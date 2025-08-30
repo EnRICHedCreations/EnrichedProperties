@@ -91,20 +91,64 @@ function handleKeyboardShortcuts(e) {
     }
 }
 
-// Load data from localStorage
-function loadData() {
-    leads = JSON.parse(localStorage.getItem('enrichedPropsLeads') || '[]');
-    properties = JSON.parse(localStorage.getItem('enrichedPropsProperties') || '[]');
-    contracts = JSON.parse(localStorage.getItem('enrichedPropsContracts') || '[]');
+// Load data from cloud storage
+async function loadData() {
+    try {
+        // Load data from cloud storage
+        leads = await CloudStorage.loadData('Leads', []);
+        properties = await CloudStorage.loadData('Properties', []);
+        contracts = await CloudStorage.loadData('Contracts', []);
+        
+        // Set up real-time listeners for cross-device updates
+        CloudStorage.onDataChange('Leads', (newLeads) => {
+            leads = newLeads;
+            updateDashboardStats();
+            if (currentTab === 'leads') updateLeadsTable();
+            if (currentTab === 'overview') updateRecentActivities();
+        });
+        
+        CloudStorage.onDataChange('Properties', (newProperties) => {
+            properties = newProperties;
+            updateDashboardStats();
+            if (currentTab === 'properties') updatePropertiesGrid();
+        });
+        
+        CloudStorage.onDataChange('Contracts', (newContracts) => {
+            contracts = newContracts;
+            updateDashboardStats();
+            if (currentTab === 'contracts') updateContractsTable();
+            if (currentTab === 'overview') updateRecentActivities();
+        });
+        
+    } catch (error) {
+        console.error('Error loading data from cloud:', error);
+        // Fallback to localStorage
+        leads = JSON.parse(localStorage.getItem('enrichedPropsLeads') || '[]');
+        properties = JSON.parse(localStorage.getItem('enrichedPropsProperties') || '[]');
+        contracts = JSON.parse(localStorage.getItem('enrichedPropsContracts') || '[]');
+    }
     
     updateDashboardStats();
 }
 
-// Save data to localStorage
-function saveData() {
-    localStorage.setItem('enrichedPropsLeads', JSON.stringify(leads));
-    localStorage.setItem('enrichedPropsProperties', JSON.stringify(properties));
-    localStorage.setItem('enrichedPropsContracts', JSON.stringify(contracts));
+// Save data to cloud storage
+async function saveData() {
+    try {
+        // Save to cloud storage
+        await Promise.all([
+            CloudStorage.saveData('Leads', leads),
+            CloudStorage.saveData('Properties', properties),
+            CloudStorage.saveData('Contracts', contracts)
+        ]);
+        
+        console.log('All data saved to cloud successfully');
+    } catch (error) {
+        console.error('Error saving data to cloud:', error);
+        // Fallback to localStorage
+        localStorage.setItem('enrichedPropsLeads', JSON.stringify(leads));
+        localStorage.setItem('enrichedPropsProperties', JSON.stringify(properties));
+        localStorage.setItem('enrichedPropsContracts', JSON.stringify(contracts));
+    }
 }
 
 
