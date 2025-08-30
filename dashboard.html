@@ -365,7 +365,12 @@
 
         <!-- Analytics Tab -->
         <div id="analytics-content" class="tab-content hidden">
-            <h2 class="text-2xl font-bold text-gray-900 mb-6">Analytics & Reports</h2>
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-900">Analytics & Reports</h2>
+                <button onclick="clearAllSampleData()" class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors">
+                    Clear All Data
+                </button>
+            </div>
             
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
                 <div class="bg-white rounded-lg shadow p-6">
@@ -617,6 +622,128 @@
                     <button type="submit" class="px-6 py-3 bg-secondary text-white rounded-lg hover:bg-blue-600">Add Buyer</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- Contract Generator Modal -->
+    <div id="contractGeneratorModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center">
+        <div class="bg-white rounded-2xl p-8 m-4 w-full max-w-4xl max-h-screen overflow-y-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl font-bold text-primary">Generate Purchase Agreement</h3>
+                <button onclick="hideContractGeneratorModal()" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+            </div>
+            <form onsubmit="createContract(event)">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <!-- Property Information -->
+                    <div class="space-y-4">
+                        <h4 class="text-lg font-semibold text-gray-900 border-b pb-2">Property Information</h4>
+                        <div>
+                            <label class="block text-gray-700 text-sm font-semibold mb-2">Property Address</label>
+                            <input type="text" id="contractPropertyAddress" class="w-full px-4 py-3 border border-gray-300 rounded-lg" required>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-gray-700 text-sm font-semibold mb-2">Purchase Price</label>
+                                <input type="number" id="contractPurchasePrice" class="w-full px-4 py-3 border border-gray-300 rounded-lg" required>
+                            </div>
+                            <div>
+                                <label class="block text-gray-700 text-sm font-semibold mb-2">EMD Amount</label>
+                                <input type="number" id="contractEMD" class="w-full px-4 py-3 border border-gray-300 rounded-lg" placeholder="5000">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-gray-700 text-sm font-semibold mb-2">Inspection Period (Days)</label>
+                                <input type="number" id="contractInspectionDays" class="w-full px-4 py-3 border border-gray-300 rounded-lg" value="7">
+                            </div>
+                            <div>
+                                <label class="block text-gray-700 text-sm font-semibold mb-2">Closing Date</label>
+                                <input type="date" id="contractClosingDate" class="w-full px-4 py-3 border border-gray-300 rounded-lg" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Seller Information -->
+                    <div class="space-y-4">
+                        <h4 class="text-lg font-semibold text-gray-900 border-b pb-2">Seller Information</h4>
+                        <div>
+                            <label class="block text-gray-700 text-sm font-semibold mb-2">Seller Name</label>
+                            <input type="text" id="contractSellerName" class="w-full px-4 py-3 border border-gray-300 rounded-lg" required>
+                        </div>
+                        <div>
+                            <label class="block text-gray-700 text-sm font-semibold mb-2">Seller Phone</label>
+                            <input type="tel" id="contractSellerPhone" class="w-full px-4 py-3 border border-gray-300 rounded-lg">
+                        </div>
+                        <div>
+                            <label class="block text-gray-700 text-sm font-semibold mb-2">Seller Email</label>
+                            <input type="email" id="contractSellerEmail" class="w-full px-4 py-3 border border-gray-300 rounded-lg">
+                        </div>
+                        <div>
+                            <label class="block text-gray-700 text-sm font-semibold mb-2">Title Company</label>
+                            <input type="text" id="contractTitleCompany" class="w-full px-4 py-3 border border-gray-300 rounded-lg" placeholder="ABC Title Company">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Additional Terms -->
+                <div class="mt-8">
+                    <h4 class="text-lg font-semibold text-gray-900 border-b pb-2 mb-4">Additional Terms & Conditions</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="flex items-center">
+                                <input type="checkbox" id="contractAssignable" class="mr-2" checked>
+                                <span class="text-sm">Contract is assignable</span>
+                            </label>
+                        </div>
+                        <div>
+                            <label class="flex items-center">
+                                <input type="checkbox" id="contractAsIs" class="mr-2" checked>
+                                <span class="text-sm">Property sold "AS-IS"</span>
+                            </label>
+                        </div>
+                        <div>
+                            <label class="flex items-center">
+                                <input type="checkbox" id="contractCashOnly" class="mr-2">
+                                <span class="text-sm">Cash transaction only</span>
+                            </label>
+                        </div>
+                        <div>
+                            <label class="flex items-center">
+                                <input type="checkbox" id="contractSellerFinancing" class="mr-2">
+                                <span class="text-sm">Seller financing available</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 text-sm font-semibold mb-2">Special Conditions</label>
+                        <textarea id="contractSpecialConditions" rows="4" class="w-full px-4 py-3 border border-gray-300 rounded-lg" placeholder="Any special terms, contingencies, or conditions..."></textarea>
+                    </div>
+                </div>
+
+                <div class="flex justify-end space-x-4 mt-8">
+                    <button type="button" onclick="hideContractGeneratorModal()" class="px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
+                    <button type="button" onclick="previewContract()" class="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700">Preview</button>
+                    <button type="submit" class="px-6 py-3 bg-secondary text-white rounded-lg hover:bg-blue-600">Generate Contract</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Contract Preview Modal -->
+    <div id="contractPreviewModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center">
+        <div class="bg-white rounded-2xl p-8 m-4 w-full max-w-5xl max-h-screen overflow-y-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl font-bold text-primary">Contract Preview</h3>
+                <button onclick="hideContractPreviewModal()" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+            </div>
+            <div id="contractPreviewContent" class="bg-white border rounded-lg p-8 text-sm leading-relaxed" style="font-family: 'Times New Roman', serif;">
+                <!-- Contract content will be generated here -->
+            </div>
+            <div class="flex justify-end space-x-4 mt-6">
+                <button onclick="hideContractPreviewModal()" class="px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50">Close</button>
+                <button onclick="downloadContract()" class="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700">Download PDF</button>
+                <button onclick="finalizeContract()" class="px-6 py-3 bg-secondary text-white rounded-lg hover:bg-blue-600">Save to Contracts</button>
+            </div>
         </div>
     </div>
 
