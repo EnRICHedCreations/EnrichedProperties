@@ -5,6 +5,7 @@ let currentTab = 'overview';
 let leads = [];
 let properties = [];
 let contracts = [];
+let buyers = [];
 
 // DOM Content Loaded
 document.addEventListener('DOMContentLoaded', function() {
@@ -77,10 +78,17 @@ function handleKeyboardShortcuts(e) {
                 e.preventDefault();
                 showTab('analytics');
                 break;
+            case '3':
+                if (e.shiftKey) { // Shift+3 for buyers (since 3 is contracts)
+                    e.preventDefault();
+                    showTab('buyers');
+                }
+                break;
             case 'n':
                 e.preventDefault();
                 if (currentTab === 'leads') showAddLeadModal();
                 else if (currentTab === 'properties') showAddPropertyModal();
+                else if (currentTab === 'buyers') showAddBuyerModal();
                 break;
         }
     }
@@ -98,6 +106,7 @@ async function loadData() {
         leads = await CloudStorage.loadData('Leads', []);
         properties = await CloudStorage.loadData('Properties', []);
         contracts = await CloudStorage.loadData('Contracts', []);
+        buyers = await CloudStorage.loadData('Buyers', []);
         
         // Set up real-time listeners for cross-device updates
         CloudStorage.onDataChange('Leads', (newLeads) => {
@@ -120,12 +129,19 @@ async function loadData() {
             if (currentTab === 'overview') updateRecentActivities();
         });
         
+        CloudStorage.onDataChange('Buyers', (newBuyers) => {
+            buyers = newBuyers;
+            updateDashboardStats();
+            if (currentTab === 'buyers') updateBuyersTable();
+        });
+        
     } catch (error) {
         console.error('Error loading data from cloud:', error);
         // Fallback to localStorage
         leads = JSON.parse(localStorage.getItem('enrichedPropsLeads') || '[]');
         properties = JSON.parse(localStorage.getItem('enrichedPropsProperties') || '[]');
         contracts = JSON.parse(localStorage.getItem('enrichedPropsContracts') || '[]');
+        buyers = JSON.parse(localStorage.getItem('enrichedPropsBuyers') || '[]');
     }
     
     updateDashboardStats();
@@ -138,7 +154,8 @@ async function saveData() {
         await Promise.all([
             CloudStorage.saveData('Leads', leads),
             CloudStorage.saveData('Properties', properties),
-            CloudStorage.saveData('Contracts', contracts)
+            CloudStorage.saveData('Contracts', contracts),
+            CloudStorage.saveData('Buyers', buyers)
         ]);
         
         console.log('All data saved to cloud successfully');
@@ -148,6 +165,7 @@ async function saveData() {
         localStorage.setItem('enrichedPropsLeads', JSON.stringify(leads));
         localStorage.setItem('enrichedPropsProperties', JSON.stringify(properties));
         localStorage.setItem('enrichedPropsContracts', JSON.stringify(contracts));
+        localStorage.setItem('enrichedPropsBuyers', JSON.stringify(buyers));
     }
 }
 
@@ -170,6 +188,8 @@ function setupEventListeners() {
             addLead(e);
         } else if (e.target.closest('#addPropertyModal')) {
             addProperty(e);
+        } else if (e.target.closest('#addBuyerModal')) {
+            addBuyer(e);
         }
     });
 }
@@ -202,6 +222,9 @@ function showTab(tabName) {
             case 'leads':
                 updateLeadsTable();
                 break;
+            case 'buyers':
+                updateBuyersTable();
+                break;
             case 'contracts':
                 updateContractsTable();
                 break;
@@ -222,16 +245,44 @@ function updateDashboardStats() {
     const pendingCount = leads.filter(lead => lead.status === 'under-contract').length;
     const totalVolume = contracts.reduce((sum, contract) => sum + (contract.purchasePrice || 0), 0);
     
-    // Update elements
+    // Contract counts
+    const draftContractsCount = contracts.filter(contract => contract.status === 'draft').length;
+    const activeContractsCount = contracts.filter(contract => contract.status === 'active').length;
+    const executedContractsCount = contracts.filter(contract => contract.status === 'executed').length;
+    
+    // Buyer counts
+    const hedgeFundBuyersCount = buyers.filter(buyer => buyer.type === 'hedge-fund').length;
+    const privateBuyersCount = buyers.filter(buyer => buyer.type === 'private-investor').length;
+    const activeBuyersCount = buyers.filter(buyer => buyer.status === 'active').length;
+    
+    // Update main dashboard elements
     const activeLeadsEl = document.getElementById('activeLeads');
     const dealsClosedEl = document.getElementById('dealsClosedCount');
     const pendingEl = document.getElementById('pendingCount');
     const totalVolumeEl = document.getElementById('totalVolume');
     
+    // Update contract stats
+    const draftContractsEl = document.getElementById('draftContractsCount');
+    const activeContractsEl = document.getElementById('activeContractsCount');
+    const executedContractsEl = document.getElementById('executedContractsCount');
+    
+    // Update buyer stats
+    const hedgeFundBuyersEl = document.getElementById('hedgeFundBuyersCount');
+    const privateBuyersEl = document.getElementById('privateBuyersCount');
+    const activeBuyersEl = document.getElementById('activeBuyersCount');
+    
     if (activeLeadsEl) activeLeadsEl.textContent = activeLeadsCount;
     if (dealsClosedEl) dealsClosedEl.textContent = dealsClosedCount;
     if (pendingEl) pendingEl.textContent = pendingCount;
     if (totalVolumeEl) totalVolumeEl.textContent = formatCurrency(totalVolume);
+    
+    if (draftContractsEl) draftContractsEl.textContent = draftContractsCount;
+    if (activeContractsEl) activeContractsEl.textContent = activeContractsCount;
+    if (executedContractsEl) executedContractsEl.textContent = executedContractsCount;
+    
+    if (hedgeFundBuyersEl) hedgeFundBuyersEl.textContent = hedgeFundBuyersCount;
+    if (privateBuyersEl) privateBuyersEl.textContent = privateBuyersCount;
+    if (activeBuyersEl) activeBuyersEl.textContent = activeBuyersCount;
 }
 
 // Update overview tab
@@ -308,36 +359,48 @@ function updateLeadsTable() {
     const tbody = document.getElementById('leadsTableBody');
     if (!tbody) return;
     
-    tbody.innerHTML = leads.map(lead => `
-        <tr class="table-row">
-            <td class="px-6 py-4 whitespace-nowrap">
-                <div class="flex items-center">
-                    <div>
-                        <div class="text-sm font-medium text-gray-900">${lead.firstName} ${lead.lastName}</div>
-                        <div class="text-sm text-gray-500">${lead.phone}</div>
+    if (leads.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="6" class="px-6 py-8 text-center text-gray-500">
+                    <div class="text-4xl mb-2">👥</div>
+                    <p class="text-sm">No leads yet</p>
+                    <p class="text-xs">Add your first lead to get started</p>
+                </td>
+            </tr>
+        `;
+    } else {
+        tbody.innerHTML = leads.map(lead => `
+            <tr class="table-row">
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="flex items-center">
+                        <div>
+                            <div class="text-sm font-medium text-gray-900">${lead.firstName} ${lead.lastName}</div>
+                            <div class="text-sm text-gray-500">${lead.phone}</div>
+                        </div>
                     </div>
-                </div>
-            </td>
-            <td class="px-6 py-4">
-                <div class="text-sm text-gray-900">${lead.propertyAddress}</div>
-                <div class="text-sm text-gray-500">${lead.source}</div>
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap">
-                <div class="text-sm text-gray-900">${lead.email || 'N/A'}</div>
-                <div class="text-sm text-gray-500">${formatPhoneNumber(lead.phone)}</div>
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap">
-                <span class="status-badge status-${lead.status}">${lead.status}</span>
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                ${lead.estimatedValue ? formatCurrency(lead.estimatedValue) : 'TBD'}
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                <button onclick="editLead(${lead.id})" class="action-button text-indigo-600 hover:text-indigo-900 mr-2">Edit</button>
-                <button onclick="deleteLead(${lead.id})" class="action-button text-red-600 hover:text-red-900">Delete</button>
-            </td>
-        </tr>
-    `).join('');
+                </td>
+                <td class="px-6 py-4">
+                    <div class="text-sm text-gray-900">${lead.propertyAddress}</div>
+                    <div class="text-sm text-gray-500">${lead.source}</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm text-gray-900">${lead.email || 'N/A'}</div>
+                    <div class="text-sm text-gray-500">${formatPhoneNumber(lead.phone)}</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <span class="status-badge status-${lead.status}">${lead.status}</span>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    ${lead.estimatedValue ? formatCurrency(lead.estimatedValue) : 'TBD'}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <button onclick="editLead(${lead.id})" class="action-button text-indigo-600 hover:text-indigo-900 mr-2">Edit</button>
+                    <button onclick="deleteLead(${lead.id})" class="action-button text-red-600 hover:text-red-900">Delete</button>
+                </td>
+            </tr>
+        `).join('');
+    }
 }
 
 // Update contracts table
@@ -345,29 +408,41 @@ function updateContractsTable() {
     const tbody = document.getElementById('contractsTableBody');
     if (!tbody) return;
     
-    tbody.innerHTML = contracts.map(contract => `
-        <tr class="table-row">
-            <td class="px-6 py-4">
-                <div class="text-sm font-medium text-gray-900">${contract.propertyAddress}</div>
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap">
-                <div class="text-sm text-gray-900">${contract.sellerName}</div>
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap">
-                <div class="text-sm text-gray-900">${formatCurrency(contract.purchasePrice)}</div>
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap">
-                <span class="status-badge status-${contract.status}">${contract.status}</span>
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap">
-                <div class="text-sm text-gray-900">${formatDate(contract.closingDate)}</div>
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                <button onclick="viewContract(${contract.id})" class="action-button text-indigo-600 hover:text-indigo-900 mr-2">View</button>
-                <button onclick="editContract(${contract.id})" class="action-button text-gray-600 hover:text-gray-900">Edit</button>
-            </td>
-        </tr>
-    `).join('');
+    if (contracts.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="6" class="px-6 py-8 text-center text-gray-500">
+                    <div class="text-4xl mb-2">📄</div>
+                    <p class="text-sm">No contracts yet</p>
+                    <p class="text-xs">Contracts will appear here as you close deals</p>
+                </td>
+            </tr>
+        `;
+    } else {
+        tbody.innerHTML = contracts.map(contract => `
+            <tr class="table-row">
+                <td class="px-6 py-4">
+                    <div class="text-sm font-medium text-gray-900">${contract.propertyAddress}</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm text-gray-900">${contract.sellerName}</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm text-gray-900">${formatCurrency(contract.purchasePrice)}</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <span class="status-badge status-${contract.status}">${contract.status}</span>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm text-gray-900">${formatDate(contract.closingDate)}</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <button onclick="viewContract(${contract.id})" class="action-button text-indigo-600 hover:text-indigo-900 mr-2">View</button>
+                    <button onclick="editContract(${contract.id})" class="action-button text-gray-600 hover:text-gray-900">Edit</button>
+                </td>
+            </tr>
+        `).join('');
+    }
 }
 
 // Update properties grid
@@ -375,45 +450,108 @@ function updatePropertiesGrid() {
     const grid = document.getElementById('propertiesGrid');
     if (!grid) return;
     
-    grid.innerHTML = properties.map(property => `
-        <div class="property-card bg-white rounded-lg shadow p-6 card-hover">
-            <div class="mb-4">
-                <h3 class="text-lg font-semibold text-gray-900 mb-2">${property.address}</h3>
+    if (properties.length === 0) {
+        grid.innerHTML = `
+            <div class="col-span-full text-center py-12 text-gray-500">
+                <div class="text-6xl mb-4">🏠</div>
+                <p class="text-lg font-medium mb-2">No properties yet</p>
+                <p class="text-sm">Add your first property to start building your portfolio</p>
+                <button onclick="showAddPropertyModal()" class="mt-4 bg-secondary text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition-colors">
+                    Add Property
+                </button>
+            </div>
+        `;
+    } else {
+        grid.innerHTML = properties.map(property => `
+            <div class="property-card bg-white rounded-lg shadow p-6 card-hover">
+                <div class="mb-4">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-2">${property.address}</h3>
+                    <div class="flex justify-between items-center">
+                        <span class="text-2xl font-bold text-secondary">${formatCurrency(property.purchasePrice)}</span>
+                        <span class="status-badge status-${property.status || 'active'}">${property.status || 'Active'}</span>
+                    </div>
+                </div>
+                <div class="grid grid-cols-3 gap-4 mb-4 text-sm text-gray-600">
+                    <div>
+                        <span class="font-medium">${property.bedrooms || 'N/A'}</span>
+                        <div>Beds</div>
+                    </div>
+                    <div>
+                        <span class="font-medium">${property.bathrooms || 'N/A'}</span>
+                        <div>Baths</div>
+                    </div>
+                    <div>
+                        <span class="font-medium">${property.sqft ? property.sqft.toLocaleString() : 'N/A'}</span>
+                        <div>Sq Ft</div>
+                    </div>
+                </div>
+                ${property.notes ? `<p class="text-sm text-gray-600 mb-4">${property.notes}</p>` : ''}
                 <div class="flex justify-between items-center">
-                    <span class="text-2xl font-bold text-secondary">${formatCurrency(property.purchasePrice)}</span>
-                    <span class="status-badge status-${property.status || 'active'}">${property.status || 'Active'}</span>
+                    <span class="text-sm text-gray-500">Added ${getTimeAgo(property.dateAdded)}</span>
+                    <div>
+                        <button onclick="editProperty(${property.id})" class="action-button text-indigo-600 hover:text-indigo-900 mr-2">Edit</button>
+                        <button onclick="deleteProperty(${property.id})" class="action-button text-red-600 hover:text-red-900">Delete</button>
+                    </div>
                 </div>
             </div>
-            <div class="grid grid-cols-3 gap-4 mb-4 text-sm text-gray-600">
-                <div>
-                    <span class="font-medium">${property.bedrooms || 'N/A'}</span>
-                    <div>Beds</div>
-                </div>
-                <div>
-                    <span class="font-medium">${property.bathrooms || 'N/A'}</span>
-                    <div>Baths</div>
-                </div>
-                <div>
-                    <span class="font-medium">${property.sqft ? property.sqft.toLocaleString() : 'N/A'}</span>
-                    <div>Sq Ft</div>
-                </div>
-            </div>
-            ${property.notes ? `<p class="text-sm text-gray-600 mb-4">${property.notes}</p>` : ''}
-            <div class="flex justify-between items-center">
-                <span class="text-sm text-gray-500">Added ${getTimeAgo(property.dateAdded)}</span>
-                <div>
-                    <button onclick="editProperty(${property.id})" class="action-button text-indigo-600 hover:text-indigo-900 mr-2">Edit</button>
-                    <button onclick="deleteProperty(${property.id})" class="action-button text-red-600 hover:text-red-900">Delete</button>
-                </div>
-            </div>
-        </div>
-    `).join('');
+        `).join('');
+    }
 }
 
 // Update analytics
 function updateAnalytics() {
     // Analytics are already updated in the HTML template
     // This could be expanded to include dynamic charts
+}
+
+// Update buyers table
+function updateBuyersTable() {
+    const tbody = document.getElementById('buyersTableBody');
+    if (!tbody) return;
+    
+    if (buyers.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="7" class="px-6 py-8 text-center text-gray-500">
+                    <div class="text-4xl mb-2">🏦</div>
+                    <p class="text-sm">No buyers yet</p>
+                    <p class="text-xs">Add your first buyer to start building your network</p>
+                </td>
+            </tr>
+        `;
+    } else {
+        tbody.innerHTML = buyers.map(buyer => `
+            <tr class="table-row">
+                <td class="px-6 py-4">
+                    <div class="text-sm font-medium text-gray-900">${buyer.name}</div>
+                    <div class="text-sm text-gray-500">${buyer.company}</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <span class="status-badge status-${buyer.type}">${formatBuyerType(buyer.type)}</span>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm text-gray-900">${buyer.email}</div>
+                    <div class="text-sm text-gray-500">${formatPhoneNumber(buyer.phone)}</div>
+                </td>
+                <td class="px-6 py-4">
+                    <div class="text-sm text-gray-900">${buyer.preferredAreas || 'Any'}</div>
+                    <div class="text-sm text-gray-500">${buyer.propertyTypes || 'All types'}</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm text-gray-900">
+                        ${buyer.minBudget ? formatCurrency(buyer.minBudget) : '$0'} - ${buyer.maxBudget ? formatCurrency(buyer.maxBudget) : '∞'}
+                    </div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <span class="status-badge status-${buyer.status}">${buyer.status}</span>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <button onclick="editBuyer(${buyer.id})" class="action-button text-indigo-600 hover:text-indigo-900 mr-2">Edit</button>
+                    <button onclick="deleteBuyer(${buyer.id})" class="action-button text-red-600 hover:text-red-900">Delete</button>
+                </td>
+            </tr>
+        `).join('');
+    }
 }
 
 // Modal functions
@@ -461,9 +599,33 @@ function hideAddPropertyModal() {
     }
 }
 
+// Buyer modal functions
+function showAddBuyerModal() {
+    const modal = document.getElementById('addBuyerModal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+        
+        setTimeout(() => {
+            const firstInput = modal.querySelector('input');
+            if (firstInput) firstInput.focus();
+        }, 100);
+    }
+}
+
+function hideAddBuyerModal() {
+    const modal = document.getElementById('addBuyerModal');
+    if (modal) {
+        modal.classList.add('hidden');
+        document.body.style.overflow = 'auto';
+        modal.querySelector('form').reset();
+    }
+}
+
 function hideAllModals() {
     hideAddLeadModal();
     hideAddPropertyModal();
+    hideAddBuyerModal();
 }
 
 // Add lead
@@ -519,6 +681,37 @@ function addProperty(event) {
     hideAddPropertyModal();
     
     showSuccessMessage('Property added successfully!');
+}
+
+// Add buyer
+function addBuyer(event) {
+    event.preventDefault();
+    
+    const form = event.target;
+    const buyerData = {
+        id: Date.now(),
+        name: form.querySelector('#buyerName').value,
+        company: form.querySelector('#buyerCompany').value,
+        phone: form.querySelector('#buyerPhone').value,
+        email: form.querySelector('#buyerEmail').value,
+        type: form.querySelector('#buyerType').value,
+        status: form.querySelector('#buyerStatus').value,
+        minBudget: parseInt(form.querySelector('#buyerMinBudget').value) || null,
+        maxBudget: parseInt(form.querySelector('#buyerMaxBudget').value) || null,
+        preferredAreas: form.querySelector('#buyerAreas').value,
+        propertyTypes: form.querySelector('#buyerPropertyTypes').value,
+        notes: form.querySelector('#buyerNotes').value,
+        dateAdded: new Date().toISOString(),
+        lastContact: null
+    };
+    
+    buyers.push(buyerData);
+    saveData();
+    updateBuyersTable();
+    updateDashboardStats();
+    hideAddBuyerModal();
+    
+    showSuccessMessage('Buyer added successfully!');
 }
 
 // CRUD operations
@@ -594,6 +787,32 @@ function generateContract() {
     alert('Contract generation feature would integrate with document templates. For demo purposes, this would create a professional purchase agreement.');
 }
 
+// Buyer CRUD operations
+function editBuyer(id) {
+    const buyer = buyers.find(b => b.id === id);
+    if (buyer) {
+        const newStatus = prompt('Enter new status (active, warm, cold, inactive):', buyer.status);
+        if (newStatus && ['active', 'warm', 'cold', 'inactive'].includes(newStatus)) {
+            buyer.status = newStatus;
+            buyer.lastContact = new Date().toISOString();
+            saveData();
+            updateBuyersTable();
+            updateDashboardStats();
+            showSuccessMessage('Buyer updated successfully!');
+        }
+    }
+}
+
+function deleteBuyer(id) {
+    if (confirm('Are you sure you want to delete this buyer?')) {
+        buyers = buyers.filter(b => b.id !== id);
+        saveData();
+        updateBuyersTable();
+        updateDashboardStats();
+        showSuccessMessage('Buyer deleted successfully!');
+    }
+}
+
 // Utility functions
 function formatCurrency(amount) {
     return new Intl.NumberFormat('en-US', {
@@ -632,6 +851,18 @@ function getTimeAgo(dateString) {
     if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} hours ago`;
     if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)} days ago`;
     return formatDate(dateString);
+}
+
+function formatBuyerType(type) {
+    const typeMap = {
+        'hedge-fund': 'Hedge Fund',
+        'private-investor': 'Private Investor',
+        'fix-flip': 'Fix & Flip',
+        'buy-hold': 'Buy & Hold',
+        'wholesaler': 'Wholesaler',
+        'other': 'Other'
+    };
+    return typeMap[type] || type;
 }
 
 function showSuccessMessage(message) {
