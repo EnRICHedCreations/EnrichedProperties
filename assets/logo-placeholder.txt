@@ -1,0 +1,7 @@
+Replace this file with your actual logo image (logo.png or logo.svg)
+
+Recommended logo specifications:
+- Format: PNG or SVG
+- Size: 200x60px for header
+- Background: Transparent
+- Colors: Match your brand colors defined in the CSS
