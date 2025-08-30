@@ -47,6 +47,9 @@
                 <button onclick="showTab('leads')" id="leads-tab" class="tab-button whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm">
                     Leads Management
                 </button>
+                <button onclick="showTab('buyers')" id="buyers-tab" class="tab-button whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm">
+                    Buyers List
+                </button>
                 <button onclick="showTab('contracts')" id="contracts-tab" class="tab-button whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm">
                     Contracts
                 </button>
@@ -125,10 +128,14 @@
 
                 <div class="bg-white rounded-lg shadow p-6">
                     <h3 class="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
                         <button onclick="showTab('leads')" class="p-4 bg-blue-50 rounded-lg text-center hover:bg-blue-100 transition-colors">
                             <div class="text-blue-600 text-2xl mb-2">➕</div>
                             <div class="text-sm font-medium">Add Lead</div>
+                        </button>
+                        <button onclick="showTab('buyers')" class="p-4 bg-indigo-50 rounded-lg text-center hover:bg-indigo-100 transition-colors">
+                            <div class="text-indigo-600 text-2xl mb-2">🏦</div>
+                            <div class="text-sm font-medium">Buyers List</div>
                         </button>
                         <button onclick="showTab('properties')" class="p-4 bg-green-50 rounded-lg text-center hover:bg-green-100 transition-colors">
                             <div class="text-green-600 text-2xl mb-2">🏠</div>
@@ -191,6 +198,95 @@
                         </thead>
                         <tbody id="leadsTableBody" class="bg-white divide-y divide-gray-200">
                             <!-- Leads will be populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Buyers Tab -->
+        <div id="buyers-content" class="tab-content hidden">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-900">Buyers List</h2>
+                <button onclick="showAddBuyerModal()" class="bg-secondary text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors">
+                    Add New Buyer
+                </button>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                        <div class="p-2 bg-green-100 rounded-lg">
+                            <div class="text-green-600 text-2xl">🏦</div>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-600">Hedge Funds</p>
+                            <p class="text-2xl font-semibold text-gray-900" id="hedgeFundBuyersCount">0</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                        <div class="p-2 bg-blue-100 rounded-lg">
+                            <div class="text-blue-600 text-2xl">👥</div>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-600">Private Investors</p>
+                            <p class="text-2xl font-semibold text-gray-900" id="privateBuyersCount">0</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                        <div class="p-2 bg-purple-100 rounded-lg">
+                            <div class="text-purple-600 text-2xl">📞</div>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-600">Active Buyers</p>
+                            <p class="text-2xl font-semibold text-gray-900" id="activeBuyersCount">0</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <div class="flex justify-between items-center">
+                        <div class="flex space-x-4">
+                            <select class="border border-gray-300 rounded-lg px-3 py-2">
+                                <option>All Types</option>
+                                <option>Hedge Fund</option>
+                                <option>Private Investor</option>
+                                <option>Fix & Flip</option>
+                                <option>Buy & Hold</option>
+                                <option>Wholesaler</option>
+                            </select>
+                            <input type="text" placeholder="Search buyers..." class="border border-gray-300 rounded-lg px-3 py-2 w-64">
+                        </div>
+                        <div class="flex space-x-2">
+                            <button class="px-4 py-2 text-sm bg-gray-100 rounded-lg hover:bg-gray-200">Export CSV</button>
+                            <button class="px-4 py-2 text-sm bg-gray-100 rounded-lg hover:bg-gray-200">Bulk Email</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name/Company</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Criteria</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Budget Range</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="buyersTableBody" class="bg-white divide-y divide-gray-200">
+                            <!-- Buyers will be populated by JavaScript -->
                         </tbody>
                     </table>
                 </div>
@@ -436,6 +532,89 @@
                 <div class="flex justify-end space-x-4">
                     <button type="button" onclick="hideAddPropertyModal()" class="px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
                     <button type="submit" class="px-6 py-3 bg-secondary text-white rounded-lg hover:bg-blue-600">Add Property</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Buyer Modal -->
+    <div id="addBuyerModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center">
+        <div class="bg-white rounded-2xl p-8 m-4 w-full max-w-3xl max-h-screen overflow-y-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl font-bold text-primary">Add New Buyer</h3>
+                <button onclick="hideAddBuyerModal()" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+            </div>
+            <form onsubmit="addBuyer(event)">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-gray-700 text-sm font-semibold mb-2">Contact Name</label>
+                        <input type="text" id="buyerName" class="w-full px-4 py-3 border border-gray-300 rounded-lg" required>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 text-sm font-semibold mb-2">Company/Entity</label>
+                        <input type="text" id="buyerCompany" class="w-full px-4 py-3 border border-gray-300 rounded-lg" required>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-gray-700 text-sm font-semibold mb-2">Phone</label>
+                        <input type="tel" id="buyerPhone" class="w-full px-4 py-3 border border-gray-300 rounded-lg" required>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 text-sm font-semibold mb-2">Email</label>
+                        <input type="email" id="buyerEmail" class="w-full px-4 py-3 border border-gray-300 rounded-lg" required>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-gray-700 text-sm font-semibold mb-2">Buyer Type</label>
+                        <select id="buyerType" class="w-full px-4 py-3 border border-gray-300 rounded-lg" required>
+                            <option value="">Select Type</option>
+                            <option value="hedge-fund">Hedge Fund</option>
+                            <option value="private-investor">Private Investor</option>
+                            <option value="fix-flip">Fix & Flip</option>
+                            <option value="buy-hold">Buy & Hold</option>
+                            <option value="wholesaler">Wholesaler</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 text-sm font-semibold mb-2">Status</label>
+                        <select id="buyerStatus" class="w-full px-4 py-3 border border-gray-300 rounded-lg">
+                            <option value="active">Active</option>
+                            <option value="warm">Warm Lead</option>
+                            <option value="cold">Cold</option>
+                            <option value="inactive">Inactive</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-gray-700 text-sm font-semibold mb-2">Min Budget</label>
+                        <input type="number" id="buyerMinBudget" class="w-full px-4 py-3 border border-gray-300 rounded-lg" placeholder="100000">
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 text-sm font-semibold mb-2">Max Budget</label>
+                        <input type="number" id="buyerMaxBudget" class="w-full px-4 py-3 border border-gray-300 rounded-lg" placeholder="500000">
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-gray-700 text-sm font-semibold mb-2">Preferred Areas</label>
+                        <input type="text" id="buyerAreas" class="w-full px-4 py-3 border border-gray-300 rounded-lg" placeholder="Dallas, Houston, Austin">
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 text-sm font-semibold mb-2">Property Types</label>
+                        <input type="text" id="buyerPropertyTypes" class="w-full px-4 py-3 border border-gray-300 rounded-lg" placeholder="SFH, Condos, Multi-family">
+                    </div>
+                </div>
+                <div class="mb-6">
+                    <label class="block text-gray-700 text-sm font-semibold mb-2">Buying Criteria & Notes</label>
+                    <textarea id="buyerNotes" rows="4" class="w-full px-4 py-3 border border-gray-300 rounded-lg" placeholder="ARV requirements, rehab tolerance, closing timeline, etc..."></textarea>
+                </div>
+                <div class="flex justify-end space-x-4">
+                    <button type="button" onclick="hideAddBuyerModal()" class="px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
+                    <button type="submit" class="px-6 py-3 bg-secondary text-white rounded-lg hover:bg-blue-600">Add Buyer</button>
                 </div>
             </form>
         </div>
