@@ -190,6 +190,8 @@ function setupEventListeners() {
             addProperty(e);
         } else if (e.target.closest('#addBuyerModal')) {
             addBuyer(e);
+        } else if (e.target.closest('#contractGeneratorModal')) {
+            createContract(e);
         }
     });
 }
@@ -626,6 +628,55 @@ function hideAllModals() {
     hideAddLeadModal();
     hideAddPropertyModal();
     hideAddBuyerModal();
+    hideContractGeneratorModal();
+    hideContractPreviewModal();
+}
+
+// Contract Generator Modal Functions
+function showContractGeneratorModal() {
+    const modal = document.getElementById('contractGeneratorModal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+        
+        // Set default closing date (30 days from now)
+        const closingDate = new Date();
+        closingDate.setDate(closingDate.getDate() + 30);
+        const closingInput = document.getElementById('contractClosingDate');
+        if (closingInput) {
+            closingInput.value = closingDate.toISOString().split('T')[0];
+        }
+        
+        setTimeout(() => {
+            const firstInput = modal.querySelector('input');
+            if (firstInput) firstInput.focus();
+        }, 100);
+    }
+}
+
+function hideContractGeneratorModal() {
+    const modal = document.getElementById('contractGeneratorModal');
+    if (modal) {
+        modal.classList.add('hidden');
+        document.body.style.overflow = 'auto';
+        modal.querySelector('form').reset();
+    }
+}
+
+function showContractPreviewModal() {
+    const modal = document.getElementById('contractPreviewModal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+function hideContractPreviewModal() {
+    const modal = document.getElementById('contractPreviewModal');
+    if (modal) {
+        modal.classList.add('hidden');
+        document.body.style.overflow = 'auto';
+    }
 }
 
 // Add lead
@@ -784,7 +835,7 @@ function editContract(id) {
 }
 
 function generateContract() {
-    alert('Contract generation feature would integrate with document templates. For demo purposes, this would create a professional purchase agreement.');
+    showContractGeneratorModal();
 }
 
 // Buyer CRUD operations
@@ -907,6 +958,297 @@ function showMessage(message, type) {
 
 function checkForUpdates() {
     // Placeholder for checking for updates
+}
+
+// Clear all sample data - call this once to ensure clean start
+function clearAllSampleData() {
+    localStorage.removeItem('enrichedPropsLeads');
+    localStorage.removeItem('enrichedPropsProperties');
+    localStorage.removeItem('enrichedPropsContracts');
+    localStorage.removeItem('enrichedPropsBuyers');
+    
+    leads = [];
+    properties = [];
+    contracts = [];
+    buyers = [];
+    
+    updateDashboardStats();
+    updateLeadsTable();
+    updateContractsTable();
+    updatePropertiesGrid();
+    updateBuyersTable();
+    
+    showSuccessMessage('All sample data cleared! Dashboard is now completely empty.');
+}
+
+// Contract Generation Functions
+let currentContractData = null;
+
+function previewContract() {
+    const contractData = getContractFormData();
+    if (!contractData) return;
+    
+    currentContractData = contractData;
+    const contractHtml = generateContractHTML(contractData);
+    
+    document.getElementById('contractPreviewContent').innerHTML = contractHtml;
+    showContractPreviewModal();
+}
+
+function createContract(event) {
+    event.preventDefault();
+    
+    const contractData = getContractFormData();
+    if (!contractData) return;
+    
+    currentContractData = contractData;
+    
+    // Create contract record
+    const contract = {
+        id: Date.now(),
+        propertyAddress: contractData.propertyAddress,
+        sellerName: contractData.sellerName,
+        purchasePrice: parseInt(contractData.purchasePrice),
+        status: 'draft',
+        closingDate: contractData.closingDate,
+        dateCreated: new Date().toISOString(),
+        contractData: contractData
+    };
+    
+    contracts.push(contract);
+    saveData();
+    updateContractsTable();
+    updateDashboardStats();
+    hideContractGeneratorModal();
+    
+    showSuccessMessage('Contract generated successfully! View in Contracts tab.');
+}
+
+function finalizeContract() {
+    if (currentContractData) {
+        const contract = {
+            id: Date.now(),
+            propertyAddress: currentContractData.propertyAddress,
+            sellerName: currentContractData.sellerName,
+            purchasePrice: parseInt(currentContractData.purchasePrice),
+            status: 'active',
+            closingDate: currentContractData.closingDate,
+            dateCreated: new Date().toISOString(),
+            contractData: currentContractData
+        };
+        
+        contracts.push(contract);
+        saveData();
+        updateContractsTable();
+        updateDashboardStats();
+        hideContractPreviewModal();
+        hideContractGeneratorModal();
+        
+        showSuccessMessage('Contract saved to your contracts list!');
+    }
+}
+
+function getContractFormData() {
+    const form = document.querySelector('#contractGeneratorModal form');
+    if (!form) return null;
+    
+    const formData = {
+        propertyAddress: document.getElementById('contractPropertyAddress').value,
+        purchasePrice: document.getElementById('contractPurchasePrice').value,
+        emdAmount: document.getElementById('contractEMD').value || '5000',
+        inspectionDays: document.getElementById('contractInspectionDays').value || '7',
+        closingDate: document.getElementById('contractClosingDate').value,
+        sellerName: document.getElementById('contractSellerName').value,
+        sellerPhone: document.getElementById('contractSellerPhone').value,
+        sellerEmail: document.getElementById('contractSellerEmail').value,
+        titleCompany: document.getElementById('contractTitleCompany').value,
+        assignable: document.getElementById('contractAssignable').checked,
+        asIs: document.getElementById('contractAsIs').checked,
+        cashOnly: document.getElementById('contractCashOnly').checked,
+        sellerFinancing: document.getElementById('contractSellerFinancing').checked,
+        specialConditions: document.getElementById('contractSpecialConditions').value
+    };
+    
+    // Validation
+    if (!formData.propertyAddress || !formData.purchasePrice || !formData.closingDate || !formData.sellerName) {
+        alert('Please fill in all required fields');
+        return null;
+    }
+    
+    return formData;
+}
+
+function generateContractHTML(data) {
+    const today = new Date().toLocaleDateString();
+    const closingDate = new Date(data.closingDate).toLocaleDateString();
+    
+    return `
+        <div class="contract-document">
+            <div class="text-center mb-8">
+                <h1 class="text-xl font-bold mb-2">REAL ESTATE PURCHASE AGREEMENT</h1>
+                <p class="text-sm">State: Texas (Modify as needed for your jurisdiction)</p>
+            </div>
+            
+            <div class="mb-6">
+                <p><strong>Date:</strong> ${today}</p>
+            </div>
+            
+            <div class="mb-6">
+                <p><strong>PARTIES:</strong></p>
+                <p><strong>Seller:</strong> ${data.sellerName}</p>
+                <p><strong>Buyer:</strong> Enriched Properties LLC, a Texas Limited Liability Company${data.assignable ? ' and/or assigns' : ''}</p>
+            </div>
+            
+            <div class="mb-6">
+                <p><strong>PROPERTY:</strong></p>
+                <p>The real property located at: <strong>${data.propertyAddress}</strong></p>
+                <p>Together with all improvements, fixtures, and appurtenances thereto (the "Property").</p>
+            </div>
+            
+            <div class="mb-6">
+                <p><strong>PURCHASE PRICE:</strong></p>
+                <p>The total purchase price for the Property shall be <strong>${formatCurrency(parseInt(data.purchasePrice))}</strong> ("Purchase Price").</p>
+            </div>
+            
+            <div class="mb-6">
+                <p><strong>EARNEST MONEY:</strong></p>
+                <p>Upon execution of this Agreement, Buyer shall deposit <strong>${formatCurrency(parseInt(data.emdAmount))}</strong> as earnest money with ${data.titleCompany || 'the designated title company'} to be held in escrow until closing.</p>
+            </div>
+            
+            <div class="mb-6">
+                <p><strong>CLOSING:</strong></p>
+                <p>Closing shall occur on or before <strong>${closingDate}</strong>. Time is of the essence.</p>
+                <p>Closing shall take place at ${data.titleCompany || 'the designated title company'} or such other location as mutually agreed upon by the parties.</p>
+            </div>
+            
+            <div class="mb-6">
+                <p><strong>INSPECTION PERIOD:</strong></p>
+                <p>Buyer shall have <strong>${data.inspectionDays} days</strong> from the date of this Agreement to inspect the Property and approve or disapprove of its condition in Buyer's sole discretion.</p>
+            </div>
+            
+            ${data.asIs ? `
+            <div class="mb-6">
+                <p><strong>AS-IS CONDITION:</strong></p>
+                <p>Seller is selling and Buyer is purchasing the Property in its present "AS-IS" condition. Seller makes no warranties or representations regarding the condition of the Property.</p>
+            </div>
+            ` : ''}
+            
+            ${data.assignable ? `
+            <div class="mb-6">
+                <p><strong>ASSIGNMENT:</strong></p>
+                <p>Buyer may assign this Agreement to any person or entity without the consent of Seller. Upon assignment, the assignee shall assume all obligations of Buyer hereunder.</p>
+            </div>
+            ` : ''}
+            
+            ${data.cashOnly ? `
+            <div class="mb-6">
+                <p><strong>CASH TRANSACTION:</strong></p>
+                <p>This is a cash transaction. Buyer shall provide proof of funds within 2 business days of execution.</p>
+            </div>
+            ` : ''}
+            
+            ${data.specialConditions ? `
+            <div class="mb-6">
+                <p><strong>SPECIAL CONDITIONS:</strong></p>
+                <p>${data.specialConditions}</p>
+            </div>
+            ` : ''}
+            
+            <div class="mb-6">
+                <p><strong>DEFAULT:</strong></p>
+                <p>If Buyer defaults, Seller may retain the earnest money as liquidated damages. If Seller defaults, Buyer may seek specific performance or damages.</p>
+            </div>
+            
+            <div class="mb-6">
+                <p><strong>CLOSING COSTS:</strong></p>
+                <p>Each party shall pay their own attorney fees. Buyer and Seller shall split title insurance premiums and closing costs equally unless otherwise specified.</p>
+            </div>
+            
+            <div class="mb-8">
+                <p><strong>GOVERNING LAW:</strong></p>
+                <p>This Agreement shall be governed by the laws of the State of Texas.</p>
+            </div>
+            
+            <div class="signature-section grid grid-cols-2 gap-8 mt-12">
+                <div>
+                    <p class="mb-8"><strong>SELLER:</strong></p>
+                    <div class="border-b border-black mb-2" style="height: 20px;"></div>
+                    <p>${data.sellerName}</p>
+                    <p>Date: _______________</p>
+                    ${data.sellerPhone ? `<p>Phone: ${data.sellerPhone}</p>` : ''}
+                    ${data.sellerEmail ? `<p>Email: ${data.sellerEmail}</p>` : ''}
+                </div>
+                
+                <div>
+                    <p class="mb-8"><strong>BUYER:</strong></p>
+                    <div class="border-b border-black mb-2" style="height: 20px;"></div>
+                    <p>Enriched Properties LLC</p>
+                    <p>By: ________________________</p>
+                    <p>Manager</p>
+                    <p>Date: _______________</p>
+                </div>
+            </div>
+            
+            <div class="mt-8 text-xs text-gray-600">
+                <p><strong>DISCLAIMER:</strong> This contract template is for informational purposes. Consult with a qualified attorney before using in actual transactions. Laws vary by state and jurisdiction.</p>
+            </div>
+        </div>
+    `;
+}
+
+function downloadContract() {
+    if (!currentContractData) return;
+    
+    const contractContent = document.getElementById('contractPreviewContent').innerHTML;
+    
+    // Create a temporary div with the contract content
+    const printContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Purchase Agreement - ${currentContractData.propertyAddress}</title>
+            <style>
+                body { font-family: 'Times New Roman', serif; font-size: 14px; line-height: 1.6; margin: 40px; }
+                .contract-document { max-width: none; }
+                .text-center { text-align: center; }
+                .mb-2 { margin-bottom: 0.5rem; }
+                .mb-4 { margin-bottom: 1rem; }
+                .mb-6 { margin-bottom: 1.5rem; }
+                .mb-8 { margin-bottom: 2rem; }
+                .mt-8 { margin-top: 2rem; }
+                .mt-12 { margin-top: 3rem; }
+                .text-xl { font-size: 1.25rem; }
+                .text-sm { font-size: 0.875rem; }
+                .text-xs { font-size: 0.75rem; }
+                .font-bold { font-weight: bold; }
+                .grid { display: grid; }
+                .grid-cols-2 { grid-template-columns: repeat(2, 1fr); }
+                .gap-8 { gap: 2rem; }
+                .border-b { border-bottom: 1px solid black; }
+                .border-black { border-color: black; }
+                .text-gray-600 { color: #666; }
+                @media print {
+                    body { margin: 20px; }
+                    .no-print { display: none; }
+                }
+            </style>
+        </head>
+        <body>
+            ${contractContent}
+        </body>
+        </html>
+    `;
+    
+    // Open in new window for printing/saving
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+    printWindow.focus();
+    
+    // Automatically trigger print dialog
+    setTimeout(() => {
+        printWindow.print();
+    }, 250);
 }
 
 // Logout function
