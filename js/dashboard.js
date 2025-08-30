@@ -97,11 +97,6 @@ function loadData() {
     properties = JSON.parse(localStorage.getItem('enrichedPropsProperties') || '[]');
     contracts = JSON.parse(localStorage.getItem('enrichedPropsContracts') || '[]');
     
-    // Load sample data if none exists
-    if (leads.length === 0) {
-        loadSampleData();
-    }
-    
     updateDashboardStats();
 }
 
@@ -112,107 +107,6 @@ function saveData() {
     localStorage.setItem('enrichedPropsContracts', JSON.stringify(contracts));
 }
 
-// Load sample data for demo
-function loadSampleData() {
-    const sampleLeads = [
-        {
-            id: 1,
-            firstName: 'John',
-            lastName: 'Smith',
-            phone: '(555) 123-4567',
-            email: 'john.smith@email.com',
-            propertyAddress: '123 Oak Street, Dallas, TX 75201',
-            estimatedValue: 285000,
-            status: 'qualified',
-            source: 'Cold Call',
-            notes: 'Motivated seller, divorce situation. Needs quick closing.',
-            dateAdded: new Date(Date.now() - 86400000 * 2).toISOString(),
-            lastContact: new Date(Date.now() - 86400000).toISOString()
-        },
-        {
-            id: 2,
-            firstName: 'Sarah',
-            lastName: 'Johnson',
-            phone: '(555) 987-6543',
-            email: 'sarah.j@email.com',
-            propertyAddress: '456 Pine Avenue, Houston, TX 77001',
-            estimatedValue: 320000,
-            status: 'contacted',
-            source: 'Direct Mail',
-            notes: 'Inherited property, needs repairs. Open to cash offers.',
-            dateAdded: new Date(Date.now() - 86400000 * 3).toISOString(),
-            lastContact: new Date(Date.now() - 86400000 * 2).toISOString()
-        },
-        {
-            id: 3,
-            firstName: 'Michael',
-            lastName: 'Davis',
-            phone: '(555) 456-7890',
-            email: 'mdavis@email.com',
-            propertyAddress: '789 Elm Drive, Austin, TX 78701',
-            estimatedValue: 410000,
-            status: 'under-contract',
-            source: 'Website Form',
-            notes: 'Pre-foreclosure. Contract signed, closing in 10 days.',
-            dateAdded: new Date(Date.now() - 86400000 * 5).toISOString(),
-            lastContact: new Date(Date.now() - 86400000).toISOString()
-        }
-    ];
-    
-    const sampleProperties = [
-        {
-            id: 1,
-            address: '123 Oak Street, Dallas, TX 75201',
-            purchasePrice: 285000,
-            bedrooms: 3,
-            bathrooms: 2,
-            sqft: 1850,
-            yearBuilt: 1995,
-            status: 'under-contract',
-            notes: 'Good condition, minor cosmetic updates needed.',
-            dateAdded: new Date(Date.now() - 86400000 * 2).toISOString()
-        },
-        {
-            id: 2,
-            address: '456 Pine Avenue, Houston, TX 77001',
-            purchasePrice: 320000,
-            bedrooms: 4,
-            bathrooms: 2.5,
-            sqft: 2100,
-            yearBuilt: 1988,
-            status: 'evaluating',
-            notes: 'Needs kitchen renovation, good bones.',
-            dateAdded: new Date(Date.now() - 86400000 * 3).toISOString()
-        }
-    ];
-    
-    const sampleContracts = [
-        {
-            id: 1,
-            propertyAddress: '123 Oak Street, Dallas, TX 75201',
-            sellerName: 'John Smith',
-            purchasePrice: 285000,
-            status: 'executed',
-            closingDate: new Date(Date.now() + 86400000 * 10).toISOString().split('T')[0],
-            dateCreated: new Date(Date.now() - 86400000 * 2).toISOString()
-        },
-        {
-            id: 2,
-            propertyAddress: '789 Elm Drive, Austin, TX 78701',
-            sellerName: 'Michael Davis',
-            purchasePrice: 410000,
-            status: 'active',
-            closingDate: new Date(Date.now() + 86400000 * 15).toISOString().split('T')[0],
-            dateCreated: new Date(Date.now() - 86400000 * 1).toISOString()
-        }
-    ];
-    
-    leads = sampleLeads;
-    properties = sampleProperties;
-    contracts = sampleContracts;
-    
-    saveData();
-}
 
 // Setup event listeners
 function setupEventListeners() {
@@ -344,15 +238,25 @@ function updateRecentActivities() {
     activities.sort((a, b) => b.date - a.date);
     
     // Generate HTML
-    activitiesContainer.innerHTML = activities.slice(0, 5).map(activity => `
-        <div class="flex items-center p-3 bg-gray-50 rounded-lg">
-            <div class="text-lg mr-3">${activity.icon}</div>
-            <div class="flex-1">
-                <p class="text-sm font-medium">${activity.message}</p>
-                <p class="text-xs text-gray-500">${activity.time}</p>
+    if (activities.length === 0) {
+        activitiesContainer.innerHTML = `
+            <div class="text-center py-8 text-gray-500">
+                <div class="text-4xl mb-2">📝</div>
+                <p class="text-sm">No recent activity</p>
+                <p class="text-xs">Activities will appear here as you work with leads and contracts</p>
             </div>
-        </div>
-    `).join('');
+        `;
+    } else {
+        activitiesContainer.innerHTML = activities.slice(0, 5).map(activity => `
+            <div class="flex items-center p-3 bg-gray-50 rounded-lg">
+                <div class="text-lg mr-3">${activity.icon}</div>
+                <div class="flex-1">
+                    <p class="text-sm font-medium">${activity.message}</p>
+                    <p class="text-xs text-gray-500">${activity.time}</p>
+                </div>
+            </div>
+        `).join('');
+    }
 }
 
 // Update leads table
