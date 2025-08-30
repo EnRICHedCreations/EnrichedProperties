@@ -113,11 +113,24 @@ function handleContactForm(form) {
     }, 2000);
 }
 
-// Store lead in local storage
-function storeLead(leadData) {
-    let leads = JSON.parse(localStorage.getItem('enrichedPropsLeads') || '[]');
-    leads.push(leadData);
-    localStorage.setItem('enrichedPropsLeads', JSON.stringify(leads));
+// Store lead in cloud storage
+async function storeLead(leadData) {
+    try {
+        // Load existing leads
+        let leads = await CloudStorage.loadData('Leads', []);
+        leads.push(leadData);
+        
+        // Save to cloud storage
+        await CloudStorage.saveData('Leads', leads);
+        
+        console.log('Lead stored successfully in cloud');
+    } catch (error) {
+        console.error('Error storing lead:', error);
+        // Fallback to localStorage
+        let leads = JSON.parse(localStorage.getItem('enrichedPropsLeads') || '[]');
+        leads.push(leadData);
+        localStorage.setItem('enrichedPropsLeads', JSON.stringify(leads));
+    }
 }
 
 // Mobile menu functionality
