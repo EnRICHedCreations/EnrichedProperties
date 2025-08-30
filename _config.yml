@@ -1,0 +1,18 @@
+# GitHub Pages Configuration
+title: Enriched Properties LLC
+description: Professional real estate acquisitions connecting motivated sellers with institutional hedge fund buyers
+url: "https://yourusername.github.io"
+baseurl: "/your-repo-name"
+
+# Build settings
+markdown: kramdown
+highlighter: rouge
+plugins:
+  - jekyll-sitemap
+  - jekyll-feed
+
+# Exclude files from processing
+exclude:
+  - README.md
+  - LICENSE
+  - .gitignore

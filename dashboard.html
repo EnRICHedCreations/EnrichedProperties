@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Enriched Properties LLC</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#1f2937',
+                        secondary: '#3b82f6',
+                        accent: '#10b981'
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50 text-gray-900">
+    <!-- Header -->
+    <header class="bg-white shadow-sm border-b">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <h1 class="text-2xl font-bold text-primary">Enriched Properties Dashboard</h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="text-sm text-gray-600">Welcome back, <span id="userDisplay">User</span></div>
+                    <a href="index.html" class="text-gray-600 hover:text-secondary">Public Site</a>
+                    <button onclick="logout()" class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors">Logout</button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Navigation Tabs -->
+        <div class="border-b border-gray-200 mb-8">
+            <nav class="-mb-px flex space-x-8">
+                <button onclick="showTab('overview')" id="overview-tab" class="tab-button active whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm">
+                    Overview
+                </button>
+                <button onclick="showTab('leads')" id="leads-tab" class="tab-button whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm">
+                    Leads Management
+                </button>
+                <button onclick="showTab('contracts')" id="contracts-tab" class="tab-button whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm">
+                    Contracts
+                </button>
+                <button onclick="showTab('properties')" id="properties-tab" class="tab-button whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm">
+                    Properties
+                </button>
+                <button onclick="showTab('analytics')" id="analytics-tab" class="tab-button whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm">
+                    Analytics
+                </button>
+            </nav>
+        </div>
+
+        <!-- Overview Tab -->
+        <div id="overview-content" class="tab-content">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                        <div class="p-2 bg-blue-100 rounded-lg">
+                            <div class="text-blue-600 text-2xl">📋</div>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-600">Active Leads</p>
+                            <p class="text-2xl font-semibold text-gray-900" id="activeLeads">24</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                        <div class="p-2 bg-green-100 rounded-lg">
+                            <div class="text-green-600 text-2xl">✅</div>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-600">Deals Closed</p>
+                            <p class="text-2xl font-semibold text-gray-900" id="dealsClosedCount">8</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                        <div class="p-2 bg-yellow-100 rounded-lg">
+                            <div class="text-yellow-600 text-2xl">⏳</div>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-600">Pending</p>
+                            <p class="text-2xl font-semibold text-gray-900" id="pendingCount">12</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                        <div class="p-2 bg-purple-100 rounded-lg">
+                            <div class="text-purple-600 text-2xl">💰</div>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-600">Volume</p>
+                            <p class="text-2xl font-semibold text-gray-900" id="totalVolume">$2.4M</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Recent Activities</h3>
+                    <div class="space-y-4" id="recentActivities">
+                        <div class="flex items-center p-3 bg-gray-50 rounded-lg">
+                            <div class="text-green-500 mr-3">✅</div>
+                            <div class="flex-1">
+                                <p class="text-sm font-medium">Contract signed - 123 Oak St</p>
+                                <p class="text-xs text-gray-500">2 hours ago</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center p-3 bg-gray-50 rounded-lg">
+                            <div class="text-blue-500 mr-3">📞</div>
+                            <div class="flex-1">
+                                <p class="text-sm font-medium">Lead contacted - Sarah Johnson</p>
+                                <p class="text-xs text-gray-500">4 hours ago</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center p-3 bg-gray-50 rounded-lg">
+                            <div class="text-yellow-500 mr-3">📋</div>
+                            <div class="flex-1">
+                                <p class="text-sm font-medium">New lead added - 456 Pine Ave</p>
+                                <p class="text-xs text-gray-500">6 hours ago</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
+                    <div class="grid grid-cols-2 gap-4">
+                        <button onclick="showTab('leads')" class="p-4 bg-blue-50 rounded-lg text-center hover:bg-blue-100 transition-colors">
+                            <div class="text-blue-600 text-2xl mb-2">➕</div>
+                            <div class="text-sm font-medium">Add Lead</div>
+                        </button>
+                        <button onclick="showTab('properties')" class="p-4 bg-green-50 rounded-lg text-center hover:bg-green-100 transition-colors">
+                            <div class="text-green-600 text-2xl mb-2">🏠</div>
+                            <div class="text-sm font-medium">View Properties</div>
+                        </button>
+                        <button onclick="showTab('contracts')" class="p-4 bg-purple-50 rounded-lg text-center hover:bg-purple-100 transition-colors">
+                            <div class="text-purple-600 text-2xl mb-2">📄</div>
+                            <div class="text-sm font-medium">Contracts</div>
+                        </button>
+                        <button onclick="showTab('analytics')" class="p-4 bg-yellow-50 rounded-lg text-center hover:bg-yellow-100 transition-colors">
+                            <div class="text-yellow-600 text-2xl mb-2">📊</div>
+                            <div class="text-sm font-medium">Analytics</div>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Leads Management Tab -->
+        <div id="leads-content" class="tab-content hidden">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-900">Leads Management</h2>
+                <button onclick="showAddLeadModal()" class="bg-secondary text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors">
+                    Add New Lead
+                </button>
+            </div>
+
+            <div class="bg-white rounded-lg shadow overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <div class="flex justify-between items-center">
+                        <div class="flex space-x-4">
+                            <select class="border border-gray-300 rounded-lg px-3 py-2">
+                                <option>All Status</option>
+                                <option>New</option>
+                                <option>Contacted</option>
+                                <option>Qualified</option>
+                                <option>Under Contract</option>
+                                <option>Closed</option>
+                            </select>
+                            <input type="text" placeholder="Search leads..." class="border border-gray-300 rounded-lg px-3 py-2 w-64">
+                        </div>
+                        <div class="flex space-x-2">
+                            <button class="px-4 py-2 text-sm bg-gray-100 rounded-lg hover:bg-gray-200">Export CSV</button>
+                            <button class="px-4 py-2 text-sm bg-gray-100 rounded-lg hover:bg-gray-200">Bulk Actions</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Property</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Est. Value</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="leadsTableBody" class="bg-white divide-y divide-gray-200">
+                            <!-- Leads will be populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Contracts Tab -->
+        <div id="contracts-content" class="tab-content hidden">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-900">Contract Management</h2>
+                <div class="flex space-x-4">
+                    <button onclick="generateContract()" class="bg-secondary text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors">
+                        Generate Contract
+                    </button>
+                    <button class="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors">
+                        Templates
+                    </button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h3 class="text-lg font-semibold mb-4">Draft Contracts</h3>
+                    <div class="text-3xl font-bold text-yellow-600 mb-2">5</div>
+                    <p class="text-sm text-gray-600">Pending review</p>
+                </div>
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h3 class="text-lg font-semibold mb-4">Active Contracts</h3>
+                    <div class="text-3xl font-bold text-blue-600 mb-2">12</div>
+                    <p class="text-sm text-gray-600">Under negotiation</p>
+                </div>
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h3 class="text-lg font-semibold mb-4">Executed</h3>
+                    <div class="text-3xl font-bold text-green-600 mb-2">8</div>
+                    <p class="text-sm text-gray-600">Ready to close</p>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h3 class="text-lg font-semibold">Recent Contracts</h3>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Property</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Seller</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Purchase Price</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Closing Date</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="contractsTableBody" class="bg-white divide-y divide-gray-200">
+                            <!-- Contracts will be populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Properties Tab -->
+        <div id="properties-content" class="tab-content hidden">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-900">Property Portfolio</h2>
+                <button onclick="showAddPropertyModal()" class="bg-secondary text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors">
+                    Add Property
+                </button>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="propertiesGrid">
+                <!-- Properties will be populated by JavaScript -->
+            </div>
+        </div>
+
+        <!-- Analytics Tab -->
+        <div id="analytics-content" class="tab-content hidden">
+            <h2 class="text-2xl font-bold text-gray-900 mb-6">Analytics & Reports</h2>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h3 class="text-lg font-semibold mb-4">Monthly Performance</h3>
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-600">Leads Generated</span>
+                            <span class="font-semibold">156</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-600">Conversion Rate</span>
+                            <span class="font-semibold">18.5%</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-600">Avg. Deal Size</span>
+                            <span class="font-semibold">$285,000</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-600">Days to Close</span>
+                            <span class="font-semibold">12.3</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h3 class="text-lg font-semibold mb-4">Lead Sources</h3>
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="text-gray-600">Cold Calling</span>
+                            <div class="flex items-center">
+                                <div class="w-24 bg-gray-200 rounded-full h-2 mr-3">
+                                    <div class="bg-blue-600 h-2 rounded-full" style="width: 45%"></div>
+                                </div>
+                                <span class="text-sm font-medium">45%</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-gray-600">Direct Mail</span>
+                            <div class="flex items-center">
+                                <div class="w-24 bg-gray-200 rounded-full h-2 mr-3">
+                                    <div class="bg-green-600 h-2 rounded-full" style="width: 30%"></div>
+                                </div>
+                                <span class="text-sm font-medium">30%</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-gray-600">Online</span>
+                            <div class="flex items-center">
+                                <div class="w-24 bg-gray-200 rounded-full h-2 mr-3">
+                                    <div class="bg-purple-600 h-2 rounded-full" style="width: 25%"></div>
+                                </div>
+                                <span class="text-sm font-medium">25%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow p-6">
+                <h3 class="text-lg font-semibold mb-4">Pipeline Analysis</h3>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stage</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Count</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Value</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Conversion Rate</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">New Leads</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">45</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">$12.8M</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">-</td>
+                            </tr>
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Qualified</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">28</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">$8.2M</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">62%</td>
+                            </tr>
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Under Contract</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">12</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">$3.4M</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">43%</td>
+                            </tr>
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Closed</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">8</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">$2.3M</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">67%</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Lead Modal -->
+    <div id="addLeadModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center">
+        <div class="bg-white rounded-2xl p-8 m-4 w-full max-w-2xl max-h-screen overflow-y-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl font-bold text-primary">Add New Lead</h3>
+                <button onclick="hideAddLeadModal()" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+            </div>
+            <form onsubmit="addLead(event)">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-gray-700 text-sm font-semibold mb-2">First Name</label>
+                        <input type="text" id="leadFirstName" class="w-full px-4 py-3 border border-gray-300 rounded-lg" required>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 text-sm font-semibold mb-2">Last Name</label>
+                        <input type="text" id="leadLastName" class="w-full px-4 py-3 border border-gray-300 rounded-lg" required>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-gray-700 text-sm font-semibold mb-2">Phone</label>
+                        <input type="tel" id="leadPhone" class="w-full px-4 py-3 border border-gray-300 rounded-lg" required>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 text-sm font-semibold mb-2">Email</label>
+                        <input type="email" id="leadEmail" class="w-full px-4 py-3 border border-gray-300 rounded-lg">
+                    </div>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-sm font-semibold mb-2">Property Address</label>
+                    <input type="text" id="leadProperty" class="w-full px-4 py-3 border border-gray-300 rounded-lg" required>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-gray-700 text-sm font-semibold mb-2">Estimated Value</label>
+                        <input type="number" id="leadValue" class="w-full px-4 py-3 border border-gray-300 rounded-lg" placeholder="250000">
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 text-sm font-semibold mb-2">Lead Source</label>
+                        <select id="leadSource" class="w-full px-4 py-3 border border-gray-300 rounded-lg">
+                            <option>Cold Call</option>
+                            <option>Direct Mail</option>
+                            <option>Online Form</option>
+                            <option>Referral</option>
+                            <option>Skip Tracing</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="mb-6">
+                    <label class="block text-gray-700 text-sm font-semibold mb-2">Notes</label>
+                    <textarea id="leadNotes" rows="3" class="w-full px-4 py-3 border border-gray-300 rounded-lg" placeholder="Additional information about the lead..."></textarea>
+                </div>
+                <div class="flex justify-end space-x-4">
+                    <button type="button" onclick="hideAddLeadModal()" class="px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
+                    <button type="submit" class="px-6 py-3 bg-secondary text-white rounded-lg hover:bg-blue-600">Add Lead</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Property Modal -->
+    <div id="addPropertyModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center">
+        <div class="bg-white rounded-2xl p-8 m-4 w-full max-w-2xl max-h-screen overflow-y-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl font-bold text-primary">Add Property</h3>
+                <button onclick="hideAddPropertyModal()" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+            </div>
+            <form onsubmit="addProperty(event)">
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-sm font-semibold mb-2">Property Address</label>
+                    <input type="text" id="propertyAddress" class="w-full px-4 py-3 border border-gray-300 rounded-lg" required>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    <div>
+                        <label class="block text-gray-700 text-sm font-semibold mb-2">Purchase Price</label>
+                        <input type="number" id="propertyPrice" class="w-full px-4 py-3 border border-gray-300 rounded-lg" required>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 text-sm font-semibold mb-2">Bedrooms</label>
+                        <input type="number" id="propertyBedrooms" class="w-full px-4 py-3 border border-gray-300 rounded-lg">
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 text-sm font-semibold mb-2">Bathrooms</label>
+                        <input type="number" step="0.5" id="propertyBathrooms" class="w-full px-4 py-3 border border-gray-300 rounded-lg">
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-gray-700 text-sm font-semibold mb-2">Square Feet</label>
+                        <input type="number" id="propertySqft" class="w-full px-4 py-3 border border-gray-300 rounded-lg">
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 text-sm font-semibold mb-2">Year Built</label>
+                        <input type="number" id="propertyYear" class="w-full px-4 py-3 border border-gray-300 rounded-lg">
+                    </div>
+                </div>
+                <div class="mb-6">
+                    <label class="block text-gray-700 text-sm font-semibold mb-2">Notes</label>
+                    <textarea id="propertyNotes" rows="3" class="w-full px-4 py-3 border border-gray-300 rounded-lg" placeholder="Property details, condition notes, etc..."></textarea>
+                </div>
+                <div class="flex justify-end space-x-4">
+                    <button type="button" onclick="hideAddPropertyModal()" class="px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
+                    <button type="submit" class="px-6 py-3 bg-secondary text-white rounded-lg hover:bg-blue-600">Add Property</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="js/dashboard.js"></script>
+</body>
+</html>
