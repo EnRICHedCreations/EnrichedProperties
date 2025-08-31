@@ -3,31 +3,31 @@
 // For production, replace with your own Firebase project credentials
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDemo_Replace_With_Your_API_Key",
-  authDomain: "enriched-properties-demo.firebaseapp.com",
-  databaseURL: "https://enriched-properties-demo-default-rtdb.firebaseio.com/",
-  projectId: "enriched-properties-demo",
-  storageBucket: "enriched-properties-demo.appspot.com",
-  messagingSenderId: "123456789012",
-  appId: "1:123456789012:web:abcdef123456789012345678"
+  apiKey: "AIzaSyDw8Olub7Wq9AFcBNrGvvPpn_6Xv6IuFZA",
+  authDomain: "enriched-properties.firebaseapp.com",
+  projectId: "enriched-properties",
+  storageBucket: "enriched-properties.firebasestorage.app",
+  messagingSenderId: "380628046443",
+  appId: "1:380628046443:web:d9640ef57dc1af997e172e",
+  measurementId: "G-FDLDKD8NCM"
 };
 
 // Initialize Firebase
 firebase.initializeApp(firebaseConfig);
 
-// Get a reference to the database service
-const database = firebase.database();
+// Get a reference to the Firestore service
+const db = firebase.firestore();
 
 // Cloud storage functions
 const CloudStorage = {
   // Save data to cloud
   async saveData(path, data) {
     try {
-      // For demo purposes, also save to localStorage as backup
+      // Save to localStorage as backup
       localStorage.setItem(`enrichedProps${path}`, JSON.stringify(data));
       
-      // In production, this would save to Firebase:
-      // await database.ref(path).set(data);
+      // Save to Firestore:
+      await db.collection(path).doc('data').set({ items: data });
       
       console.log(`Data saved to ${path}`);
       return true;
@@ -40,12 +40,14 @@ const CloudStorage = {
   // Load data from cloud
   async loadData(path, defaultValue = []) {
     try {
-      // For demo purposes, load from localStorage
+      // For now, load from localStorage
       const localData = localStorage.getItem(`enrichedProps${path}`);
       
-      // In production, this would load from Firebase:
-      // const snapshot = await database.ref(path).once('value');
-      // return snapshot.val() || defaultValue;
+      // Load from Firestore:
+      const doc = await db.collection(path).doc('data').get();
+      if (doc.exists) {
+        return doc.data().items || defaultValue;
+      }
       
       return localData ? JSON.parse(localData) : defaultValue;
     } catch (error) {
@@ -65,10 +67,12 @@ const CloudStorage = {
         }
       });
       
-      // In production, this would use Firebase real-time listeners:
-      // database.ref(path).on('value', (snapshot) => {
-      //   callback(snapshot.val() || []);
-      // });
+      // Firestore real-time listeners:
+      db.collection(path).doc('data').onSnapshot((doc) => {
+        if (doc.exists) {
+          callback(doc.data().items || []);
+        }
+      });
       
     } catch (error) {
       console.error('Error setting up real-time listener:', error);
