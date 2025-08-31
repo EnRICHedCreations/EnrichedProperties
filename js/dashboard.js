@@ -692,8 +692,14 @@ function hideContractGeneratorModal() {
     const modal = document.getElementById('contractGeneratorModal');
     if (modal) {
         modal.classList.add('hidden');
+        modal.style.display = 'none';
         document.body.style.overflow = 'auto';
-        modal.querySelector('form').reset();
+        
+        // Reset form if it exists
+        const form = modal.querySelector('form');
+        if (form) {
+            form.reset();
+        }
     }
 }
 
@@ -801,17 +807,8 @@ function addBuyer(event) {
 
 // CRUD operations
 function editLead(id) {
-    console.log('editLead called with id:', id);
     const lead = leads.find(l => l.id === id);
-    if (!lead) {
-        console.error('Lead not found:', id);
-        return;
-    }
-    
-    console.log('Found lead:', lead);
-    
-    // Simple test - if this still shows prompt, there's a caching issue
-    alert('Edit modal should open now. If you see this alert, there may be a browser caching issue. Please refresh the page.');
+    if (!lead) return;
     
     const formContent = `
         <div class="space-y-4">
@@ -873,7 +870,6 @@ function editLead(id) {
         </div>
     `;
     
-    console.log('About to show modal');
     showCustomModal('Edit Lead', formContent, () => saveEditedLead(id));
 }
 
