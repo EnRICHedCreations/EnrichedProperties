@@ -2194,6 +2194,718 @@ function findBuyersForProperty(propertyId) {
     showPropertyMatches(property);
 }
 
+// Contract Generation System - Professional Legal Templates
+function generateContract() {
+    const formContent = `
+        <div class="space-y-4">
+            <h4 class="font-semibold text-center mb-4">Create New Contract</h4>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Contract Type *</label>
+                    <select id="newContractType" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" onchange="updateContractForm()">
+                        <option value="">Select Contract Type</option>
+                        <option value="purchase">Purchase Agreement</option>
+                        <option value="assignment">Assignment Agreement</option>
+                        <option value="option">Option Contract</option>
+                        <option value="wholesale">Wholesale Purchase Agreement</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Property *</label>
+                    <select id="newContractProperty" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                        <option value="">Select Property</option>
+                        ${properties.map(prop => `<option value="${prop.id}">${prop.address} - ${formatCurrency(prop.purchasePrice)}</option>`).join('')}
+                        <option value="new">+ Add New Property</option>
+                    </select>
+                </div>
+            </div>
+            <div id="contractFormFields">
+                <p class="text-center text-gray-500">Select a contract type to continue</p>
+            </div>
+        </div>
+    `;
+    
+    showCustomModal('Generate Contract', formContent, () => createContractFromForm());
+}
+
+function updateContractForm() {
+    const contractType = document.getElementById('newContractType').value;
+    const fieldsContainer = document.getElementById('contractFormFields');
+    
+    if (!contractType) {
+        fieldsContainer.innerHTML = '<p class="text-center text-gray-500">Select a contract type to continue</p>';
+        return;
+    }
+    
+    let formFields = '';
+    
+    switch(contractType) {
+        case 'purchase':
+            formFields = `
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Seller Name *</label>
+                        <input type="text" id="contractSellerName" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Buyer Name *</label>
+                        <input type="text" id="contractBuyerName" value="Enriched Properties LLC" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
+                    </div>
+                </div>
+                <div class="grid grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Purchase Price *</label>
+                        <input type="number" id="contractPurchasePrice" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Earnest Money</label>
+                        <input type="number" id="contractEMD" value="1000" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Closing Date *</label>
+                        <input type="date" id="contractClosingDate" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
+                    </div>
+                </div>
+            `;
+            break;
+        case 'assignment':
+            formFields = `
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Original Seller *</label>
+                        <input type="text" id="contractSellerName" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">End Buyer *</label>
+                        <select id="contractBuyerName" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
+                            <option value="">Select End Buyer</option>
+                            ${buyers.map(buyer => `<option value="${buyer.name}">${buyer.name} - ${buyer.company || buyer.email}</option>`).join('')}
+                        </select>
+                    </div>
+                </div>
+                <div class="grid grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Original Contract Price *</label>
+                        <input type="number" id="contractPurchasePrice" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Assignment Fee *</label>
+                        <input type="number" id="contractAssignmentFee" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Assignment Date *</label>
+                        <input type="date" id="contractClosingDate" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
+                    </div>
+                </div>
+            `;
+            break;
+        case 'option':
+            formFields = `
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Property Owner *</label>
+                        <input type="text" id="contractSellerName" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Option Holder *</label>
+                        <input type="text" id="contractBuyerName" value="Enriched Properties LLC" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
+                    </div>
+                </div>
+                <div class="grid grid-cols-4 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Option Fee *</label>
+                        <input type="number" id="contractOptionFee" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Purchase Price *</label>
+                        <input type="number" id="contractPurchasePrice" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Option Period (Days) *</label>
+                        <input type="number" id="contractOptionDays" value="30" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Expiration Date *</label>
+                        <input type="date" id="contractClosingDate" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
+                    </div>
+                </div>
+            `;
+            break;
+        case 'wholesale':
+            formFields = `
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Motivated Seller *</label>
+                        <input type="text" id="contractSellerName" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Wholesaler *</label>
+                        <input type="text" id="contractBuyerName" value="Enriched Properties LLC" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
+                    </div>
+                </div>
+                <div class="grid grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Purchase Price *</label>
+                        <input type="number" id="contractPurchasePrice" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Earnest Money *</label>
+                        <input type="number" id="contractEMD" value="1000" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Closing Date *</label>
+                        <input type="date" id="contractClosingDate" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Inspection Period (Days)</label>
+                        <input type="number" id="contractInspectionDays" value="7" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                    </div>
+                    <div class="flex items-center space-x-4 pt-7">
+                        <label class="flex items-center">
+                            <input type="checkbox" id="contractAssignable" checked class="rounded border-gray-300 text-indigo-600">
+                            <span class="ml-2 text-sm">Assignable</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" id="contractAsIs" checked class="rounded border-gray-300 text-indigo-600">
+                            <span class="ml-2 text-sm">As-Is</span>
+                        </label>
+                    </div>
+                </div>
+            `;
+            break;
+    }
+    
+    fieldsContainer.innerHTML = formFields;
+}
+
+function createContractFromForm() {
+    const contractType = document.getElementById('newContractType').value;
+    const propertyId = document.getElementById('newContractProperty').value;
+    const sellerName = document.getElementById('contractSellerName')?.value;
+    const buyerName = document.getElementById('contractBuyerName')?.value;
+    const purchasePrice = parseFloat(document.getElementById('contractPurchasePrice')?.value);
+    const closingDate = document.getElementById('contractClosingDate')?.value;
+    
+    if (!contractType || !sellerName || !buyerName || !purchasePrice || !closingDate) {
+        showErrorMessage('Please fill in all required fields');
+        return;
+    }
+    
+    let property = null;
+    if (propertyId && propertyId !== 'new') {
+        property = properties.find(p => p.id === parseInt(propertyId));
+    }
+    
+    const propertyAddress = property?.address || 'Property Address to be Updated';
+    
+    // Create contract object
+    const contract = {
+        id: Date.now(),
+        type: contractType.charAt(0).toUpperCase() + contractType.slice(1),
+        propertyAddress: propertyAddress,
+        propertyId: propertyId !== 'new' ? parseInt(propertyId) : null,
+        sellerName: sellerName,
+        buyerName: buyerName,
+        purchasePrice: purchasePrice,
+        closingDate: closingDate,
+        status: 'draft',
+        dateCreated: new Date().toISOString(),
+        contractData: {}
+    };
+    
+    // Add type-specific data
+    switch(contractType) {
+        case 'assignment':
+            contract.assignmentFee = parseFloat(document.getElementById('contractAssignmentFee')?.value) || 0;
+            break;
+        case 'option':
+            contract.optionFee = parseFloat(document.getElementById('contractOptionFee')?.value) || 0;
+            contract.optionDays = parseInt(document.getElementById('contractOptionDays')?.value) || 30;
+            contract.optionExpiration = closingDate;
+            break;
+        case 'wholesale':
+            contract.emdAmount = parseFloat(document.getElementById('contractEMD')?.value) || 1000;
+            contract.inspectionDays = parseInt(document.getElementById('contractInspectionDays')?.value) || 7;
+            contract.assignable = document.getElementById('contractAssignable')?.checked || false;
+            contract.asIs = document.getElementById('contractAsIs')?.checked || false;
+            break;
+        case 'purchase':
+            contract.emdAmount = parseFloat(document.getElementById('contractEMD')?.value) || 1000;
+            break;
+    }
+    
+    // Add to contracts array
+    contracts.push(contract);
+    saveData();
+    updateContractsTable();
+    updateDashboardStats();
+    hideContractGeneratorModal();
+    
+    showSuccessMessage(`${contract.type} contract created successfully!`);
+    
+    // Ask if user wants to generate the document
+    if (confirm('Would you like to generate the contract document now?')) {
+        generateContractDocument(contract.id);
+    }
+}
+
+function showTemplatesModal() {
+    const formContent = `
+        <div class="space-y-6">
+            <h4 class="font-semibold text-center mb-4">Contract Templates</h4>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 cursor-pointer" onclick="useTemplate('purchase-agreement')">
+                    <h5 class="font-semibold text-lg mb-2">📄 Purchase Agreement</h5>
+                    <p class="text-sm text-gray-600 mb-3">Standard real estate purchase contract for direct acquisitions.</p>
+                    <ul class="text-xs text-gray-500 space-y-1">
+                        <li>• Purchase price and terms</li>
+                        <li>• Earnest money deposit</li>
+                        <li>• Inspection periods</li>
+                        <li>• Closing conditions</li>
+                    </ul>
+                </div>
+                
+                <div class="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 cursor-pointer" onclick="useTemplate('assignment-agreement')">
+                    <h5 class="font-semibold text-lg mb-2">🔄 Assignment Agreement</h5>
+                    <p class="text-sm text-gray-600 mb-3">Transfer purchase contract rights to end buyer with assignment fee.</p>
+                    <ul class="text-xs text-gray-500 space-y-1">
+                        <li>• Original contract reference</li>
+                        <li>• Assignment fee structure</li>
+                        <li>• End buyer obligations</li>
+                        <li>• Assignment terms</li>
+                    </ul>
+                </div>
+                
+                <div class="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 cursor-pointer" onclick="useTemplate('option-contract')">
+                    <h5 class="font-semibold text-lg mb-2">⏰ Option Contract</h5>
+                    <p class="text-sm text-gray-600 mb-3">Secure exclusive right to purchase within specified timeframe.</p>
+                    <ul class="text-xs text-gray-500 space-y-1">
+                        <li>• Option fee payment</li>
+                        <li>• Exercise period</li>
+                        <li>• Purchase terms</li>
+                        <li>• Renewal options</li>
+                    </ul>
+                </div>
+                
+                <div class="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 cursor-pointer" onclick="useTemplate('wholesale-contract')">
+                    <h5 class="font-semibold text-lg mb-2">🏠 Wholesale Purchase Agreement</h5>
+                    <p class="text-sm text-gray-600 mb-3">Wholesaler-friendly contract with assignable rights.</p>
+                    <ul class="text-xs text-gray-500 space-y-1">
+                        <li>• Assignable contract</li>
+                        <li>• As-is condition</li>
+                        <li>• Short closing period</li>
+                        <li>• Minimal earnest money</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    showCustomModal('Contract Templates', formContent, () => hideContractGeneratorModal());
+}
+
+// Professional Legal Contract Document Generation
+function generateContractDocument(contractId) {
+    const contract = contracts.find(c => c.id === contractId);
+    if (!contract) {
+        showErrorMessage('Contract not found');
+        return;
+    }
+    
+    let contractHTML = '';
+    
+    switch(contract.type.toLowerCase()) {
+        case 'purchase':
+            contractHTML = generatePurchaseAgreementHTML(contract);
+            break;
+        case 'assignment':
+            contractHTML = generateAssignmentAgreementHTML(contract);
+            break;
+        case 'option':
+            contractHTML = generateOptionContractHTML(contract);
+            break;
+        case 'wholesale':
+            contractHTML = generateWholesaleContractHTML(contract);
+            break;
+        default:
+            contractHTML = generatePurchaseAgreementHTML(contract);
+    }
+    
+    // Show contract document in modal for review/download
+    showContractDocumentModal(contract, contractHTML);
+}
+
+function generatePurchaseAgreementHTML(contract) {
+    const currentDate = new Date().toLocaleDateString();
+    const closingDate = new Date(contract.closingDate).toLocaleDateString();
+    
+    return `
+        <div class="contract-document" style="font-family: 'Times New Roman', Times, serif; line-height: 1.6; max-width: 8.5in; margin: 0 auto; padding: 1in; background: white;">
+            <div style="text-align: center; margin-bottom: 30px;">
+                <h1 style="font-size: 18px; font-weight: bold; margin-bottom: 10px;">REAL ESTATE PURCHASE AGREEMENT</h1>
+                <p style="font-size: 12px;">State of [STATE] - County of [COUNTY]</p>
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+                <p><strong>Date:</strong> ${currentDate}</p>
+                <p><strong>Contract Number:</strong> ${contract.id}</p>
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+                <h3 style="font-size: 14px; font-weight: bold; margin-bottom: 10px;">PARTIES</h3>
+                <p><strong>SELLER:</strong> ${contract.sellerName}</p>
+                <p><strong>BUYER:</strong> ${contract.buyerName}</p>
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+                <h3 style="font-size: 14px; font-weight: bold; margin-bottom: 10px;">PROPERTY</h3>
+                <p><strong>Property Address:</strong> ${contract.propertyAddress}</p>
+                <p>The real property described above, including all improvements, fixtures, and appurtenances thereto (the "Property").</p>
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+                <h3 style="font-size: 14px; font-weight: bold; margin-bottom: 10px;">PURCHASE PRICE AND TERMS</h3>
+                <p><strong>Total Purchase Price:</strong> ${formatCurrency(contract.purchasePrice)} (${numberToWords(contract.purchasePrice)} DOLLARS)</p>
+                <p><strong>Earnest Money Deposit:</strong> ${formatCurrency(contract.emdAmount || 1000)}</p>
+                <p><strong>Closing Date:</strong> ${closingDate}</p>
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+                <h3 style="font-size: 14px; font-weight: bold; margin-bottom: 10px;">TERMS AND CONDITIONS</h3>
+                <ol style="margin-left: 20px;">
+                    <li style="margin-bottom: 10px;"><strong>Earnest Money:</strong> Buyer shall deposit the earnest money with the escrow agent within 3 business days after execution of this Agreement.</li>
+                    <li style="margin-bottom: 10px;"><strong>Title:</strong> Seller agrees to convey marketable title to the Property by general warranty deed, free and clear of all encumbrances except those specifically accepted by Buyer.</li>
+                    <li style="margin-bottom: 10px;"><strong>Inspection Period:</strong> Buyer shall have 10 days from acceptance to inspect the Property and approve or disapprove its condition.</li>
+                    <li style="margin-bottom: 10px;"><strong>Financing:</strong> This contract is contingent upon Buyer obtaining financing within 30 days of acceptance.</li>
+                    <li style="margin-bottom: 10px;"><strong>Closing Costs:</strong> Each party shall pay their own closing costs unless otherwise specified.</li>
+                    <li style="margin-bottom: 10px;"><strong>Default:</strong> If either party defaults, the non-defaulting party may pursue all available legal remedies.</li>
+                    <li style="margin-bottom: 10px;"><strong>Entire Agreement:</strong> This Agreement constitutes the entire agreement between the parties and supersedes all prior negotiations.</li>
+                </ol>
+            </div>
+            
+            <div style="margin-top: 40px;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 60px;">
+                    <div style="width: 45%;">
+                        <div style="border-bottom: 1px solid black; margin-bottom: 5px; height: 1px;"></div>
+                        <p style="font-size: 12px; text-align: center;"><strong>SELLER SIGNATURE</strong></p>
+                        <p style="font-size: 12px; text-align: center;">${contract.sellerName}</p>
+                        <p style="font-size: 12px; text-align: center;">Date: ________________</p>
+                    </div>
+                    <div style="width: 45%;">
+                        <div style="border-bottom: 1px solid black; margin-bottom: 5px; height: 1px;"></div>
+                        <p style="font-size: 12px; text-align: center;"><strong>BUYER SIGNATURE</strong></p>
+                        <p style="font-size: 12px; text-align: center;">${contract.buyerName}</p>
+                        <p style="font-size: 12px; text-align: center;">Date: ________________</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div style="margin-top: 30px; font-size: 10px; text-align: center; border-top: 1px solid #ccc; padding-top: 10px;">
+                <p><strong>DISCLAIMER:</strong> This is a template document. Consult with a qualified attorney before using in any real estate transaction.</p>
+                <p>Generated by Enriched Properties LLC CRM System</p>
+            </div>
+        </div>
+    `;
+}
+
+function generateAssignmentAgreementHTML(contract) {
+    const currentDate = new Date().toLocaleDateString();
+    const assignmentDate = new Date(contract.closingDate).toLocaleDateString();
+    
+    return `
+        <div class="contract-document" style="font-family: 'Times New Roman', Times, serif; line-height: 1.6; max-width: 8.5in; margin: 0 auto; padding: 1in; background: white;">
+            <div style="text-align: center; margin-bottom: 30px;">
+                <h1 style="font-size: 18px; font-weight: bold; margin-bottom: 10px;">ASSIGNMENT AGREEMENT</h1>
+                <p style="font-size: 12px;">State of [STATE] - County of [COUNTY]</p>
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+                <p><strong>Date:</strong> ${currentDate}</p>
+                <p><strong>Assignment Number:</strong> ${contract.id}</p>
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+                <h3 style="font-size: 14px; font-weight: bold; margin-bottom: 10px;">PARTIES</h3>
+                <p><strong>ASSIGNOR:</strong> ${contract.buyerName} (Original Buyer)</p>
+                <p><strong>ASSIGNEE:</strong> ${contract.sellerName} (End Buyer)</p>
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+                <h3 style="font-size: 14px; font-weight: bold; margin-bottom: 10px;">ORIGINAL CONTRACT</h3>
+                <p><strong>Property Address:</strong> ${contract.propertyAddress}</p>
+                <p><strong>Original Contract Price:</strong> ${formatCurrency(contract.purchasePrice)}</p>
+                <p><strong>Assignment Date:</strong> ${assignmentDate}</p>
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+                <h3 style="font-size: 14px; font-weight: bold; margin-bottom: 10px;">ASSIGNMENT TERMS</h3>
+                <p><strong>Assignment Fee:</strong> ${formatCurrency(contract.assignmentFee || 0)}</p>
+                <p>Assignor hereby assigns all rights, title, and interest in the original purchase agreement to Assignee in consideration for the assignment fee stated above.</p>
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+                <h3 style="font-size: 14px; font-weight: bold; margin-bottom: 10px;">TERMS AND CONDITIONS</h3>
+                <ol style="margin-left: 20px;">
+                    <li style="margin-bottom: 10px;"><strong>Assignment Fee:</strong> Assignee agrees to pay the assignment fee to Assignor at closing.</li>
+                    <li style="margin-bottom: 10px;"><strong>Original Contract:</strong> Assignee accepts all terms and conditions of the original purchase agreement.</li>
+                    <li style="margin-bottom: 10px;"><strong>Closing:</strong> Assignee is responsible for completing the closing as outlined in the original contract.</li>
+                    <li style="margin-bottom: 10px;"><strong>Default:</strong> Assignee assumes all obligations and liabilities under the original contract.</li>
+                    <li style="margin-bottom: 10px;"><strong>Notification:</strong> Seller has been notified of this assignment and consents to the transfer.</li>
+                </ol>
+            </div>
+            
+            <div style="margin-top: 40px;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 60px;">
+                    <div style="width: 45%;">
+                        <div style="border-bottom: 1px solid black; margin-bottom: 5px; height: 1px;"></div>
+                        <p style="font-size: 12px; text-align: center;"><strong>ASSIGNOR SIGNATURE</strong></p>
+                        <p style="font-size: 12px; text-align: center;">${contract.buyerName}</p>
+                        <p style="font-size: 12px; text-align: center;">Date: ________________</p>
+                    </div>
+                    <div style="width: 45%;">
+                        <div style="border-bottom: 1px solid black; margin-bottom: 5px; height: 1px;"></div>
+                        <p style="font-size: 12px; text-align: center;"><strong>ASSIGNEE SIGNATURE</strong></p>
+                        <p style="font-size: 12px; text-align: center;">${contract.sellerName}</p>
+                        <p style="font-size: 12px; text-align: center;">Date: ________________</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div style="margin-top: 30px; font-size: 10px; text-align: center; border-top: 1px solid #ccc; padding-top: 10px;">
+                <p><strong>DISCLAIMER:</strong> This is a template document. Consult with a qualified attorney before using in any real estate transaction.</p>
+                <p>Generated by Enriched Properties LLC CRM System</p>
+            </div>
+        </div>
+    `;
+}
+
+function generateOptionContractHTML(contract) {
+    const currentDate = new Date().toLocaleDateString();
+    const expirationDate = new Date(contract.closingDate).toLocaleDateString();
+    
+    return `
+        <div class="contract-document" style="font-family: 'Times New Roman', Times, serif; line-height: 1.6; max-width: 8.5in; margin: 0 auto; padding: 1in; background: white;">
+            <div style="text-align: center; margin-bottom: 30px;">
+                <h1 style="font-size: 18px; font-weight: bold; margin-bottom: 10px;">OPTION TO PURCHASE REAL ESTATE</h1>
+                <p style="font-size: 12px;">State of [STATE] - County of [COUNTY]</p>
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+                <p><strong>Date:</strong> ${currentDate}</p>
+                <p><strong>Option Number:</strong> ${contract.id}</p>
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+                <h3 style="font-size: 14px; font-weight: bold; margin-bottom: 10px;">PARTIES</h3>
+                <p><strong>OPTIONOR (Property Owner):</strong> ${contract.sellerName}</p>
+                <p><strong>OPTIONEE (Option Holder):</strong> ${contract.buyerName}</p>
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+                <h3 style="font-size: 14px; font-weight: bold; margin-bottom: 10px;">PROPERTY</h3>
+                <p><strong>Property Address:</strong> ${contract.propertyAddress}</p>
+                <p>The real property described above, including all improvements, fixtures, and appurtenances thereto (the "Property").</p>
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+                <h3 style="font-size: 14px; font-weight: bold; margin-bottom: 10px;">OPTION TERMS</h3>
+                <p><strong>Option Fee:</strong> ${formatCurrency(contract.optionFee || 0)}</p>
+                <p><strong>Purchase Price:</strong> ${formatCurrency(contract.purchasePrice)}</p>
+                <p><strong>Option Period:</strong> ${contract.optionDays || 30} days</p>
+                <p><strong>Expiration Date:</strong> ${expirationDate}</p>
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+                <h3 style="font-size: 14px; font-weight: bold; margin-bottom: 10px;">TERMS AND CONDITIONS</h3>
+                <ol style="margin-left: 20px;">
+                    <li style="margin-bottom: 10px;"><strong>Option Consideration:</strong> In consideration for this option, Optionee pays Optionor the option fee, which is non-refundable.</li>
+                    <li style="margin-bottom: 10px;"><strong>Exclusive Right:</strong> This option grants Optionee the exclusive right to purchase the Property during the option period.</li>
+                    <li style="margin-bottom: 10px;"><strong>Exercise of Option:</strong> Optionee may exercise this option by providing written notice to Optionor before expiration.</li>
+                    <li style="margin-bottom: 10px;"><strong>Purchase Terms:</strong> Upon exercise, the parties agree to execute a purchase agreement with standard real estate terms.</li>
+                    <li style="margin-bottom: 10px;"><strong>Option Fee Credit:</strong> The option fee shall be credited toward the purchase price upon exercise.</li>
+                    <li style="margin-bottom: 10px;"><strong>Property Condition:</strong> Optionee accepts the Property in its current "AS-IS" condition.</li>
+                    <li style="margin-bottom: 10px;"><strong>Binding Agreement:</strong> This option, when exercised, creates a binding purchase agreement.</li>
+                </ol>
+            </div>
+            
+            <div style="margin-top: 40px;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 60px;">
+                    <div style="width: 45%;">
+                        <div style="border-bottom: 1px solid black; margin-bottom: 5px; height: 1px;"></div>
+                        <p style="font-size: 12px; text-align: center;"><strong>OPTIONOR SIGNATURE</strong></p>
+                        <p style="font-size: 12px; text-align: center;">${contract.sellerName}</p>
+                        <p style="font-size: 12px; text-align: center;">Date: ________________</p>
+                    </div>
+                    <div style="width: 45%;">
+                        <div style="border-bottom: 1px solid black; margin-bottom: 5px; height: 1px;"></div>
+                        <p style="font-size: 12px; text-align: center;"><strong>OPTIONEE SIGNATURE</strong></p>
+                        <p style="font-size: 12px; text-align: center;">${contract.buyerName}</p>
+                        <p style="font-size: 12px; text-align: center;">Date: ________________</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div style="margin-top: 30px; font-size: 10px; text-align: center; border-top: 1px solid #ccc; padding-top: 10px;">
+                <p><strong>DISCLAIMER:</strong> This is a template document. Consult with a qualified attorney before using in any real estate transaction.</p>
+                <p>Generated by Enriched Properties LLC CRM System</p>
+            </div>
+        </div>
+    `;
+}
+
+function generateWholesaleContractHTML(contract) {
+    const currentDate = new Date().toLocaleDateString();
+    const closingDate = new Date(contract.closingDate).toLocaleDateString();
+    
+    return `
+        <div class="contract-document" style="font-family: 'Times New Roman', Times, serif; line-height: 1.6; max-width: 8.5in; margin: 0 auto; padding: 1in; background: white;">
+            <div style="text-align: center; margin-bottom: 30px;">
+                <h1 style="font-size: 18px; font-weight: bold; margin-bottom: 10px;">WHOLESALE PURCHASE AGREEMENT</h1>
+                <p style="font-size: 12px;">State of [STATE] - County of [COUNTY]</p>
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+                <p><strong>Date:</strong> ${currentDate}</p>
+                <p><strong>Contract Number:</strong> ${contract.id}</p>
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+                <h3 style="font-size: 14px; font-weight: bold; margin-bottom: 10px;">PARTIES</h3>
+                <p><strong>SELLER:</strong> ${contract.sellerName}</p>
+                <p><strong>BUYER/WHOLESALER:</strong> ${contract.buyerName}</p>
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+                <h3 style="font-size: 14px; font-weight: bold; margin-bottom: 10px;">PROPERTY</h3>
+                <p><strong>Property Address:</strong> ${contract.propertyAddress}</p>
+                <p>The real property described above, including all improvements, fixtures, and appurtenances thereto (the "Property").</p>
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+                <h3 style="font-size: 14px; font-weight: bold; margin-bottom: 10px;">PURCHASE PRICE AND TERMS</h3>
+                <p><strong>Total Purchase Price:</strong> ${formatCurrency(contract.purchasePrice)}</p>
+                <p><strong>Earnest Money Deposit:</strong> ${formatCurrency(contract.emdAmount || 1000)}</p>
+                <p><strong>Closing Date:</strong> ${closingDate}</p>
+                <p><strong>Inspection Period:</strong> ${contract.inspectionDays || 7} days</p>
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+                <h3 style="font-size: 14px; font-weight: bold; margin-bottom: 10px;">WHOLESALE TERMS AND CONDITIONS</h3>
+                <ol style="margin-left: 20px;">
+                    <li style="margin-bottom: 10px;"><strong>AS-IS Condition:</strong> ${contract.asIs ? 'Property is sold in AS-IS condition with no repairs by Seller.' : 'Standard property condition applies.'}</li>
+                    <li style="margin-bottom: 10px;"><strong>Assignment Rights:</strong> ${contract.assignable ? 'This contract may be assigned by Buyer to any third party without Seller consent.' : 'This contract is not assignable.'}</li>
+                    <li style="margin-bottom: 10px;"><strong>Earnest Money:</strong> Minimal earnest money deposit reflects wholesale nature of transaction.</li>
+                    <li style="margin-bottom: 10px;"><strong>Quick Closing:</strong> Short closing period allows for rapid transaction completion.</li>
+                    <li style="margin-bottom: 10px;"><strong>Inspection Period:</strong> Buyer has ${contract.inspectionDays || 7} days to inspect and approve Property condition.</li>
+                    <li style="margin-bottom: 10px;"><strong>Financing:</strong> This contract is contingent upon Buyer obtaining financing or assigns contract to qualified buyer.</li>
+                    <li style="margin-bottom: 10px;"><strong>Title:</strong> Seller agrees to convey marketable title by general warranty deed.</li>
+                    <li style="margin-bottom: 10px;"><strong>Default Remedies:</strong> Upon default, earnest money shall be retained as agreed liquidated damages.</li>
+                </ol>
+            </div>
+            
+            <div style="margin-top: 40px;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 60px;">
+                    <div style="width: 45%;">
+                        <div style="border-bottom: 1px solid black; margin-bottom: 5px; height: 1px;"></div>
+                        <p style="font-size: 12px; text-align: center;"><strong>SELLER SIGNATURE</strong></p>
+                        <p style="font-size: 12px; text-align: center;">${contract.sellerName}</p>
+                        <p style="font-size: 12px; text-align: center;">Date: ________________</p>
+                    </div>
+                    <div style="width: 45%;">
+                        <div style="border-bottom: 1px solid black; margin-bottom: 5px; height: 1px;"></div>
+                        <p style="font-size: 12px; text-align: center;"><strong>BUYER SIGNATURE</strong></p>
+                        <p style="font-size: 12px; text-align: center;">${contract.buyerName}</p>
+                        <p style="font-size: 12px; text-align: center;">Date: ________________</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div style="margin-top: 30px; font-size: 10px; text-align: center; border-top: 1px solid #ccc; padding-top: 10px;">
+                <p><strong>DISCLAIMER:</strong> This is a template document. Consult with a qualified attorney before using in any real estate transaction.</p>
+                <p>Generated by Enriched Properties LLC CRM System</p>
+            </div>
+        </div>
+    `;
+}
+
+function showContractDocumentModal(contract, contractHTML) {
+    const modalContent = `
+        <div class="space-y-4">
+            <div class="flex justify-between items-center mb-4">
+                <h4 class="font-semibold">${contract.type} Contract - ${contract.propertyAddress}</h4>
+                <div class="flex space-x-2">
+                    <button onclick="printContract('${contract.id}')" class="px-3 py-2 bg-blue-500 text-white text-sm rounded hover:bg-blue-600">Print</button>
+                    <button onclick="downloadContractPDF('${contract.id}')" class="px-3 py-2 bg-green-500 text-white text-sm rounded hover:bg-green-600">Download PDF</button>
+                </div>
+            </div>
+            <div id="contractDocument" style="border: 1px solid #ddd; max-height: 500px; overflow-y: auto; background: white;">
+                ${contractHTML}
+            </div>
+            <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                <p class="text-sm text-yellow-800"><strong>Legal Notice:</strong> These templates are for informational purposes only. Always consult with a qualified real estate attorney before using any contract in an actual transaction.</p>
+            </div>
+        </div>
+    `;
+    
+    showCustomModal('Contract Document', modalContent, () => hideContractGeneratorModal());
+}
+
+// Helper function to convert numbers to words (simplified version)
+function numberToWords(num) {
+    if (num < 1000) return num.toString();
+    if (num < 1000000) return Math.floor(num / 1000) + 'K';
+    return Math.floor(num / 1000000) + 'M';
+}
+
+// Print contract function
+function printContract(contractId) {
+    const contractContent = document.getElementById('contractDocument').innerHTML;
+    const printWindow = window.open('', '', 'height=600,width=800');
+    printWindow.document.write('<html><head><title>Contract</title></head><body>');
+    printWindow.document.write(contractContent);
+    printWindow.document.write('</body></html>');
+    printWindow.document.close();
+    printWindow.print();
+}
+
+// Download PDF function (simplified - in production would use jsPDF or similar)
+function downloadContractPDF(contractId) {
+    const contract = contracts.find(c => c.id == contractId);
+    if (!contract) return;
+    
+    // For now, create a downloadable HTML file
+    const contractContent = document.getElementById('contractDocument').innerHTML;
+    const htmlContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>${contract.type} Contract - ${contract.propertyAddress}</title>
+            <style>
+                body { font-family: 'Times New Roman', Times, serif; margin: 0; padding: 20px; }
+                @media print { body { margin: 0; } }
+            </style>
+        </head>
+        <body>
+            ${contractContent}
+        </body>
+        </html>
+    `;
+    
+    const blob = new Blob([htmlContent], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${contract.type}_Contract_${contract.id}.html`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    showSuccessMessage('Contract document downloaded! You can print to PDF from your browser.');
+}
+
 function deleteBuyer(id) {
     if (confirm('Are you sure you want to delete this buyer?')) {
         buyers = buyers.filter(b => b.id !== id);
@@ -2721,6 +3433,9 @@ function updateProfitDisplay() {
     
     // Calculate ROI automatically (but don't call recursively)
     updateROIDisplay();
+    
+    // Calculate Rapid Offers automatically
+    calculateRapidOffers();
 }
 
 // Calculate ROI and deal metrics (public function)
@@ -2807,6 +3522,87 @@ function updateROIDisplay() {
     }
     
     if (dealEvaluationEl) dealEvaluationEl.textContent = evaluation;
+}
+
+// Rapid Offer System Calculator
+// Based on Flip with Rick / Zach Ginn Wholesaling Formula
+function calculateOffers({ ARV, repairs = 0 }) {
+  if (!ARV || ARV <= 0) {
+    throw new Error("ARV (After Repair Value) must be a positive number");
+  }
+
+  // Adjusted Value (ARV minus repairs)
+  const netValue = ARV - repairs;
+
+  let multiplier;
+
+  if (ARV < 120000) {
+    multiplier = 0.70; // 70%
+  } else if (ARV >= 120000 && ARV <= 220000) {
+    multiplier = 0.80; // 80%
+  } else if (ARV > 220000 && ARV <= 300000) {
+    multiplier = 0.815; // 81.5%
+  } else if (ARV > 300000 && ARV <= 400000) {
+    multiplier = 0.829; // 82.9%
+  } else {
+    multiplier = 0.849; // 84.9%
+  }
+
+  // Max Allowable Offer (MAO)
+  const MAO = netValue * multiplier;
+
+  // Least Allowable Offer (initial lowball = 70% of MAO)
+  const LAO = MAO * 0.70;
+
+  return {
+    ARV,
+    repairs,
+    netValue,
+    multiplier,
+    MAO: Math.round(MAO),
+    LAO: Math.round(LAO)
+  };
+}
+
+// Calculate Rapid Offer System and update display
+function calculateRapidOffers() {
+    try {
+        const arv = getARVValue();
+        const { totalRepairs } = getRepairsValue();
+        
+        if (arv <= 0) {
+            document.getElementById('rapidMAO').textContent = '$0';
+            document.getElementById('rapidLAO').textContent = '$0';
+            document.getElementById('rapidMultiplier').textContent = '0%';
+            document.getElementById('rapidNetValue').textContent = '$0';
+            return;
+        }
+        
+        const offerData = calculateOffers({ ARV: arv, repairs: totalRepairs });
+        
+        // Update display elements
+        document.getElementById('rapidMAO').textContent = formatCurrency(offerData.MAO);
+        document.getElementById('rapidLAO').textContent = formatCurrency(offerData.LAO);
+        document.getElementById('rapidMultiplier').textContent = (offerData.multiplier * 100).toFixed(1) + '%';
+        document.getElementById('rapidNetValue').textContent = formatCurrency(offerData.netValue);
+        
+        // Update color coding for offers
+        const maoEl = document.getElementById('rapidMAO');
+        const laoEl = document.getElementById('rapidLAO');
+        
+        if (maoEl) {
+            maoEl.className = 'text-lg font-bold text-green-600';
+        }
+        
+        if (laoEl) {
+            laoEl.className = 'text-lg font-bold text-blue-600';
+        }
+        
+    } catch (error) {
+        console.error('Error calculating rapid offers:', error);
+        document.getElementById('rapidMAO').textContent = 'Error';
+        document.getElementById('rapidLAO').textContent = 'Error';
+    }
 }
 
 // Search comparables with pre-populated external links
