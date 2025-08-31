@@ -524,9 +524,10 @@ function updatePropertiesGrid() {
                 ${property.notes ? `<p class="text-sm text-gray-600 mb-4">${property.notes}</p>` : ''}
                 <div class="flex justify-between items-center">
                     <span class="text-sm text-gray-500">Added ${getTimeAgo(property.dateAdded)}</span>
-                    <div>
-                        <button onclick="editProperty(${property.id})" class="action-button text-indigo-600 hover:text-indigo-900 mr-2">Edit</button>
-                        <button onclick="deleteProperty(${property.id})" class="action-button text-red-600 hover:text-red-900">Delete</button>
+                    <div class="flex flex-wrap gap-1">
+                        <button onclick="editProperty(${property.id})" class="action-button text-indigo-600 hover:text-indigo-900 text-xs">Edit</button>
+                        <button onclick="findBuyersForProperty(${property.id})" class="action-button text-green-600 hover:text-green-900 text-xs">Find Buyers</button>
+                        <button onclick="deleteProperty(${property.id})" class="action-button text-red-600 hover:text-red-900 text-xs">Delete</button>
                     </div>
                 </div>
             </div>
@@ -542,6 +543,9 @@ function updateAnalytics() {
 
 // Update buyers table
 function updateBuyersTable() {
+    // Update buyer performance scores before displaying
+    updateBuyerPerformance();
+    
     const tbody = document.getElementById('buyersTableBody');
     if (!tbody) return;
     
@@ -580,10 +584,14 @@ function updateBuyersTable() {
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
                     <span class="status-badge status-${buyer.status}">${buyer.status}</span>
+                    <div class="text-xs text-gray-500 mt-1">Score: ${buyer.performanceScore || 0}/100</div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <button onclick="editBuyer(${buyer.id})" class="action-button text-indigo-600 hover:text-indigo-900 mr-2">Edit</button>
-                    <button onclick="deleteBuyer(${buyer.id})" class="action-button text-red-600 hover:text-red-900">Delete</button>
+                    <div class="flex flex-wrap gap-1">
+                        <button onclick="editBuyer(${buyer.id})" class="action-button text-indigo-600 hover:text-indigo-900 text-xs">Edit</button>
+                        <button onclick="addBuyerReferral(${buyer.id})" class="action-button text-green-600 hover:text-green-900 text-xs">Add Referral</button>
+                        <button onclick="deleteBuyer(${buyer.id})" class="action-button text-red-600 hover:text-red-900 text-xs">Delete</button>
+                    </div>
                 </td>
             </tr>
         `).join('');
@@ -1626,8 +1634,10 @@ function editBuyer(id) {
                     <label class="block text-sm font-medium text-gray-700">Buyer Type</label>
                     <select id="editBuyerType" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                         <option value="cash-buyer" ${buyer.type === 'cash-buyer' ? 'selected' : ''}>Cash Buyer</option>
-                        <option value="investor" ${buyer.type === 'investor' ? 'selected' : ''}>Investor</option>
+                        <option value="private-investor" ${buyer.type === 'private-investor' ? 'selected' : ''}>Private Investor</option>
                         <option value="hedge-fund" ${buyer.type === 'hedge-fund' ? 'selected' : ''}>Hedge Fund</option>
+                        <option value="fix-flip" ${buyer.type === 'fix-flip' ? 'selected' : ''}>Fix & Flip</option>
+                        <option value="buy-hold" ${buyer.type === 'buy-hold' ? 'selected' : ''}>Buy & Hold</option>
                         <option value="wholesaler" ${buyer.type === 'wholesaler' ? 'selected' : ''}>Wholesaler</option>
                         <option value="rehabber" ${buyer.type === 'rehabber' ? 'selected' : ''}>Rehabber</option>
                     </select>
@@ -1661,6 +1671,14 @@ function editBuyer(id) {
                 <input type="text" id="editBuyerPropertyTypes" value="${buyer.propertyTypes || ''}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" placeholder="e.g., SFR, Condos, Townhomes">
             </div>
             <div>
+                <label class="block text-sm font-medium text-gray-700">Performance Score (0-100)</label>
+                <input type="number" id="editBuyerPerformanceScore" value="${buyer.performanceScore || 0}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" min="0" max="100">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Deals Closed</label>
+                <input type="number" id="editBuyerDealsCompleted" value="${buyer.dealsCompleted || 0}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" min="0" readonly>
+            </div>
+            <div>
                 <label class="block text-sm font-medium text-gray-700">Notes</label>
                 <textarea id="editBuyerNotes" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" placeholder="Any additional notes about this buyer...">${buyer.notes || ''}</textarea>
             </div>
@@ -1685,6 +1703,8 @@ function saveEditedBuyer(id) {
     const maxBudget = parseFloat(document.getElementById('editBuyerMaxBudget').value) || null;
     const preferredAreas = document.getElementById('editBuyerPreferredAreas').value.trim();
     const propertyTypes = document.getElementById('editBuyerPropertyTypes').value.trim();
+    const performanceScore = parseInt(document.getElementById('editBuyerPerformanceScore').value) || 0;
+    const dealsCompleted = parseInt(document.getElementById('editBuyerDealsCompleted').value) || 0;
     const notes = document.getElementById('editBuyerNotes').value.trim();
     
     // Validate required fields
@@ -1704,6 +1724,8 @@ function saveEditedBuyer(id) {
     buyer.maxBudget = maxBudget;
     buyer.preferredAreas = preferredAreas;
     buyer.propertyTypes = propertyTypes;
+    buyer.performanceScore = performanceScore;
+    buyer.dealsCompleted = dealsCompleted;
     buyer.notes = notes;
     buyer.lastContact = new Date().toISOString();
     
@@ -1714,6 +1736,462 @@ function saveEditedBuyer(id) {
     hideContractGeneratorModal();
     
     showSuccessMessage('Buyer updated successfully!');
+}
+
+// Enhanced Buyer Management Features (3.1-3.4)
+
+// 3.1 Buyer Criteria Matching - Auto-match properties to buyer preferences
+function findMatchingBuyers(property) {
+    const matches = [];
+    
+    buyers.forEach(buyer => {
+        if (buyer.status !== 'active') return; // Only check active buyers
+        
+        let score = 0;
+        let maxScore = 0;
+        
+        // Check price range
+        maxScore += 40;
+        if (buyer.minBudget && buyer.maxBudget) {
+            if (property.purchasePrice >= buyer.minBudget && property.purchasePrice <= buyer.maxBudget) {
+                score += 40;
+            }
+        } else if (buyer.maxBudget && property.purchasePrice <= buyer.maxBudget) {
+            score += 40;
+        } else if (buyer.minBudget && property.purchasePrice >= buyer.minBudget) {
+            score += 40;
+        }
+        
+        // Check property type match
+        maxScore += 20;
+        if (buyer.propertyTypes) {
+            const buyerTypes = buyer.propertyTypes.toLowerCase().split(',').map(t => t.trim());
+            const propertyType = (property.type || 'sfr').toLowerCase();
+            if (buyerTypes.some(type => type.includes(propertyType) || propertyType.includes(type))) {
+                score += 20;
+            }
+        } else {
+            score += 10; // Partial score if no preference specified
+        }
+        
+        // Check area preference
+        maxScore += 25;
+        if (buyer.preferredAreas && property.address) {
+            const buyerAreas = buyer.preferredAreas.toLowerCase().split(',').map(a => a.trim());
+            const propertyAddress = property.address.toLowerCase();
+            if (buyerAreas.some(area => propertyAddress.includes(area))) {
+                score += 25;
+            }
+        } else {
+            score += 5; // Small score if no area preference
+        }
+        
+        // Buyer performance bonus
+        maxScore += 15;
+        if (buyer.performanceScore) {
+            score += Math.round((buyer.performanceScore / 100) * 15);
+        }
+        
+        const matchPercentage = Math.round((score / maxScore) * 100);
+        
+        if (matchPercentage >= 30) { // Only include decent matches
+            matches.push({
+                buyer: buyer,
+                score: matchPercentage,
+                reasons: []
+            });
+        }
+    });
+    
+    return matches.sort((a, b) => b.score - a.score);
+}
+
+function showPropertyMatches(property) {
+    const matches = findMatchingBuyers(property);
+    
+    if (matches.length === 0) {
+        showErrorMessage('No matching buyers found for this property.');
+        return;
+    }
+    
+    const matchContent = `
+        <div class="space-y-4">
+            <div class="text-center mb-4">
+                <h4 class="font-semibold">Property: ${property.address}</h4>
+                <p class="text-sm text-gray-600">Price: ${formatCurrency(property.purchasePrice)}</p>
+            </div>
+            ${matches.map(match => `
+                <div class="border border-gray-200 rounded-lg p-4">
+                    <div class="flex justify-between items-start mb-2">
+                        <div>
+                            <h5 class="font-medium">${match.buyer.name}</h5>
+                            <p class="text-sm text-gray-600">${match.buyer.company || match.buyer.email}</p>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-sm font-semibold text-green-600">${match.score}% Match</div>
+                            <div class="text-xs text-gray-500">Performance: ${match.buyer.performanceScore || 0}/100</div>
+                        </div>
+                    </div>
+                    <div class="text-xs text-gray-600 mb-2">
+                        <span>Budget: ${match.buyer.minBudget ? formatCurrency(match.buyer.minBudget) : '$0'} - ${match.buyer.maxBudget ? formatCurrency(match.buyer.maxBudget) : '∞'}</span>
+                        ${match.buyer.preferredAreas ? `<br>Areas: ${match.buyer.preferredAreas}` : ''}
+                        ${match.buyer.propertyTypes ? `<br>Types: ${match.buyer.propertyTypes}` : ''}
+                    </div>
+                    <div class="flex space-x-2">
+                        <button onclick="contactBuyer(${match.buyer.id}, '${property.address}')" class="px-3 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600">Contact</button>
+                        <button onclick="sendPropertyDetails(${match.buyer.id}, ${property.id})" class="px-3 py-1 bg-green-500 text-white text-xs rounded hover:bg-green-600">Send Details</button>
+                    </div>
+                </div>
+            `).join('')}
+        </div>
+    `;
+    
+    showCustomModal('Matching Buyers', matchContent, () => hideContractGeneratorModal());
+}
+
+// 3.2 Buyer Performance Metrics - Track which buyers close deals
+function updateBuyerPerformance() {
+    buyers.forEach(buyer => {
+        // Count completed deals
+        const dealsCompleted = contracts.filter(contract => 
+            contract.buyerName === buyer.name && 
+            contract.status === 'executed'
+        ).length;
+        
+        buyer.dealsCompleted = dealsCompleted;
+        
+        // Calculate performance score based on multiple factors
+        let score = 0;
+        
+        // Deals completed (40 points max)
+        score += Math.min(dealsCompleted * 10, 40);
+        
+        // Response time (20 points - placeholder, would need communication tracking)
+        score += buyer.status === 'active' ? 20 : 0;
+        
+        // Budget reliability (20 points - placeholder)
+        score += buyer.maxBudget && buyer.minBudget ? 20 : 10;
+        
+        // Recent activity (20 points)
+        if (buyer.lastContact) {
+            const daysSince = Math.floor((Date.now() - new Date(buyer.lastContact).getTime()) / (1000 * 60 * 60 * 24));
+            if (daysSince <= 30) score += 20;
+            else if (daysSince <= 90) score += 10;
+        }
+        
+        buyer.performanceScore = Math.min(score, 100);
+    });
+}
+
+function getBuyerPerformanceReport() {
+    updateBuyerPerformance();
+    
+    const topPerformers = buyers
+        .filter(buyer => buyer.performanceScore > 0)
+        .sort((a, b) => b.performanceScore - a.performanceScore)
+        .slice(0, 10);
+    
+    const reportContent = `
+        <div class="space-y-4">
+            <h4 class="font-semibold text-center mb-4">Top Buyer Performance</h4>
+            ${topPerformers.length === 0 ? 
+                '<p class="text-center text-gray-500">No buyer performance data yet.</p>' :
+                topPerformers.map((buyer, index) => `
+                    <div class="flex items-center justify-between p-3 ${index < 3 ? 'bg-yellow-50' : 'bg-gray-50'} rounded-lg">
+                        <div class="flex items-center">
+                            <div class="text-lg mr-3">${index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '📊'}</div>
+                            <div>
+                                <div class="font-medium">${buyer.name}</div>
+                                <div class="text-xs text-gray-600">${buyer.company || buyer.email}</div>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="font-semibold text-green-600">${buyer.performanceScore}/100</div>
+                            <div class="text-xs text-gray-500">${buyer.dealsCompleted || 0} deals closed</div>
+                        </div>
+                    </div>
+                `).join('')
+            }
+        </div>
+    `;
+    
+    showCustomModal('Buyer Performance Report', reportContent, () => hideContractGeneratorModal());
+}
+
+// 3.3 Buyer Communication Tools - Bulk email/SMS to targeted buyer segments
+function showBuyerCommunicationModal() {
+    const formContent = `
+        <div class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Target Audience</label>
+                <select id="communicationTarget" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                    <option value="all">All Active Buyers</option>
+                    <option value="hedge-fund">Hedge Funds Only</option>
+                    <option value="private-investor">Private Investors Only</option>
+                    <option value="top-performers">Top Performers (Score 80+)</option>
+                    <option value="recent-inactive">Recently Inactive (30+ days)</option>
+                    <option value="high-budget">High Budget ($500K+)</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Communication Type</label>
+                <select id="communicationType" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                    <option value="email">Email</option>
+                    <option value="sms">SMS (Text Message)</option>
+                    <option value="both">Both Email & SMS</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Subject/Title</label>
+                <input type="text" id="communicationSubject" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" placeholder="New Property Alert - Great Investment Opportunity">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Message Template</label>
+                <select id="messageTemplate" onchange="loadMessageTemplate()" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                    <option value="">Choose a template...</option>
+                    <option value="new-property">New Property Alert</option>
+                    <option value="price-drop">Price Reduction Notice</option>
+                    <option value="market-update">Market Update</option>
+                    <option value="follow-up">Follow-up Check-in</option>
+                    <option value="custom">Custom Message</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Message Content</label>
+                <textarea id="communicationMessage" rows="6" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" placeholder="Enter your message here..."></textarea>
+            </div>
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <div class="text-sm">
+                    <strong>Available Variables:</strong><br>
+                    {buyerName}, {company}, {propertyAddress}, {price}, {dealCount}
+                </div>
+            </div>
+        </div>
+    `;
+    
+    showCustomModal('Bulk Buyer Communication', formContent, () => sendBulkCommunication());
+}
+
+function loadMessageTemplate() {
+    const template = document.getElementById('messageTemplate').value;
+    const messageField = document.getElementById('communicationMessage');
+    const subjectField = document.getElementById('communicationSubject');
+    
+    const templates = {
+        'new-property': {
+            subject: 'New Property Alert - {propertyAddress}',
+            message: 'Hi {buyerName},\n\nI wanted to reach out about a new property that matches your investment criteria:\n\nAddress: {propertyAddress}\nPrice: {price}\n\nThis property offers excellent potential for your portfolio. Would you like me to send over the full details and analysis?\n\nBest regards,\nEnriched Properties LLC'
+        },
+        'price-drop': {
+            subject: 'Price Reduction Alert - {propertyAddress}',
+            message: 'Hi {buyerName},\n\nGreat news! The price has been reduced on a property you might be interested in:\n\nAddress: {propertyAddress}\nNew Price: {price}\n\nThis creates an even better investment opportunity. Let me know if you\'d like to discuss!\n\nBest regards,\nEnriched Properties LLC'
+        },
+        'market-update': {
+            subject: 'Market Update & New Opportunities',
+            message: 'Hi {buyerName},\n\nHope you\'re doing well! I wanted to give you a quick market update and let you know about some new opportunities coming up.\n\nWe\'ve been seeing great deals in your preferred areas and price range. With {dealCount} successful transactions this year, we\'re seeing strong momentum.\n\nWould you be interested in a quick call to discuss current opportunities?\n\nBest regards,\nEnriched Properties LLC'
+        },
+        'follow-up': {
+            subject: 'Following Up - Investment Opportunities',
+            message: 'Hi {buyerName},\n\nIt\'s been a while since we last connected, and I wanted to follow up on your investment goals.\n\nWe\'ve had several properties that might interest you, and I\'d love to make sure you\'re getting first look at deals that match your criteria.\n\nAre you still actively looking for properties in the {preferredAreas} area?\n\nBest regards,\nEnriched Properties LLC'
+        }
+    };
+    
+    if (templates[template]) {
+        subjectField.value = templates[template].subject;
+        messageField.value = templates[template].message;
+    }
+}
+
+function sendBulkCommunication() {
+    const target = document.getElementById('communicationTarget').value;
+    const type = document.getElementById('communicationType').value;
+    const subject = document.getElementById('communicationSubject').value;
+    const message = document.getElementById('communicationMessage').value;
+    
+    if (!subject || !message) {
+        showErrorMessage('Please enter both subject and message');
+        return;
+    }
+    
+    // Filter buyers based on target audience
+    let targetBuyers = [];
+    
+    switch(target) {
+        case 'all':
+            targetBuyers = buyers.filter(buyer => buyer.status === 'active');
+            break;
+        case 'hedge-fund':
+            targetBuyers = buyers.filter(buyer => buyer.type === 'hedge-fund' && buyer.status === 'active');
+            break;
+        case 'private-investor':
+            targetBuyers = buyers.filter(buyer => buyer.type === 'private-investor' && buyer.status === 'active');
+            break;
+        case 'top-performers':
+            targetBuyers = buyers.filter(buyer => buyer.performanceScore >= 80 && buyer.status === 'active');
+            break;
+        case 'recent-inactive':
+            targetBuyers = buyers.filter(buyer => {
+                if (!buyer.lastContact) return true;
+                const daysSince = Math.floor((Date.now() - new Date(buyer.lastContact).getTime()) / (1000 * 60 * 60 * 24));
+                return daysSince >= 30;
+            });
+            break;
+        case 'high-budget':
+            targetBuyers = buyers.filter(buyer => buyer.maxBudget && buyer.maxBudget >= 500000);
+            break;
+    }
+    
+    if (targetBuyers.length === 0) {
+        showErrorMessage('No buyers match the selected criteria');
+        return;
+    }
+    
+    // Simulate sending messages (in real implementation, would integrate with email/SMS services)
+    targetBuyers.forEach(buyer => {
+        const personalizedSubject = subject
+            .replace('{buyerName}', buyer.name)
+            .replace('{company}', buyer.company || '')
+            .replace('{dealCount}', buyer.dealsCompleted || 0);
+            
+        const personalizedMessage = message
+            .replace('{buyerName}', buyer.name)
+            .replace('{company}', buyer.company || '')
+            .replace('{dealCount}', buyer.dealsCompleted || 0)
+            .replace('{preferredAreas}', buyer.preferredAreas || 'your preferred areas');
+    });
+    
+    hideContractGeneratorModal();
+    showSuccessMessage(`Communication sent to ${targetBuyers.length} buyers via ${type}`);
+}
+
+// 3.4 Buyer Network Expansion - Referral tracking and networking tools
+function addBuyerReferral(buyerId) {
+    const buyer = buyers.find(b => b.id === buyerId);
+    if (!buyer) return;
+    
+    const formContent = `
+        <div class="space-y-4">
+            <div class="text-center mb-4">
+                <h4 class="font-semibold">Add Referral for ${buyer.name}</h4>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Referral Name *</label>
+                    <input type="text" id="referralName" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Company</label>
+                    <input type="text" id="referralCompany" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Email *</label>
+                    <input type="email" id="referralEmail" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Phone</label>
+                    <input type="tel" id="referralPhone" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Relationship</label>
+                <select id="referralRelationship" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                    <option value="colleague">Colleague</option>
+                    <option value="partner">Business Partner</option>
+                    <option value="client">Previous Client</option>
+                    <option value="friend">Friend</option>
+                    <option value="other">Other</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Notes</label>
+                <textarea id="referralNotes" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" placeholder="Any additional information about this referral..."></textarea>
+            </div>
+        </div>
+    `;
+    
+    showCustomModal('Add Buyer Referral', formContent, () => saveBuyerReferral(buyerId));
+}
+
+function saveBuyerReferral(referrerBuyerId) {
+    const name = document.getElementById('referralName').value.trim();
+    const company = document.getElementById('referralCompany').value.trim();
+    const email = document.getElementById('referralEmail').value.trim();
+    const phone = document.getElementById('referralPhone').value.trim();
+    const relationship = document.getElementById('referralRelationship').value;
+    const notes = document.getElementById('referralNotes').value.trim();
+    
+    if (!name || !email) {
+        showErrorMessage('Name and email are required');
+        return;
+    }
+    
+    // Create new buyer from referral
+    const newBuyer = {
+        id: Date.now(),
+        name: name,
+        company: company,
+        email: email,
+        phone: phone,
+        type: 'private-investor', // Default type
+        status: 'warm', // Referrals start as warm leads
+        referredBy: referrerBuyerId,
+        relationship: relationship,
+        notes: notes,
+        dateAdded: new Date().toISOString(),
+        performanceScore: 25 // Referrals start with bonus score
+    };
+    
+    buyers.push(newBuyer);
+    
+    // Update referrer's referral count
+    const referrer = buyers.find(b => b.id === referrerBuyerId);
+    if (referrer) {
+        referrer.referralsGiven = (referrer.referralsGiven || 0) + 1;
+        referrer.performanceScore = Math.min((referrer.performanceScore || 0) + 5, 100); // Bonus for referrals
+    }
+    
+    saveData();
+    updateBuyersTable();
+    hideContractGeneratorModal();
+    
+    showSuccessMessage(`Referral added successfully! ${name} has been added as a warm lead.`);
+}
+
+// Helper functions for buyer communication
+function contactBuyer(buyerId, propertyAddress) {
+    const buyer = buyers.find(b => b.id === buyerId);
+    if (!buyer) return;
+    
+    // Update last contact
+    buyer.lastContact = new Date().toISOString();
+    saveData();
+    
+    // In real implementation, this would integrate with email/phone systems
+    alert(`Contacting ${buyer.name} about ${propertyAddress}\n\nPhone: ${buyer.phone}\nEmail: ${buyer.email}`);
+}
+
+function sendPropertyDetails(buyerId, propertyId) {
+    const buyer = buyers.find(b => b.id === buyerId);
+    const property = properties.find(p => p.id === propertyId);
+    
+    if (!buyer || !property) return;
+    
+    // Update last contact
+    buyer.lastContact = new Date().toISOString();
+    saveData();
+    
+    showSuccessMessage(`Property details sent to ${buyer.name} at ${buyer.email}`);
+}
+
+function findBuyersForProperty(propertyId) {
+    const property = properties.find(p => p.id === propertyId);
+    if (!property) {
+        showErrorMessage('Property not found');
+        return;
+    }
+    showPropertyMatches(property);
 }
 
 function deleteBuyer(id) {
