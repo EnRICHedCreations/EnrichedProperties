@@ -228,6 +228,8 @@ function showTab(tabName) {
                 break;
             case 'buyers':
                 updateBuyersTable();
+                // Initialize scroll sync after table is updated
+                setTimeout(initializeBuyersTableScrollSync, 100);
                 break;
             case 'contracts':
                 updateContractsTable();
@@ -298,6 +300,47 @@ function updateOverview() {
     updateDashboardStats();
     updateRecentActivities();
     updateContractDeadlines();
+}
+
+// Initialize synchronized horizontal scrolling for buyers table
+function initializeBuyersTableScrollSync() {
+    const topScrollContainer = document.getElementById('topScrollContainer');
+    const mainTableContainer = document.getElementById('buyersTableContainer');
+    
+    if (!topScrollContainer || !mainTableContainer) return;
+    
+    // Sync main table scroll to top scroll bar
+    mainTableContainer.addEventListener('scroll', function() {
+        if (this.isScrolling !== 'main') {
+            topScrollContainer.scrollLeft = this.scrollLeft;
+        }
+    });
+    
+    // Sync top scroll bar to main table
+    topScrollContainer.addEventListener('scroll', function() {
+        if (this.isScrolling !== 'top') {
+            mainTableContainer.scrollLeft = this.scrollLeft;
+        }
+    });
+    
+    // Update top scroll bar width to match table content width
+    const updateScrollBarWidth = () => {
+        const table = mainTableContainer.querySelector('table');
+        if (table) {
+            const scrollBarContent = topScrollContainer.querySelector('div');
+            scrollBarContent.style.width = table.scrollWidth + 'px';
+        }
+    };
+    
+    // Update scroll bar width when table is updated
+    const observer = new MutationObserver(updateScrollBarWidth);
+    const tableBody = document.getElementById('buyersTableBody');
+    if (tableBody) {
+        observer.observe(tableBody, { childList: true, subtree: true });
+    }
+    
+    // Initial width update
+    setTimeout(updateScrollBarWidth, 100);
 }
 
 // Update recent activities
@@ -601,6 +644,9 @@ function updateBuyersTable() {
             </tr>
         `).join('');
     }
+    
+    // Initialize scroll synchronization after table is updated
+    setTimeout(initializeBuyersTableScrollSync, 50);
 }
 
 // Modal functions
@@ -1059,6 +1105,9 @@ function importBuyersFromCSV() {
     saveData();
     updateBuyersTable();
     updateDashboardStats();
+    
+    // Initialize scroll sync after import
+    setTimeout(initializeBuyersTableScrollSync, 100);
     
     // Show results
     setTimeout(() => {
