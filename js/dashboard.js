@@ -912,19 +912,28 @@ function useTemplate(templateType) {
     // Pre-fill contract generator with template data
     const templateData = getTemplateData(templateType);
     
-    // Show contract generator modal with template data
-    showContractGeneratorModal();
-    
-    // Fill in the form fields with template data
-    setTimeout(() => {
-        if (templateData.sellerName) document.getElementById('sellerName').value = templateData.sellerName;
-        if (templateData.buyerName) document.getElementById('buyerName').value = templateData.buyerName;
-        if (templateData.propertyAddress) document.getElementById('propertyAddress').value = templateData.propertyAddress;
-        if (templateData.purchasePrice) document.getElementById('purchasePrice').value = templateData.purchasePrice;
-        if (templateData.contractType) document.getElementById('contractType').value = templateData.contractType;
-        if (templateData.terms) document.getElementById('terms').value = templateData.terms;
-        if (templateData.closingDate) document.getElementById('closingDate').value = templateData.closingDate;
-    }, 100);
+    // Show appropriate modal based on template type
+    if (templateType === 'assignment-agreement') {
+        showAssignmentContractModal(templateData);
+    } else if (templateType === 'option-contract') {
+        showOptionContractModal(templateData);
+    } else if (templateType === 'wholesale-contract') {
+        showWholesaleContractModal(templateData);
+    } else {
+        // Default to purchase agreement modal
+        showContractGeneratorModal();
+        
+        // Fill in the form fields with template data
+        setTimeout(() => {
+            if (templateData.sellerName) document.getElementById('sellerName').value = templateData.sellerName;
+            if (templateData.buyerName) document.getElementById('buyerName').value = templateData.buyerName;
+            if (templateData.propertyAddress) document.getElementById('propertyAddress').value = templateData.propertyAddress;
+            if (templateData.purchasePrice) document.getElementById('purchasePrice').value = templateData.purchasePrice;
+            if (templateData.contractType) document.getElementById('contractType').value = templateData.contractType;
+            if (templateData.terms) document.getElementById('terms').value = templateData.terms;
+            if (templateData.closingDate) document.getElementById('closingDate').value = templateData.closingDate;
+        }, 100);
+    }
     
     showSuccessMessage(`${getTemplateDisplayName(templateType)} template loaded successfully!`);
 }
@@ -983,6 +992,328 @@ function getTemplateDisplayName(templateType) {
     };
     
     return names[templateType] || 'Template';
+}
+
+// Specialized contract modal functions
+function showAssignmentContractModal(templateData) {
+    // Create assignment contract form
+    const formContent = `
+        <div class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Original Contract Property Address *</label>
+                <input type="text" id="assignmentPropertyAddress" value="${templateData.propertyAddress || ''}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" placeholder="123 Main St, City, State ZIP" required>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Original Seller Name *</label>
+                    <input type="text" id="assignmentSellerName" value="${templateData.sellerName || ''}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Assignee (End Buyer) *</label>
+                    <select id="assignmentBuyerName" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
+                        <option value="">Select End Buyer</option>
+                        ${buyers.map(buyer => `<option value="${buyer.name}">${buyer.name} - ${buyer.company}</option>`).join('')}
+                    </select>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Original Contract Price *</label>
+                    <input type="number" id="assignmentOriginalPrice" value="${templateData.purchasePrice || ''}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" min="0" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Assignment Fee *</label>
+                    <input type="number" id="assignmentFee" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" min="0" required>
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Original Contract Date</label>
+                <input type="date" id="assignmentOriginalDate" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Assignment Date *</label>
+                <input type="date" id="assignmentDate" value="${new Date().toISOString().split('T')[0]}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Special Terms</label>
+                <textarea id="assignmentSpecialTerms" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" placeholder="Any special conditions or terms for the assignment">${templateData.terms || ''}</textarea>
+            </div>
+        </div>
+    `;
+    
+    showCustomModal('Assignment Agreement', formContent, () => generateAssignmentContract());
+}
+
+function showOptionContractModal(templateData) {
+    const formContent = `
+        <div class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Property Address *</label>
+                <input type="text" id="optionPropertyAddress" value="${templateData.propertyAddress || ''}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" placeholder="123 Main St, City, State ZIP" required>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Seller Name *</label>
+                    <input type="text" id="optionSellerName" value="${templateData.sellerName || ''}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Option Holder *</label>
+                    <input type="text" id="optionBuyerName" value="${templateData.buyerName || ''}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
+                </div>
+            </div>
+            <div class="grid grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Option Fee *</label>
+                    <input type="number" id="optionFee" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" min="0" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Purchase Price *</label>
+                    <input type="number" id="optionPurchasePrice" value="${templateData.purchasePrice || ''}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" min="0" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Option Period (Days) *</label>
+                    <input type="number" id="optionPeriodDays" value="30" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" min="1" required>
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Option Expiration Date *</label>
+                <input type="date" id="optionExpirationDate" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Special Terms</label>
+                <textarea id="optionSpecialTerms" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" placeholder="Any special conditions or terms">${templateData.terms || ''}</textarea>
+            </div>
+        </div>
+    `;
+    
+    showCustomModal('Option Contract', formContent, () => generateOptionContract());
+}
+
+function showWholesaleContractModal(templateData) {
+    const formContent = `
+        <div class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Property Address *</label>
+                <input type="text" id="wholesalePropertyAddress" value="${templateData.propertyAddress || ''}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" placeholder="123 Main St, City, State ZIP" required>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Motivated Seller Name *</label>
+                    <input type="text" id="wholesaleSellerName" value="${templateData.sellerName || ''}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Wholesaler/Company *</label>
+                    <input type="text" id="wholesaleBuyerName" value="Enriched Properties LLC" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Purchase Price *</label>
+                    <input type="number" id="wholesalePurchasePrice" value="${templateData.purchasePrice || ''}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" min="0" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Earnest Money Deposit</label>
+                    <input type="number" id="wholesaleEMD" value="1000" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" min="0">
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Inspection Period (Days)</label>
+                    <input type="number" id="wholesaleInspectionDays" value="7" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" min="0">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Closing Date *</label>
+                    <input type="date" id="wholesaleClosingDate" value="${templateData.closingDate || ''}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
+                </div>
+            </div>
+            <div class="flex items-center space-x-4">
+                <label class="flex items-center">
+                    <input type="checkbox" id="wholesaleAssignable" checked class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                    <span class="ml-2 text-sm text-gray-700">Assignable Contract</span>
+                </label>
+                <label class="flex items-center">
+                    <input type="checkbox" id="wholesaleAsIs" checked class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                    <span class="ml-2 text-sm text-gray-700">As-Is Condition</span>
+                </label>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Special Conditions</label>
+                <textarea id="wholesaleSpecialConditions" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" placeholder="Any special conditions or terms">${templateData.terms || ''}</textarea>
+            </div>
+        </div>
+    `;
+    
+    showCustomModal('Wholesale Purchase Agreement', formContent, () => generateWholesaleContract());
+}
+
+function showCustomModal(title, content, onSubmit) {
+    const modal = document.getElementById('contractGeneratorModal');
+    const modalTitle = modal.querySelector('h3');
+    const modalContent = modal.querySelector('#customFormContent');
+    
+    // Update modal title
+    modalTitle.textContent = title;
+    
+    // Insert custom content
+    if (!modalContent) {
+        // Create custom content area if it doesn't exist
+        const formContainer = modal.querySelector('form');
+        const customDiv = document.createElement('div');
+        customDiv.id = 'customFormContent';
+        formContainer.innerHTML = content + `
+            <div class="flex justify-end space-x-4 mt-6">
+                <button type="button" onclick="hideContractGeneratorModal()" class="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300">Cancel</button>
+                <button type="submit" class="px-4 py-2 bg-accent text-white rounded-lg hover:bg-blue-600">Generate Contract</button>
+            </div>
+        `;
+        
+        // Update form submit handler
+        formContainer.onsubmit = function(e) {
+            e.preventDefault();
+            onSubmit();
+        };
+    } else {
+        modalContent.innerHTML = content;
+    }
+    
+    // Show modal
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+}
+
+// Contract generation functions for specialized templates
+function generateAssignmentContract() {
+    const contractData = {
+        propertyAddress: document.getElementById('assignmentPropertyAddress').value,
+        sellerName: document.getElementById('assignmentSellerName').value,
+        buyerName: document.getElementById('assignmentBuyerName').value,
+        originalPrice: parseFloat(document.getElementById('assignmentOriginalPrice').value),
+        assignmentFee: parseFloat(document.getElementById('assignmentFee').value),
+        originalDate: document.getElementById('assignmentOriginalDate').value,
+        assignmentDate: document.getElementById('assignmentDate').value,
+        specialTerms: document.getElementById('assignmentSpecialTerms').value
+    };
+    
+    // Validate required fields
+    if (!contractData.propertyAddress || !contractData.sellerName || !contractData.buyerName || 
+        !contractData.originalPrice || !contractData.assignmentFee || !contractData.assignmentDate) {
+        showErrorMessage('Please fill in all required fields');
+        return;
+    }
+    
+    // Create contract object
+    const contract = {
+        id: Date.now(),
+        type: 'Assignment',
+        propertyAddress: contractData.propertyAddress,
+        sellerName: contractData.sellerName,
+        buyerName: contractData.buyerName,
+        purchasePrice: contractData.originalPrice,
+        assignmentFee: contractData.assignmentFee,
+        status: 'draft',
+        closingDate: contractData.assignmentDate,
+        dateCreated: new Date().toISOString(),
+        contractData: contractData
+    };
+    
+    // Add to contracts array
+    contracts.push(contract);
+    saveData();
+    updateContractsTable();
+    updateDashboardStats();
+    hideContractGeneratorModal();
+    
+    showSuccessMessage('Assignment contract generated successfully!');
+}
+
+function generateOptionContract() {
+    const contractData = {
+        propertyAddress: document.getElementById('optionPropertyAddress').value,
+        sellerName: document.getElementById('optionSellerName').value,
+        buyerName: document.getElementById('optionBuyerName').value,
+        optionFee: parseFloat(document.getElementById('optionFee').value),
+        purchasePrice: parseFloat(document.getElementById('optionPurchasePrice').value),
+        optionPeriodDays: parseInt(document.getElementById('optionPeriodDays').value),
+        expirationDate: document.getElementById('optionExpirationDate').value,
+        specialTerms: document.getElementById('optionSpecialTerms').value
+    };
+    
+    // Validate required fields
+    if (!contractData.propertyAddress || !contractData.sellerName || !contractData.buyerName || 
+        !contractData.optionFee || !contractData.purchasePrice || !contractData.expirationDate) {
+        showErrorMessage('Please fill in all required fields');
+        return;
+    }
+    
+    // Create contract object
+    const contract = {
+        id: Date.now(),
+        type: 'Option',
+        propertyAddress: contractData.propertyAddress,
+        sellerName: contractData.sellerName,
+        buyerName: contractData.buyerName,
+        purchasePrice: contractData.purchasePrice,
+        optionFee: contractData.optionFee,
+        status: 'draft',
+        closingDate: contractData.expirationDate,
+        optionExpiration: contractData.expirationDate,
+        dateCreated: new Date().toISOString(),
+        contractData: contractData
+    };
+    
+    // Add to contracts array
+    contracts.push(contract);
+    saveData();
+    updateContractsTable();
+    updateDashboardStats();
+    hideContractGeneratorModal();
+    
+    showSuccessMessage('Option contract generated successfully!');
+}
+
+function generateWholesaleContract() {
+    const contractData = {
+        propertyAddress: document.getElementById('wholesalePropertyAddress').value,
+        sellerName: document.getElementById('wholesaleSellerName').value,
+        buyerName: document.getElementById('wholesaleBuyerName').value,
+        purchasePrice: parseFloat(document.getElementById('wholesalePurchasePrice').value),
+        emdAmount: parseFloat(document.getElementById('wholesaleEMD').value) || 1000,
+        inspectionDays: parseInt(document.getElementById('wholesaleInspectionDays').value) || 7,
+        closingDate: document.getElementById('wholesaleClosingDate').value,
+        assignable: document.getElementById('wholesaleAssignable').checked,
+        asIs: document.getElementById('wholesaleAsIs').checked,
+        specialConditions: document.getElementById('wholesaleSpecialConditions').value
+    };
+    
+    // Validate required fields
+    if (!contractData.propertyAddress || !contractData.sellerName || !contractData.buyerName || 
+        !contractData.purchasePrice || !contractData.closingDate) {
+        showErrorMessage('Please fill in all required fields');
+        return;
+    }
+    
+    // Create contract object
+    const contract = {
+        id: Date.now(),
+        type: 'Wholesale',
+        propertyAddress: contractData.propertyAddress,
+        sellerName: contractData.sellerName,
+        buyerName: contractData.buyerName,
+        purchasePrice: contractData.purchasePrice,
+        status: 'draft',
+        closingDate: contractData.closingDate,
+        dateCreated: new Date().toISOString(),
+        contractData: contractData
+    };
+    
+    // Add to contracts array
+    contracts.push(contract);
+    saveData();
+    updateContractsTable();
+    updateDashboardStats();
+    hideContractGeneratorModal();
+    
+    showSuccessMessage('Wholesale contract generated successfully!');
 }
 
 // Buyer CRUD operations
