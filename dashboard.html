@@ -211,9 +211,14 @@
         <div id="buyers-content" class="tab-content hidden">
             <div class="flex justify-between items-center mb-6">
                 <h2 class="text-2xl font-bold text-gray-900">Buyers List</h2>
-                <button onclick="showAddBuyerModal()" class="bg-secondary text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors">
-                    Add New Buyer
-                </button>
+                <div class="flex space-x-3">
+                    <button onclick="showImportBuyersModal()" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
+                        Import CSV
+                    </button>
+                    <button onclick="showAddBuyerModal()" class="bg-secondary text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors">
+                        Add New Buyer
+                    </button>
+                </div>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -1255,6 +1260,75 @@
                     </button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- Import Buyers CSV Modal -->
+    <div id="importBuyersModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center">
+        <div class="bg-white rounded-2xl p-8 m-4 w-full max-w-2xl max-h-screen overflow-y-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl font-bold text-primary">Import Buyers from CSV</h3>
+                <button onclick="hideImportBuyersModal()" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+            </div>
+            
+            <div class="space-y-6">
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <h4 class="font-semibold text-blue-800 mb-2">📋 CSV Format Requirements</h4>
+                    <div class="text-sm text-blue-700 space-y-1">
+                        <p><strong>Required Headers:</strong> Business_Name, Contact_Person, Phone_Primary, Email_Business</p>
+                        <p><strong>Optional Headers:</strong> Phone_Secondary, Email_Personal, Address_Street, Address_City, Address_State, Address_Zip, Investment_Focus, Price_Range_Min, Price_Range_Max, Preferred_Areas, Property_Types, Notes</p>
+                        <p><strong>Example:</strong> Business_Name,Contact_Person,Phone_Primary,Email_Business,Investment_Focus</p>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-gray-700 text-sm font-semibold mb-2">Select CSV File</label>
+                    <input type="file" id="csvFileInput" accept=".csv" class="w-full px-4 py-3 border border-gray-300 rounded-lg file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                </div>
+
+                <div id="csvPreview" class="hidden">
+                    <h4 class="font-semibold text-gray-800 mb-2">Preview (First 5 rows)</h4>
+                    <div class="overflow-x-auto">
+                        <table id="csvPreviewTable" class="min-w-full divide-y divide-gray-200 border">
+                            <thead class="bg-gray-50">
+                                <!-- Headers will be populated by JavaScript -->
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                <!-- Rows will be populated by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div id="importOptions" class="hidden space-y-4">
+                    <div class="flex items-center space-x-2">
+                        <input type="checkbox" id="skipDuplicates" checked class="rounded border-gray-300 text-indigo-600">
+                        <label for="skipDuplicates" class="text-sm font-medium text-gray-700">Skip duplicates (based on email)</label>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <input type="checkbox" id="setAsActive" checked class="rounded border-gray-300 text-indigo-600">
+                        <label for="setAsActive" class="text-sm font-medium text-gray-700">Set all imported buyers as "Active"</label>
+                    </div>
+                </div>
+
+                <div id="importStatus" class="hidden">
+                    <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-sm font-medium text-gray-700">Import Progress</span>
+                            <span id="importProgress" class="text-sm text-gray-600">0/0</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div id="importProgressBar" class="bg-green-600 h-2 rounded-full" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex justify-end space-x-4">
+                    <button type="button" onclick="hideImportBuyersModal()" class="px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
+                    <button type="button" id="previewCSVBtn" onclick="previewCSV()" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Preview CSV</button>
+                    <button type="button" id="importCSVBtn" onclick="importBuyersFromCSV()" class="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 hidden">Import Buyers</button>
+                </div>
+            </div>
         </div>
     </div>
 
