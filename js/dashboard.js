@@ -675,6 +675,7 @@ function hideAllModals() {
     hideAddLeadModal();
     hideAddPropertyModal();
     hideAddBuyerModal();
+    hideImportBuyersModal();
     hideContractGeneratorModal();
     hideContractPreviewModal();
 }
@@ -816,6 +817,328 @@ function addBuyer(event) {
     hideAddBuyerModal();
     
     showSuccessMessage('Buyer added successfully!');
+}
+
+// CSV Import Functions
+function showImportBuyersModal() {
+    const modal = document.getElementById('importBuyersModal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+        
+        // Reset modal state
+        resetImportModal();
+        
+        setTimeout(() => {
+            const fileInput = modal.querySelector('#csvFileInput');
+            if (fileInput) fileInput.focus();
+        }, 100);
+    }
+}
+
+function hideImportBuyersModal() {
+    const modal = document.getElementById('importBuyersModal');
+    if (modal) {
+        modal.classList.add('hidden');
+        document.body.style.overflow = 'auto';
+        resetImportModal();
+    }
+}
+
+function resetImportModal() {
+    // Reset file input
+    const fileInput = document.getElementById('csvFileInput');
+    if (fileInput) fileInput.value = '';
+    
+    // Hide preview and options
+    document.getElementById('csvPreview').classList.add('hidden');
+    document.getElementById('importOptions').classList.add('hidden');
+    document.getElementById('importStatus').classList.add('hidden');
+    
+    // Reset buttons
+    document.getElementById('previewCSVBtn').classList.remove('hidden');
+    document.getElementById('importCSVBtn').classList.add('hidden');
+    
+    // Clear preview table
+    const table = document.getElementById('csvPreviewTable');
+    if (table) {
+        table.querySelector('thead').innerHTML = '';
+        table.querySelector('tbody').innerHTML = '';
+    }
+}
+
+let csvData = [];
+let csvHeaders = [];
+
+function previewCSV() {
+    const fileInput = document.getElementById('csvFileInput');
+    const file = fileInput.files[0];
+    
+    if (!file) {
+        showErrorMessage('Please select a CSV file first.');
+        return;
+    }
+    
+    if (!file.name.toLowerCase().endsWith('.csv')) {
+        showErrorMessage('Please select a valid CSV file.');
+        return;
+    }
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const csvText = e.target.result;
+            const lines = csvText.trim().split('\n');
+            
+            if (lines.length < 2) {
+                showErrorMessage('CSV file must contain at least a header row and one data row.');
+                return;
+            }
+            
+            // Parse CSV headers
+            csvHeaders = parseCSVLine(lines[0]);
+            
+            // Validate required headers
+            const requiredHeaders = ['Business_Name', 'Contact_Person', 'Phone_Primary', 'Email_Business'];
+            const missingHeaders = requiredHeaders.filter(header => 
+                !csvHeaders.some(csvHeader => csvHeader.toLowerCase() === header.toLowerCase())
+            );
+            
+            if (missingHeaders.length > 0) {
+                showErrorMessage(`Missing required headers: ${missingHeaders.join(', ')}`);
+                return;
+            }
+            
+            // Parse CSV data
+            csvData = [];
+            for (let i = 1; i < lines.length; i++) {
+                if (lines[i].trim()) {
+                    const rowData = parseCSVLine(lines[i]);
+                    const rowObject = {};
+                    csvHeaders.forEach((header, index) => {
+                        rowObject[header] = rowData[index] || '';
+                    });
+                    csvData.push(rowObject);
+                }
+            }
+            
+            if (csvData.length === 0) {
+                showErrorMessage('No valid data rows found in CSV file.');
+                return;
+            }
+            
+            // Show preview
+            displayCSVPreview();
+            showSuccessMessage(`CSV loaded successfully! Found ${csvData.length} buyers to import.`);
+            
+        } catch (error) {
+            console.error('CSV parsing error:', error);
+            showErrorMessage('Error parsing CSV file. Please check the file format.');
+        }
+    };
+    
+    reader.readAsText(file);
+}
+
+function parseCSVLine(line) {
+    const result = [];
+    let current = '';
+    let inQuotes = false;
+    
+    for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+        
+        if (char === '"') {
+            if (inQuotes && line[i + 1] === '"') {
+                current += '"';
+                i++; // Skip next quote
+            } else {
+                inQuotes = !inQuotes;
+            }
+        } else if (char === ',' && !inQuotes) {
+            result.push(current.trim());
+            current = '';
+        } else {
+            current += char;
+        }
+    }
+    
+    result.push(current.trim());
+    return result;
+}
+
+function displayCSVPreview() {
+    const table = document.getElementById('csvPreviewTable');
+    const thead = table.querySelector('thead');
+    const tbody = table.querySelector('tbody');
+    
+    // Clear existing content
+    thead.innerHTML = '';
+    tbody.innerHTML = '';
+    
+    // Create header row
+    const headerRow = document.createElement('tr');
+    csvHeaders.forEach(header => {
+        const th = document.createElement('th');
+        th.className = 'px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider';
+        th.textContent = header;
+        headerRow.appendChild(th);
+    });
+    thead.appendChild(headerRow);
+    
+    // Create data rows (first 5 only for preview)
+    const previewData = csvData.slice(0, 5);
+    previewData.forEach(row => {
+        const tr = document.createElement('tr');
+        csvHeaders.forEach(header => {
+            const td = document.createElement('td');
+            td.className = 'px-4 py-2 text-sm text-gray-900';
+            td.textContent = row[header] || '';
+            tr.appendChild(td);
+        });
+        tbody.appendChild(tr);
+    });
+    
+    // Show preview and options
+    document.getElementById('csvPreview').classList.remove('hidden');
+    document.getElementById('importOptions').classList.remove('hidden');
+    
+    // Switch buttons
+    document.getElementById('previewCSVBtn').classList.add('hidden');
+    document.getElementById('importCSVBtn').classList.remove('hidden');
+}
+
+function importBuyersFromCSV() {
+    if (csvData.length === 0) {
+        showErrorMessage('No data to import. Please preview the CSV first.');
+        return;
+    }
+    
+    const skipDuplicates = document.getElementById('skipDuplicates').checked;
+    const setAsActive = document.getElementById('setAsActive').checked;
+    
+    // Show progress
+    document.getElementById('importStatus').classList.remove('hidden');
+    const progressBar = document.getElementById('importProgressBar');
+    const progressText = document.getElementById('importProgress');
+    
+    let imported = 0;
+    let skipped = 0;
+    let errors = 0;
+    
+    csvData.forEach((row, index) => {
+        try {
+            // Map CSV fields to buyer object
+            const buyerData = mapCSVToBuyer(row, setAsActive);
+            
+            // Check for duplicates if option is enabled
+            if (skipDuplicates && buyerData.email) {
+                const existingBuyer = buyers.find(b => 
+                    b.email && b.email.toLowerCase() === buyerData.email.toLowerCase()
+                );
+                if (existingBuyer) {
+                    skipped++;
+                    updateProgress(index + 1, csvData.length, imported, skipped, errors);
+                    return;
+                }
+            }
+            
+            // Add buyer to list
+            buyers.push(buyerData);
+            imported++;
+            
+        } catch (error) {
+            console.error('Error importing buyer:', error, row);
+            errors++;
+        }
+        
+        updateProgress(index + 1, csvData.length, imported, skipped, errors);
+    });
+    
+    // Save data and update UI
+    saveData();
+    updateBuyersTable();
+    updateDashboardStats();
+    
+    // Show results
+    setTimeout(() => {
+        let message = `Import completed! Imported: ${imported}`;
+        if (skipped > 0) message += `, Skipped: ${skipped}`;
+        if (errors > 0) message += `, Errors: ${errors}`;
+        
+        if (imported > 0) {
+            showSuccessMessage(message);
+        } else {
+            showErrorMessage(message);
+        }
+        
+        if (imported > 0) {
+            hideImportBuyersModal();
+        }
+    }, 500);
+}
+
+function updateProgress(current, total, imported, skipped, errors) {
+    const progressBar = document.getElementById('importProgressBar');
+    const progressText = document.getElementById('importProgress');
+    
+    const percentage = (current / total) * 100;
+    progressBar.style.width = `${percentage}%`;
+    progressText.textContent = `${current}/${total} (Imported: ${imported}, Skipped: ${skipped}, Errors: ${errors})`;
+}
+
+function mapCSVToBuyer(csvRow, setAsActive) {
+    // Helper function to get CSV value by header name (case-insensitive)
+    const getValue = (headerName) => {
+        const header = csvHeaders.find(h => h.toLowerCase() === headerName.toLowerCase());
+        return header ? (csvRow[header] || '').trim() : '';
+    };
+    
+    // Map investment focus to buyer type
+    const investmentFocus = getValue('Investment_Focus').toLowerCase();
+    let buyerType = 'other';
+    
+    if (investmentFocus.includes('hedge fund') || investmentFocus.includes('fund')) {
+        buyerType = 'hedge-fund';
+    } else if (investmentFocus.includes('private') || investmentFocus.includes('investor')) {
+        buyerType = 'private-investor';
+    } else if (investmentFocus.includes('fix') || investmentFocus.includes('flip')) {
+        buyerType = 'fix-flip';
+    } else if (investmentFocus.includes('hold') || investmentFocus.includes('rental')) {
+        buyerType = 'buy-hold';
+    } else if (investmentFocus.includes('wholesale')) {
+        buyerType = 'wholesaler';
+    }
+    
+    // Parse budget ranges
+    const minBudget = parseInt(getValue('Price_Range_Min')) || null;
+    const maxBudget = parseInt(getValue('Price_Range_Max')) || null;
+    
+    return {
+        id: Date.now() + Math.random(), // Ensure unique IDs
+        name: getValue('Contact_Person') || getValue('Business_Name'),
+        company: getValue('Business_Name'),
+        phone: getValue('Phone_Primary') || getValue('Phone_Secondary'),
+        email: getValue('Email_Business') || getValue('Email_Personal'),
+        type: buyerType,
+        status: setAsActive ? 'active' : 'warm',
+        minBudget: minBudget,
+        maxBudget: maxBudget,
+        preferredAreas: getValue('Preferred_Areas') || `${getValue('Address_City')}, ${getValue('Address_State')}`.replace(', ', ''),
+        propertyTypes: getValue('Property_Types'),
+        notes: getValue('Notes') || `Investment Focus: ${getValue('Investment_Focus')}`,
+        dateAdded: new Date().toISOString(),
+        lastContact: null,
+        // Additional fields from CSV
+        secondaryPhone: getValue('Phone_Secondary'),
+        personalEmail: getValue('Email_Personal'),
+        address: {
+            street: getValue('Address_Street'),
+            city: getValue('Address_City'),
+            state: getValue('Address_State'),
+            zip: getValue('Address_Zip')
+        }
+    };
 }
 
 // CRUD operations
