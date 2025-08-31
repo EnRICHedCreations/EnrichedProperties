@@ -801,19 +801,122 @@ function addBuyer(event) {
 
 // CRUD operations
 function editLead(id) {
+    console.log('editLead called with id:', id);
     const lead = leads.find(l => l.id === id);
-    if (lead) {
-        // This would open an edit modal - simplified for demo
-        const newStatus = prompt('Enter new status (new, contacted, qualified, under-contract, closed):', lead.status);
-        if (newStatus && ['new', 'contacted', 'qualified', 'under-contract', 'closed'].includes(newStatus)) {
-            lead.status = newStatus;
-            lead.lastContact = new Date().toISOString();
-            saveData();
-            updateLeadsTable();
-            updateDashboardStats();
-            showSuccessMessage('Lead updated successfully!');
-        }
+    if (!lead) {
+        console.error('Lead not found:', id);
+        return;
     }
+    
+    console.log('Found lead:', lead);
+    
+    // Simple test - if this still shows prompt, there's a caching issue
+    alert('Edit modal should open now. If you see this alert, there may be a browser caching issue. Please refresh the page.');
+    
+    const formContent = `
+        <div class="space-y-4">
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">First Name *</label>
+                    <input type="text" id="editLeadFirstName" value="${lead.firstName || ''}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Last Name *</label>
+                    <input type="text" id="editLeadLastName" value="${lead.lastName || ''}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Phone *</label>
+                    <input type="tel" id="editLeadPhone" value="${lead.phone || ''}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Email</label>
+                    <input type="email" id="editLeadEmail" value="${lead.email || ''}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Property Address *</label>
+                <input type="text" id="editLeadPropertyAddress" value="${lead.propertyAddress || ''}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Status</label>
+                    <select id="editLeadStatus" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                        <option value="new" ${lead.status === 'new' ? 'selected' : ''}>New</option>
+                        <option value="contacted" ${lead.status === 'contacted' ? 'selected' : ''}>Contacted</option>
+                        <option value="qualified" ${lead.status === 'qualified' ? 'selected' : ''}>Qualified</option>
+                        <option value="under-contract" ${lead.status === 'under-contract' ? 'selected' : ''}>Under Contract</option>
+                        <option value="closed" ${lead.status === 'closed' ? 'selected' : ''}>Closed</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Source</label>
+                    <select id="editLeadSource" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                        <option value="website" ${lead.source === 'website' ? 'selected' : ''}>Website</option>
+                        <option value="referral" ${lead.source === 'referral' ? 'selected' : ''}>Referral</option>
+                        <option value="social-media" ${lead.source === 'social-media' ? 'selected' : ''}>Social Media</option>
+                        <option value="direct-mail" ${lead.source === 'direct-mail' ? 'selected' : ''}>Direct Mail</option>
+                        <option value="cold-call" ${lead.source === 'cold-call' ? 'selected' : ''}>Cold Call</option>
+                        <option value="other" ${lead.source === 'other' ? 'selected' : ''}>Other</option>
+                    </select>
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Estimated Value</label>
+                <input type="number" id="editLeadEstimatedValue" value="${lead.estimatedValue || ''}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" min="0">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Notes</label>
+                <textarea id="editLeadNotes" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" placeholder="Any additional notes about this lead...">${lead.notes || ''}</textarea>
+            </div>
+        </div>
+    `;
+    
+    console.log('About to show modal');
+    showCustomModal('Edit Lead', formContent, () => saveEditedLead(id));
+}
+
+function saveEditedLead(id) {
+    const lead = leads.find(l => l.id === id);
+    if (!lead) return;
+    
+    // Get form values
+    const firstName = document.getElementById('editLeadFirstName').value.trim();
+    const lastName = document.getElementById('editLeadLastName').value.trim();
+    const phone = document.getElementById('editLeadPhone').value.trim();
+    const email = document.getElementById('editLeadEmail').value.trim();
+    const propertyAddress = document.getElementById('editLeadPropertyAddress').value.trim();
+    const status = document.getElementById('editLeadStatus').value;
+    const source = document.getElementById('editLeadSource').value;
+    const estimatedValue = parseFloat(document.getElementById('editLeadEstimatedValue').value) || null;
+    const notes = document.getElementById('editLeadNotes').value.trim();
+    
+    // Validate required fields
+    if (!firstName || !lastName || !phone || !propertyAddress) {
+        showErrorMessage('Please fill in all required fields');
+        return;
+    }
+    
+    // Update lead object
+    lead.firstName = firstName;
+    lead.lastName = lastName;
+    lead.phone = phone;
+    lead.email = email;
+    lead.propertyAddress = propertyAddress;
+    lead.status = status;
+    lead.source = source;
+    lead.estimatedValue = estimatedValue;
+    lead.notes = notes;
+    lead.lastContact = new Date().toISOString();
+    
+    // Save and update UI
+    saveData();
+    updateLeadsTable();
+    updateDashboardStats();
+    hideContractGeneratorModal();
+    
+    showSuccessMessage('Lead updated successfully!');
 }
 
 function deleteLead(id) {
@@ -828,15 +931,88 @@ function deleteLead(id) {
 
 function editProperty(id) {
     const property = properties.find(p => p.id === id);
-    if (property) {
-        const newPrice = prompt('Enter new purchase price:', property.purchasePrice);
-        if (newPrice && !isNaN(newPrice)) {
-            property.purchasePrice = parseInt(newPrice);
-            saveData();
-            updatePropertiesGrid();
-            showSuccessMessage('Property updated successfully!');
-        }
+    if (!property) return;
+    
+    const formContent = `
+        <div class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Property Address *</label>
+                <input type="text" id="editPropertyAddress" value="${property.address || ''}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
+            </div>
+            <div class="grid grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Bedrooms</label>
+                    <input type="number" id="editPropertyBedrooms" value="${property.bedrooms || ''}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" min="0">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Bathrooms</label>
+                    <input type="number" id="editPropertyBathrooms" value="${property.bathrooms || ''}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" min="0" step="0.5">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Square Feet</label>
+                    <input type="number" id="editPropertySqft" value="${property.sqft || ''}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" min="0">
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Purchase Price *</label>
+                    <input type="number" id="editPropertyPurchasePrice" value="${property.purchasePrice || ''}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" min="0" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Status</label>
+                    <select id="editPropertyStatus" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                        <option value="active" ${(property.status || 'active') === 'active' ? 'selected' : ''}>Active</option>
+                        <option value="under-contract" ${property.status === 'under-contract' ? 'selected' : ''}>Under Contract</option>
+                        <option value="sold" ${property.status === 'sold' ? 'selected' : ''}>Sold</option>
+                        <option value="on-hold" ${property.status === 'on-hold' ? 'selected' : ''}>On Hold</option>
+                    </select>
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Notes</label>
+                <textarea id="editPropertyNotes" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" placeholder="Any additional notes about this property...">${property.notes || ''}</textarea>
+            </div>
+        </div>
+    `;
+    
+    showCustomModal('Edit Property', formContent, () => saveEditedProperty(id));
+}
+
+function saveEditedProperty(id) {
+    const property = properties.find(p => p.id === id);
+    if (!property) return;
+    
+    // Get form values
+    const address = document.getElementById('editPropertyAddress').value.trim();
+    const bedrooms = parseInt(document.getElementById('editPropertyBedrooms').value) || null;
+    const bathrooms = parseFloat(document.getElementById('editPropertyBathrooms').value) || null;
+    const sqft = parseInt(document.getElementById('editPropertySqft').value) || null;
+    const purchasePrice = parseFloat(document.getElementById('editPropertyPurchasePrice').value);
+    const status = document.getElementById('editPropertyStatus').value;
+    const notes = document.getElementById('editPropertyNotes').value.trim();
+    
+    // Validate required fields
+    if (!address || !purchasePrice) {
+        showErrorMessage('Please fill in all required fields');
+        return;
     }
+    
+    // Update property object
+    property.address = address;
+    property.bedrooms = bedrooms;
+    property.bathrooms = bathrooms;
+    property.sqft = sqft;
+    property.purchasePrice = purchasePrice;
+    property.status = status;
+    property.notes = notes;
+    
+    // Save and update UI
+    saveData();
+    updatePropertiesGrid();
+    updateDashboardStats();
+    hideContractGeneratorModal();
+    
+    showSuccessMessage('Property updated successfully!');
 }
 
 function deleteProperty(id) {
@@ -857,15 +1033,117 @@ function viewContract(id) {
 
 function editContract(id) {
     const contract = contracts.find(c => c.id === id);
-    if (contract) {
-        const newStatus = prompt('Enter new status (draft, active, executed):', contract.status);
-        if (newStatus && ['draft', 'active', 'executed'].includes(newStatus)) {
-            contract.status = newStatus;
-            saveData();
-            updateContractsTable();
-            showSuccessMessage('Contract updated successfully!');
-        }
+    if (!contract) return;
+    
+    const contractType = contract.type || 'Purchase';
+    
+    const formContent = `
+        <div class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Property Address *</label>
+                <input type="text" id="editContractPropertyAddress" value="${contract.propertyAddress || ''}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Seller Name *</label>
+                    <input type="text" id="editContractSellerName" value="${contract.sellerName || ''}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Buyer Name</label>
+                    <input type="text" id="editContractBuyerName" value="${contract.buyerName || ''}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                </div>
+            </div>
+            <div class="grid grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Purchase Price *</label>
+                    <input type="number" id="editContractPurchasePrice" value="${contract.purchasePrice || ''}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" min="0" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Assignment Fee</label>
+                    <input type="number" id="editContractAssignmentFee" value="${contract.assignmentFee || ''}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" min="0">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Contract Type</label>
+                    <select id="editContractType" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                        <option value="Purchase" ${contractType === 'Purchase' ? 'selected' : ''}>Purchase</option>
+                        <option value="Assignment" ${contractType === 'Assignment' ? 'selected' : ''}>Assignment</option>
+                        <option value="Option" ${contractType === 'Option' ? 'selected' : ''}>Option</option>
+                        <option value="Wholesale" ${contractType === 'Wholesale' ? 'selected' : ''}>Wholesale</option>
+                    </select>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Status</label>
+                    <select id="editContractStatus" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                        <option value="draft" ${contract.status === 'draft' ? 'selected' : ''}>Draft</option>
+                        <option value="active" ${contract.status === 'active' ? 'selected' : ''}>Active</option>
+                        <option value="executed" ${contract.status === 'executed' ? 'selected' : ''}>Executed</option>
+                        <option value="cancelled" ${contract.status === 'cancelled' ? 'selected' : ''}>Cancelled</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Closing Date</label>
+                    <input type="date" id="editContractClosingDate" value="${contract.closingDate ? contract.closingDate.split('T')[0] : ''}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                </div>
+            </div>
+            ${contractType === 'Option' ? `
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Option Expiration Date</label>
+                <input type="date" id="editContractOptionExpiration" value="${contract.optionExpiration ? contract.optionExpiration.split('T')[0] : ''}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+            </div>
+            ` : ''}
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Notes</label>
+                <textarea id="editContractNotes" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" placeholder="Any additional notes about this contract...">${contract.notes || ''}</textarea>
+            </div>
+        </div>
+    `;
+    
+    showCustomModal('Edit Contract', formContent, () => saveEditedContract(id));
+}
+
+function saveEditedContract(id) {
+    const contract = contracts.find(c => c.id === id);
+    if (!contract) return;
+    
+    // Get form values
+    const propertyAddress = document.getElementById('editContractPropertyAddress').value.trim();
+    const sellerName = document.getElementById('editContractSellerName').value.trim();
+    const buyerName = document.getElementById('editContractBuyerName').value.trim();
+    const purchasePrice = parseFloat(document.getElementById('editContractPurchasePrice').value);
+    const assignmentFee = parseFloat(document.getElementById('editContractAssignmentFee').value) || null;
+    const type = document.getElementById('editContractType').value;
+    const status = document.getElementById('editContractStatus').value;
+    const closingDate = document.getElementById('editContractClosingDate').value;
+    const optionExpiration = document.getElementById('editContractOptionExpiration')?.value;
+    const notes = document.getElementById('editContractNotes').value.trim();
+    
+    // Validate required fields
+    if (!propertyAddress || !sellerName || !purchasePrice) {
+        showErrorMessage('Please fill in all required fields');
+        return;
     }
+    
+    // Update contract object
+    contract.propertyAddress = propertyAddress;
+    contract.sellerName = sellerName;
+    contract.buyerName = buyerName;
+    contract.purchasePrice = purchasePrice;
+    contract.assignmentFee = assignmentFee;
+    contract.type = type;
+    contract.status = status;
+    contract.closingDate = closingDate;
+    if (optionExpiration) contract.optionExpiration = optionExpiration;
+    contract.notes = notes;
+    
+    // Save and update UI
+    saveData();
+    updateContractsTable();
+    updateDashboardStats();
+    hideContractGeneratorModal();
+    
+    showSuccessMessage('Contract updated successfully!');
 }
 
 // Delete contract function
@@ -1147,36 +1425,40 @@ function showWholesaleContractModal(templateData) {
 }
 
 function showCustomModal(title, content, onSubmit) {
-    const modal = document.getElementById('contractGeneratorModal');
+    // Check if modal exists
+    let modal = document.getElementById('contractGeneratorModal');
+    if (!modal) {
+        console.error('Modal not found');
+        return;
+    }
+    
     const modalTitle = modal.querySelector('h3');
-    const modalContent = modal.querySelector('#customFormContent');
+    const formContainer = modal.querySelector('form');
+    
+    if (!modalTitle || !formContainer) {
+        console.error('Modal elements not found');
+        return;
+    }
     
     // Update modal title
     modalTitle.textContent = title;
     
-    // Insert custom content
-    if (!modalContent) {
-        // Create custom content area if it doesn't exist
-        const formContainer = modal.querySelector('form');
-        const customDiv = document.createElement('div');
-        customDiv.id = 'customFormContent';
-        formContainer.innerHTML = content + `
-            <div class="flex justify-end space-x-4 mt-6">
-                <button type="button" onclick="hideContractGeneratorModal()" class="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300">Cancel</button>
-                <button type="submit" class="px-4 py-2 bg-accent text-white rounded-lg hover:bg-blue-600">Generate Contract</button>
-            </div>
-        `;
-        
-        // Update form submit handler
-        formContainer.onsubmit = function(e) {
-            e.preventDefault();
-            onSubmit();
-        };
-    } else {
-        modalContent.innerHTML = content;
-    }
+    // Always replace the entire form content
+    formContainer.innerHTML = content + `
+        <div class="flex justify-end space-x-4 mt-6">
+            <button type="button" onclick="hideContractGeneratorModal()" class="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300">Cancel</button>
+            <button type="submit" class="px-4 py-2 bg-accent text-white rounded-lg hover:bg-blue-600">Save Changes</button>
+        </div>
+    `;
+    
+    // Update form submit handler
+    formContainer.onsubmit = function(e) {
+        e.preventDefault();
+        onSubmit();
+    };
     
     // Show modal
+    modal.classList.remove('hidden');
     modal.style.display = 'flex';
     document.body.style.overflow = 'hidden';
 }
@@ -1319,17 +1601,123 @@ function generateWholesaleContract() {
 // Buyer CRUD operations
 function editBuyer(id) {
     const buyer = buyers.find(b => b.id === id);
-    if (buyer) {
-        const newStatus = prompt('Enter new status (active, warm, cold, inactive):', buyer.status);
-        if (newStatus && ['active', 'warm', 'cold', 'inactive'].includes(newStatus)) {
-            buyer.status = newStatus;
-            buyer.lastContact = new Date().toISOString();
-            saveData();
-            updateBuyersTable();
-            updateDashboardStats();
-            showSuccessMessage('Buyer updated successfully!');
-        }
+    if (!buyer) return;
+    
+    const formContent = `
+        <div class="space-y-4">
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Name *</label>
+                    <input type="text" id="editBuyerName" value="${buyer.name || ''}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Company</label>
+                    <input type="text" id="editBuyerCompany" value="${buyer.company || ''}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Email *</label>
+                    <input type="email" id="editBuyerEmail" value="${buyer.email || ''}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Phone *</label>
+                    <input type="tel" id="editBuyerPhone" value="${buyer.phone || ''}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Buyer Type</label>
+                    <select id="editBuyerType" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                        <option value="cash-buyer" ${buyer.type === 'cash-buyer' ? 'selected' : ''}>Cash Buyer</option>
+                        <option value="investor" ${buyer.type === 'investor' ? 'selected' : ''}>Investor</option>
+                        <option value="hedge-fund" ${buyer.type === 'hedge-fund' ? 'selected' : ''}>Hedge Fund</option>
+                        <option value="wholesaler" ${buyer.type === 'wholesaler' ? 'selected' : ''}>Wholesaler</option>
+                        <option value="rehabber" ${buyer.type === 'rehabber' ? 'selected' : ''}>Rehabber</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Status</label>
+                    <select id="editBuyerStatus" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                        <option value="active" ${buyer.status === 'active' ? 'selected' : ''}>Active</option>
+                        <option value="warm" ${buyer.status === 'warm' ? 'selected' : ''}>Warm</option>
+                        <option value="cold" ${buyer.status === 'cold' ? 'selected' : ''}>Cold</option>
+                        <option value="inactive" ${buyer.status === 'inactive' ? 'selected' : ''}>Inactive</option>
+                    </select>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Min Budget</label>
+                    <input type="number" id="editBuyerMinBudget" value="${buyer.minBudget || ''}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" min="0">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Max Budget</label>
+                    <input type="number" id="editBuyerMaxBudget" value="${buyer.maxBudget || ''}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" min="0">
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Preferred Areas</label>
+                <input type="text" id="editBuyerPreferredAreas" value="${buyer.preferredAreas || ''}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" placeholder="e.g., North Dallas, Plano, Richardson">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Property Types</label>
+                <input type="text" id="editBuyerPropertyTypes" value="${buyer.propertyTypes || ''}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" placeholder="e.g., SFR, Condos, Townhomes">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Notes</label>
+                <textarea id="editBuyerNotes" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" placeholder="Any additional notes about this buyer...">${buyer.notes || ''}</textarea>
+            </div>
+        </div>
+    `;
+    
+    showCustomModal('Edit Buyer', formContent, () => saveEditedBuyer(id));
+}
+
+function saveEditedBuyer(id) {
+    const buyer = buyers.find(b => b.id === id);
+    if (!buyer) return;
+    
+    // Get form values
+    const name = document.getElementById('editBuyerName').value.trim();
+    const company = document.getElementById('editBuyerCompany').value.trim();
+    const email = document.getElementById('editBuyerEmail').value.trim();
+    const phone = document.getElementById('editBuyerPhone').value.trim();
+    const type = document.getElementById('editBuyerType').value;
+    const status = document.getElementById('editBuyerStatus').value;
+    const minBudget = parseFloat(document.getElementById('editBuyerMinBudget').value) || null;
+    const maxBudget = parseFloat(document.getElementById('editBuyerMaxBudget').value) || null;
+    const preferredAreas = document.getElementById('editBuyerPreferredAreas').value.trim();
+    const propertyTypes = document.getElementById('editBuyerPropertyTypes').value.trim();
+    const notes = document.getElementById('editBuyerNotes').value.trim();
+    
+    // Validate required fields
+    if (!name || !email || !phone) {
+        showErrorMessage('Please fill in all required fields');
+        return;
     }
+    
+    // Update buyer object
+    buyer.name = name;
+    buyer.company = company;
+    buyer.email = email;
+    buyer.phone = phone;
+    buyer.type = type;
+    buyer.status = status;
+    buyer.minBudget = minBudget;
+    buyer.maxBudget = maxBudget;
+    buyer.preferredAreas = preferredAreas;
+    buyer.propertyTypes = propertyTypes;
+    buyer.notes = notes;
+    buyer.lastContact = new Date().toISOString();
+    
+    // Save and update UI
+    saveData();
+    updateBuyersTable();
+    updateDashboardStats();
+    hideContractGeneratorModal();
+    
+    showSuccessMessage('Buyer updated successfully!');
 }
 
 function deleteBuyer(id) {
