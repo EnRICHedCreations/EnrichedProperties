@@ -2279,6 +2279,16 @@ function updateContractForm() {
                         <input type="text" id="contractBuyerName" value="Enriched Properties LLC" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
                     </div>
                 </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">State *</label>
+                        <input type="text" id="contractState" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" placeholder="State" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">County *</label>
+                        <input type="text" id="contractCounty" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" placeholder="County" required>
+                    </div>
+                </div>
                 <div class="grid grid-cols-3 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Purchase Price *</label>
@@ -2310,6 +2320,16 @@ function updateContractForm() {
                         </select>
                     </div>
                 </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">State *</label>
+                        <input type="text" id="contractState" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" placeholder="State" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">County *</label>
+                        <input type="text" id="contractCounty" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" placeholder="County" required>
+                    </div>
+                </div>
                 <div class="grid grid-cols-3 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Original Contract Price *</label>
@@ -2336,6 +2356,16 @@ function updateContractForm() {
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Option Holder *</label>
                         <input type="text" id="contractBuyerName" value="Enriched Properties LLC" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">State *</label>
+                        <input type="text" id="contractState" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" placeholder="State" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">County *</label>
+                        <input type="text" id="contractCounty" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" placeholder="County" required>
                     </div>
                 </div>
                 <div class="grid grid-cols-4 gap-4">
@@ -2368,6 +2398,16 @@ function updateContractForm() {
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Wholesaler *</label>
                         <input type="text" id="contractBuyerName" value="Enriched Properties LLC" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">State *</label>
+                        <input type="text" id="contractState" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" placeholder="State" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">County *</label>
+                        <input type="text" id="contractCounty" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" placeholder="County" required>
                     </div>
                 </div>
                 <div class="grid grid-cols-3 gap-4">
@@ -2414,8 +2454,10 @@ function createContractFromForm() {
     const buyerName = document.getElementById('contractBuyerName')?.value;
     const purchasePrice = parseFloat(document.getElementById('contractPurchasePrice')?.value);
     const closingDate = document.getElementById('contractClosingDate')?.value;
+    const state = document.getElementById('contractState')?.value;
+    const county = document.getElementById('contractCounty')?.value;
     
-    if (!contractType || !sellerName || !buyerName || !purchasePrice || !closingDate) {
+    if (!contractType || !sellerName || !buyerName || !purchasePrice || !closingDate || !state || !county) {
         showErrorMessage('Please fill in all required fields');
         return;
     }
@@ -2437,6 +2479,8 @@ function createContractFromForm() {
         buyerName: buyerName,
         purchasePrice: purchasePrice,
         closingDate: closingDate,
+        state: state,
+        county: county,
         status: 'draft',
         dateCreated: new Date().toISOString(),
         contractData: {}
@@ -2572,7 +2616,7 @@ function generatePurchaseAgreementHTML(contract) {
         <div class="contract-document" style="font-family: 'Times New Roman', Times, serif; line-height: 1.6; max-width: 8.5in; margin: 0 auto; padding: 1in; background: white;">
             <div style="text-align: center; margin-bottom: 30px;">
                 <h1 style="font-size: 18px; font-weight: bold; margin-bottom: 10px;">REAL ESTATE PURCHASE AGREEMENT</h1>
-                <p style="font-size: 12px;">State of [STATE] - County of [COUNTY]</p>
+                <p style="font-size: 12px;">State of ${contract.state || '[STATE]'} - County of ${contract.county || '[COUNTY]'}</p>
             </div>
             
             <div style="margin-bottom: 20px;">
@@ -2594,7 +2638,7 @@ function generatePurchaseAgreementHTML(contract) {
             
             <div style="margin-bottom: 20px;">
                 <h3 style="font-size: 14px; font-weight: bold; margin-bottom: 10px;">PURCHASE PRICE AND TERMS</h3>
-                <p><strong>Total Purchase Price:</strong> ${formatCurrency(contract.purchasePrice)} (${numberToWords(contract.purchasePrice)} DOLLARS)</p>
+                <p><strong>Total Purchase Price:</strong> ${formatCurrency(contract.purchasePrice)}</p>
                 <p><strong>Earnest Money Deposit:</strong> ${formatCurrency(contract.emdAmount || 1000)}</p>
                 <p><strong>Closing Date:</strong> ${closingDate}</p>
             </div>
@@ -2645,7 +2689,7 @@ function generateAssignmentAgreementHTML(contract) {
         <div class="contract-document" style="font-family: 'Times New Roman', Times, serif; line-height: 1.6; max-width: 8.5in; margin: 0 auto; padding: 1in; background: white;">
             <div style="text-align: center; margin-bottom: 30px;">
                 <h1 style="font-size: 18px; font-weight: bold; margin-bottom: 10px;">ASSIGNMENT AGREEMENT</h1>
-                <p style="font-size: 12px;">State of [STATE] - County of [COUNTY]</p>
+                <p style="font-size: 12px;">State of ${contract.state || '[STATE]'} - County of ${contract.county || '[COUNTY]'}</p>
             </div>
             
             <div style="margin-bottom: 20px;">
@@ -2715,7 +2759,7 @@ function generateOptionContractHTML(contract) {
         <div class="contract-document" style="font-family: 'Times New Roman', Times, serif; line-height: 1.6; max-width: 8.5in; margin: 0 auto; padding: 1in; background: white;">
             <div style="text-align: center; margin-bottom: 30px;">
                 <h1 style="font-size: 18px; font-weight: bold; margin-bottom: 10px;">OPTION TO PURCHASE REAL ESTATE</h1>
-                <p style="font-size: 12px;">State of [STATE] - County of [COUNTY]</p>
+                <p style="font-size: 12px;">State of ${contract.state || '[STATE]'} - County of ${contract.county || '[COUNTY]'}</p>
             </div>
             
             <div style="margin-bottom: 20px;">
@@ -2788,7 +2832,7 @@ function generateWholesaleContractHTML(contract) {
         <div class="contract-document" style="font-family: 'Times New Roman', Times, serif; line-height: 1.6; max-width: 8.5in; margin: 0 auto; padding: 1in; background: white;">
             <div style="text-align: center; margin-bottom: 30px;">
                 <h1 style="font-size: 18px; font-weight: bold; margin-bottom: 10px;">WHOLESALE PURCHASE AGREEMENT</h1>
-                <p style="font-size: 12px;">State of [STATE] - County of [COUNTY]</p>
+                <p style="font-size: 12px;">State of ${contract.state || '[STATE]'} - County of ${contract.county || '[COUNTY]'}</p>
             </div>
             
             <div style="margin-bottom: 20px;">
@@ -4121,22 +4165,48 @@ function generateSignatureLink() {
 }
 
 function finalizeSignatures() {
+    console.log('finalizeSignatures() called');
     const contractId = window.currentSignatureContractId;
-    const contract = contracts.find(c => c.id === contractId);
-    if (!contract) return;
+    console.log('Contract ID:', contractId);
     
-    if (contract.signatures?.sellerSigned && contract.signatures?.buyerSigned) {
+    if (!contractId) {
+        showErrorMessage('No contract selected. Please close and reopen the signature modal.');
+        return;
+    }
+    
+    const contract = contracts.find(c => c.id == contractId); // Use == to handle type coercion
+    
+    if (!contract) {
+        showErrorMessage('Contract not found. Please try again.');
+        console.error('Contract lookup failed:', {
+            contractId,
+            contractIds: contracts.map(c => c.id),
+            contracts: contracts.length
+        });
+        return;
+    }
+    
+    // Check if both parties have signed
+    const sellerSigned = contract.signatures?.sellerSigned;
+    const buyerSigned = contract.signatures?.buyerSigned;
+    
+    if (sellerSigned && buyerSigned) {
         contract.status = 'executed';
         contract.executedDate = new Date().toISOString();
         
         saveData();
         updateContractsTable();
         updateContractStats();
+        updateContractDeadlines();
         hideDigitalSignatureModal();
         
         showSuccessMessage('Contract finalized and marked as executed!');
     } else {
-        showErrorMessage('Both parties must sign before finalizing the contract.');
+        let missingSignatures = [];
+        if (!sellerSigned) missingSignatures.push('Seller');
+        if (!buyerSigned) missingSignatures.push('Buyer');
+        
+        showErrorMessage(`Missing signatures from: ${missingSignatures.join(' and ')}. Both parties must sign before finalizing the contract.`);
     }
 }
 
@@ -4208,7 +4278,7 @@ function updateContractDeadlines() {
     const urgentDeadlines = [];
     
     contracts.forEach(contract => {
-        if (contract.closingDate && ['active', 'executed'].includes(contract.status)) {
+        if (contract.closingDate && ['draft', 'active', 'executed'].includes(contract.status)) {
             const closingDate = new Date(contract.closingDate);
             const daysUntil = Math.ceil((closingDate - now) / (1000 * 60 * 60 * 24));
             
@@ -4223,7 +4293,7 @@ function updateContractDeadlines() {
         }
         
         // Check for option expiration deadlines
-        if (contract.optionExpiration && contract.status === 'active') {
+        if (contract.optionExpiration && ['draft', 'active'].includes(contract.status)) {
             const optionDate = new Date(contract.optionExpiration);
             const daysUntil = Math.ceil((optionDate - now) / (1000 * 60 * 60 * 24));
             
