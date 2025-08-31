@@ -1443,7 +1443,7 @@ function calculateROI() {
     document.getElementById('dealEvaluation').textContent = evaluation;
 }
 
-// Search comparables (placeholder for now)
+// Search comparables with pre-populated external links
 function searchComparables() {
     const neighborhood = document.getElementById('neighborhood').value;
     const priceRangeLow = document.getElementById('priceRangeLow').value;
@@ -1459,7 +1459,10 @@ function searchComparables() {
         return;
     }
     
-    // Simulate search results
+    // Build search URLs with parameters
+    updateSearchLinks();
+    
+    // Show search results
     resultsDiv.innerHTML = `
         <div class="space-y-2">
             <h5 class="font-semibold">Search Parameters:</h5>
@@ -1468,12 +1471,85 @@ function searchComparables() {
             <p class="text-xs"><strong>Beds/Baths:</strong> ${minBeds}+/${minBaths}+</p>
             <p class="text-xs"><strong>Min Sqft:</strong> ${formatNumber(minSqft)}</p>
             <hr class="my-2">
-            <p class="text-sm text-blue-600">💡 <strong>Tip:</strong> Use the Zillow and Realtor.com buttons above to research comparables with these criteria.</p>
-            <p class="text-xs text-gray-500">Future update will integrate with MLS/API for automatic comparable searches.</p>
+            <p class="text-sm text-green-600">✅ <strong>Ready!</strong> Zillow and Realtor.com buttons above now have your search criteria pre-loaded.</p>
+            <p class="text-xs text-gray-500">Click the buttons above to open searches with your criteria automatically filled in.</p>
         </div>
     `;
     
-    showSuccessMessage('Search parameters set! Use the research links above to find comparables.');
+    showSuccessMessage('Search links updated! Click Zillow/Realtor.com buttons to open pre-populated searches.');
+}
+
+// Update external search links with current criteria
+function updateSearchLinks() {
+    const neighborhood = document.getElementById('neighborhood').value;
+    const priceRangeLow = document.getElementById('priceRangeLow').value || '';
+    const priceRangeHigh = document.getElementById('priceRangeHigh').value || '';
+    const minBeds = document.getElementById('minBeds').value || '';
+    const minBaths = document.getElementById('minBaths').value || '';
+    const minSqft = document.getElementById('minSqft').value || '';
+    
+    // Build Zillow URL
+    let zillowUrl = 'https://www.zillow.com/homes/';
+    if (neighborhood) {
+        zillowUrl += encodeURIComponent(neighborhood) + '_rb/';
+    }
+    
+    // Add Zillow search parameters
+    const zillowParams = [];
+    if (priceRangeLow && priceRangeHigh) {
+        zillowParams.push(`${priceRangeLow}-${priceRangeHigh}_price`);
+    } else if (priceRangeLow) {
+        zillowParams.push(`${priceRangeLow}-_price`);
+    } else if (priceRangeHigh) {
+        zillowParams.push(`0-${priceRangeHigh}_price`);
+    }
+    
+    if (minBeds) {
+        zillowParams.push(`${minBeds}-_beds`);
+    }
+    
+    if (minBaths) {
+        zillowParams.push(`${minBaths}-_baths`);
+    }
+    
+    if (minSqft) {
+        zillowParams.push(`${minSqft}-_size`);
+    }
+    
+    if (zillowParams.length > 0) {
+        zillowUrl += zillowParams.join('/') + '/';
+    }
+    
+    // Build Realtor.com URL
+    let realtorUrl = 'https://www.realtor.com/realestateandhomes-search/';
+    if (neighborhood) {
+        realtorUrl += encodeURIComponent(neighborhood);
+    }
+    
+    const realtorParams = new URLSearchParams();
+    if (priceRangeLow) realtorParams.append('price-min', priceRangeLow);
+    if (priceRangeHigh) realtorParams.append('price-max', priceRangeHigh);
+    if (minBeds) realtorParams.append('beds-min', minBeds);
+    if (minBaths) realtorParams.append('baths-min', minBaths);
+    if (minSqft) realtorParams.append('sqft-min', minSqft);
+    
+    if (realtorParams.toString()) {
+        realtorUrl += '?' + realtorParams.toString();
+    }
+    
+    // Update the button onclick handlers
+    const zillowButton = document.querySelector('button[onclick*="zillow.com"]');
+    const realtorButton = document.querySelector('button[onclick*="realtor.com"]');
+    
+    if (zillowButton) {
+        zillowButton.setAttribute('onclick', `window.open('${zillowUrl}', '_blank')`);
+        zillowButton.innerHTML = 'Open Zillow Search 🔗';
+    }
+    
+    if (realtorButton) {
+        realtorButton.setAttribute('onclick', `window.open('${realtorUrl}', '_blank')`);
+        realtorButton.innerHTML = 'Open Realtor.com Search 🔗';
+    }
 }
 
 // Clear all analysis data
@@ -1524,6 +1600,20 @@ function clearAnalysis() {
         document.getElementById('minSqft').value = '';
         document.getElementById('researchNotes').value = '';
         document.getElementById('comparablesResults').innerHTML = '<p class="text-gray-600">Comparable search results will appear here</p>';
+        
+        // Reset external search buttons
+        const zillowButton = document.querySelector('button[onclick*="zillow"]');
+        const realtorButton = document.querySelector('button[onclick*="realtor"]');
+        
+        if (zillowButton) {
+            zillowButton.setAttribute('onclick', `window.open('https://www.zillow.com', '_blank')`);
+            zillowButton.innerHTML = 'Open Zillow';
+        }
+        
+        if (realtorButton) {
+            realtorButton.setAttribute('onclick', `window.open('https://www.realtor.com', '_blank')`);
+            realtorButton.innerHTML = 'Open Realtor.com';
+        }
         
         // Reset all displays
         updateProfitDisplay();
