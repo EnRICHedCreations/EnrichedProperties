@@ -1263,3 +1263,277 @@ function logout() {
         }, 1500);
     }
 }
+
+// ==============================================
+// DEAL ANALYSIS CALCULATOR FUNCTIONS
+// ==============================================
+
+// Calculate ARV (After Repair Value)
+function calculateARV() {
+    const comp1 = parseFloat(document.getElementById('comp1').value) || 0;
+    const comp2 = parseFloat(document.getElementById('comp2').value) || 0;
+    const comp3 = parseFloat(document.getElementById('comp3').value) || 0;
+    
+    let avgARV = 0;
+    let compCount = 0;
+    
+    if (comp1 > 0) { avgARV += comp1; compCount++; }
+    if (comp2 > 0) { avgARV += comp2; compCount++; }
+    if (comp3 > 0) { avgARV += comp3; compCount++; }
+    
+    if (compCount > 0) {
+        avgARV = avgARV / compCount;
+    }
+    
+    document.getElementById('calculatedARV').textContent = formatCurrency(avgARV);
+    
+    // Update profit analysis display
+    updateProfitDisplay();
+    
+    return avgARV;
+}
+
+// Calculate total repair costs
+function calculateRepairs() {
+    const kitchenCost = parseFloat(document.getElementById('kitchenCost').value) || 0;
+    const bathroomCost = parseFloat(document.getElementById('bathroomCost').value) || 0;
+    const flooringCost = parseFloat(document.getElementById('flooringCost').value) || 0;
+    const paintCost = parseFloat(document.getElementById('paintCost').value) || 0;
+    const roofCost = parseFloat(document.getElementById('roofCost').value) || 0;
+    const hvacCost = parseFloat(document.getElementById('hvacCost').value) || 0;
+    const electricalCost = parseFloat(document.getElementById('electricalCost').value) || 0;
+    const plumbingCost = parseFloat(document.getElementById('plumbingCost').value) || 0;
+    const landscapingCost = parseFloat(document.getElementById('landscapingCost').value) || 0;
+    
+    const subtotal = kitchenCost + bathroomCost + flooringCost + paintCost + 
+                    roofCost + hvacCost + electricalCost + plumbingCost + landscapingCost;
+    
+    const contingency = subtotal * 0.10; // 10% contingency
+    const totalRepairs = subtotal + contingency;
+    
+    document.getElementById('contingencyCost').textContent = formatCurrency(contingency);
+    document.getElementById('totalRepairs').textContent = formatCurrency(totalRepairs);
+    
+    // Update profit analysis display
+    updateProfitDisplay();
+    
+    return totalRepairs;
+}
+
+// Calculate profit margins
+function calculateProfit() {
+    updateProfitDisplay();
+}
+
+// Update profit display with all calculations
+function updateProfitDisplay() {
+    const arv = calculateARV();
+    const totalRepairs = calculateRepairs();
+    const purchasePrice = parseFloat(document.getElementById('purchasePrice').value) || 0;
+    const assignmentFee = parseFloat(document.getElementById('assignmentFee').value) || 0;
+    const marketingCosts = parseFloat(document.getElementById('marketingCosts').value) || 0;
+    const otherCosts = parseFloat(document.getElementById('otherCosts').value) || 0;
+    
+    const totalCosts = marketingCosts + otherCosts;
+    const buyerInvestment = purchasePrice + totalRepairs;
+    const buyerProfit = arv - buyerInvestment;
+    const yourProfit = assignmentFee - totalCosts;
+    
+    // Update profit analysis display
+    document.getElementById('profitARV').textContent = formatCurrency(arv);
+    document.getElementById('profitPurchase').textContent = formatCurrency(purchasePrice);
+    document.getElementById('profitRepairs').textContent = formatCurrency(totalRepairs);
+    document.getElementById('profitAssignment').textContent = formatCurrency(assignmentFee);
+    document.getElementById('profitCosts').textContent = formatCurrency(totalCosts);
+    document.getElementById('buyerProfit').textContent = formatCurrency(buyerProfit);
+    document.getElementById('yourProfit').textContent = formatCurrency(yourProfit);
+    
+    // Update profit color coding
+    const buyerProfitEl = document.getElementById('buyerProfit');
+    const yourProfitEl = document.getElementById('yourProfit');
+    
+    if (buyerProfit > 0) {
+        buyerProfitEl.className = 'text-lg font-bold text-green-600';
+    } else {
+        buyerProfitEl.className = 'text-lg font-bold text-red-600';
+    }
+    
+    if (yourProfit > 0) {
+        yourProfitEl.className = 'text-lg font-bold text-green-600';
+    } else {
+        yourProfitEl.className = 'text-lg font-bold text-red-600';
+    }
+    
+    // Calculate ROI automatically
+    calculateROI();
+}
+
+// Calculate ROI and deal metrics
+function calculateROI() {
+    const assignmentFee = parseFloat(document.getElementById('assignmentFee').value) || 0;
+    const marketingCosts = parseFloat(document.getElementById('marketingCosts').value) || 0;
+    const otherCosts = parseFloat(document.getElementById('otherCosts').value) || 0;
+    const timeInvestment = parseFloat(document.getElementById('timeInvestment').value) || 1;
+    const hourlyTarget = parseFloat(document.getElementById('hourlyTarget').value) || 0;
+    const daysToClose = parseFloat(document.getElementById('daysToClose').value) || 30;
+    
+    const netProfit = assignmentFee - marketingCosts - otherCosts;
+    const profitPerHour = netProfit / timeInvestment;
+    const dealsPerMonth = 30 / daysToClose;
+    const monthlyROI = netProfit * dealsPerMonth;
+    
+    // Calculate deal score (0-100)
+    let dealScore = 0;
+    const arv = calculateARV();
+    const purchasePrice = parseFloat(document.getElementById('purchasePrice').value) || 0;
+    const totalRepairs = calculateRepairs();
+    
+    if (arv > 0 && purchasePrice > 0) {
+        const buyerProfit = arv - purchasePrice - totalRepairs;
+        const profitMarginPercent = (buyerProfit / arv) * 100;
+        const assignmentPercent = (assignmentFee / purchasePrice) * 100;
+        
+        // Score based on various factors
+        if (profitMarginPercent >= 20) dealScore += 30;
+        else if (profitMarginPercent >= 15) dealScore += 20;
+        else if (profitMarginPercent >= 10) dealScore += 10;
+        
+        if (assignmentPercent >= 8) dealScore += 25;
+        else if (assignmentPercent >= 5) dealScore += 15;
+        else if (assignmentPercent >= 3) dealScore += 10;
+        
+        if (profitPerHour >= hourlyTarget) dealScore += 25;
+        else if (profitPerHour >= hourlyTarget * 0.8) dealScore += 15;
+        else if (profitPerHour >= hourlyTarget * 0.6) dealScore += 10;
+        
+        if (daysToClose <= 21) dealScore += 20;
+        else if (daysToClose <= 30) dealScore += 15;
+        else if (daysToClose <= 45) dealScore += 10;
+    }
+    
+    // Update ROI display
+    document.getElementById('profitPerHour').textContent = formatCurrency(profitPerHour);
+    document.getElementById('monthlyROI').textContent = formatCurrency(monthlyROI);
+    document.getElementById('dealScore').textContent = Math.round(dealScore) + '/100';
+    
+    // Update deal score color
+    const dealScoreEl = document.getElementById('dealScore');
+    if (dealScore >= 80) {
+        dealScoreEl.className = 'text-lg font-bold text-green-600';
+    } else if (dealScore >= 60) {
+        dealScoreEl.className = 'text-lg font-bold text-yellow-600';
+    } else {
+        dealScoreEl.className = 'text-lg font-bold text-red-600';
+    }
+    
+    // Update deal evaluation
+    let evaluation = '';
+    if (dealScore >= 80) {
+        evaluation = '🚀 EXCELLENT DEAL - Strong profit margins for both you and buyer. High ROI potential.';
+    } else if (dealScore >= 70) {
+        evaluation = '✅ GOOD DEAL - Solid profits with acceptable risk. Worth pursuing.';
+    } else if (dealScore >= 60) {
+        evaluation = '⚠️ MARGINAL DEAL - Lower profits but still viable. Consider negotiating better terms.';
+    } else if (dealScore >= 40) {
+        evaluation = '❌ POOR DEAL - Low profit margins. High risk, not recommended.';
+    } else {
+        evaluation = '🛑 BAD DEAL - Negative or very low returns. Avoid this deal.';
+    }
+    
+    document.getElementById('dealEvaluation').textContent = evaluation;
+}
+
+// Search comparables (placeholder for now)
+function searchComparables() {
+    const neighborhood = document.getElementById('neighborhood').value;
+    const priceRangeLow = document.getElementById('priceRangeLow').value;
+    const priceRangeHigh = document.getElementById('priceRangeHigh').value;
+    const minBeds = document.getElementById('minBeds').value;
+    const minBaths = document.getElementById('minBaths').value;
+    const minSqft = document.getElementById('minSqft').value;
+    
+    const resultsDiv = document.getElementById('comparablesResults');
+    
+    if (!neighborhood) {
+        resultsDiv.innerHTML = '<p class="text-red-600">Please enter a neighborhood or zip code</p>';
+        return;
+    }
+    
+    // Simulate search results
+    resultsDiv.innerHTML = `
+        <div class="space-y-2">
+            <h5 class="font-semibold">Search Parameters:</h5>
+            <p class="text-xs"><strong>Area:</strong> ${neighborhood}</p>
+            <p class="text-xs"><strong>Price:</strong> $${formatNumber(priceRangeLow)} - $${formatNumber(priceRangeHigh)}</p>
+            <p class="text-xs"><strong>Beds/Baths:</strong> ${minBeds}+/${minBaths}+</p>
+            <p class="text-xs"><strong>Min Sqft:</strong> ${formatNumber(minSqft)}</p>
+            <hr class="my-2">
+            <p class="text-sm text-blue-600">💡 <strong>Tip:</strong> Use the Zillow and Realtor.com buttons above to research comparables with these criteria.</p>
+            <p class="text-xs text-gray-500">Future update will integrate with MLS/API for automatic comparable searches.</p>
+        </div>
+    `;
+    
+    showSuccessMessage('Search parameters set! Use the research links above to find comparables.');
+}
+
+// Clear all analysis data
+function clearAnalysis() {
+    if (confirm('Clear all deal analysis data?')) {
+        // Property info
+        document.getElementById('propAddress').value = '';
+        document.getElementById('propSqft').value = '';
+        document.getElementById('propBeds').value = '';
+        document.getElementById('propBaths').value = '';
+        
+        // ARV Calculator
+        document.getElementById('comp1').value = '';
+        document.getElementById('comp2').value = '';
+        document.getElementById('comp3').value = '';
+        document.getElementById('calculatedARV').textContent = '$0';
+        
+        // Repair costs
+        document.getElementById('kitchenCost').value = '';
+        document.getElementById('bathroomCost').value = '';
+        document.getElementById('flooringCost').value = '';
+        document.getElementById('paintCost').value = '';
+        document.getElementById('roofCost').value = '';
+        document.getElementById('hvacCost').value = '';
+        document.getElementById('electricalCost').value = '';
+        document.getElementById('plumbingCost').value = '';
+        document.getElementById('landscapingCost').value = '';
+        document.getElementById('contingencyCost').textContent = '$0';
+        document.getElementById('totalRepairs').textContent = '$0';
+        
+        // Profit analysis
+        document.getElementById('purchasePrice').value = '';
+        document.getElementById('assignmentFee').value = '';
+        document.getElementById('marketingCosts').value = '';
+        document.getElementById('otherCosts').value = '';
+        
+        // ROI Calculator
+        document.getElementById('timeInvestment').value = '';
+        document.getElementById('hourlyTarget').value = '';
+        document.getElementById('daysToClose').value = '';
+        
+        // Market comparables
+        document.getElementById('neighborhood').value = '';
+        document.getElementById('priceRangeLow').value = '';
+        document.getElementById('priceRangeHigh').value = '';
+        document.getElementById('minBeds').value = '';
+        document.getElementById('minBaths').value = '';
+        document.getElementById('minSqft').value = '';
+        document.getElementById('researchNotes').value = '';
+        document.getElementById('comparablesResults').innerHTML = '<p class="text-gray-600">Comparable search results will appear here</p>';
+        
+        // Reset all displays
+        updateProfitDisplay();
+        
+        showSuccessMessage('Deal analysis cleared successfully!');
+    }
+}
+
+// Helper function to format numbers without currency symbol
+function formatNumber(number) {
+    if (!number) return '0';
+    return new Intl.NumberFormat('en-US').format(number);
+}
