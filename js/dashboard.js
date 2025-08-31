@@ -6,6 +6,8 @@ let leads = [];
 let properties = [];
 let contracts = [];
 let buyers = [];
+let assignmentFees = [];
+let contractDeadlines = [];
 
 // DOM Content Loaded
 document.addEventListener('DOMContentLoaded', function() {
@@ -236,6 +238,10 @@ function showTab(tabName) {
             case 'analytics':
                 updateAnalytics();
                 break;
+            case 'dealanalysis':
+                // Initialize Deal Analysis displays
+                updateProfitDisplay();
+                break;
         }
     }
 }
@@ -413,7 +419,7 @@ function updateContractsTable() {
     if (contracts.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="6" class="px-6 py-8 text-center text-gray-500">
+                <td colspan="8" class="px-6 py-8 text-center text-gray-500">
                     <div class="text-4xl mb-2">📄</div>
                     <p class="text-sm">No contracts yet</p>
                     <p class="text-xs">Contracts will appear here as you close deals</p>
@@ -421,29 +427,57 @@ function updateContractsTable() {
             </tr>
         `;
     } else {
-        tbody.innerHTML = contracts.map(contract => `
+        tbody.innerHTML = contracts.map(contract => {
+            // Get contract type
+            const contractType = contract.type || (contract.contractData?.assignable ? 'Assignment' : 'Purchase');
+            
+            // Get assignment fee
+            const assignmentFee = contract.assignmentFee || contract.contractData?.assignmentFee || 'N/A';
+            
+            // Calculate deadline (days until closing)
+            const deadline = contract.closingDate ? calculateDaysUntilDeadline(contract.closingDate) : 'N/A';
+            
+            // Get signature status
+            const signatureStatus = getContractSignatureStatus(contract);
+            
+            return `
             <tr class="table-row">
-                <td class="px-6 py-4">
-                    <div class="text-sm font-medium text-gray-900">${contract.propertyAddress}</div>
+                <td class="px-4 py-4">
+                    <div class="text-sm font-medium text-gray-900">${contractType}</div>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap">
+                <td class="px-4 py-4">
                     <div class="text-sm text-gray-900">${contract.sellerName}</div>
+                    <div class="text-xs text-gray-500">${contract.propertyAddress}</div>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap">
+                <td class="px-4 py-4 whitespace-nowrap">
                     <div class="text-sm text-gray-900">${formatCurrency(contract.purchasePrice)}</div>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap">
+                <td class="px-4 py-4 whitespace-nowrap">
+                    <div class="text-sm text-gray-900">${assignmentFee !== 'N/A' ? formatCurrency(assignmentFee) : 'N/A'}</div>
+                </td>
+                <td class="px-4 py-4 whitespace-nowrap">
                     <span class="status-badge status-${contract.status}">${contract.status}</span>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm text-gray-900">${formatDate(contract.closingDate)}</div>
+                <td class="px-4 py-4 whitespace-nowrap">
+                    <div class="text-sm ${deadline.includes('days') && parseInt(deadline) <= 7 ? 'text-red-600 font-semibold' : 'text-gray-900'}">
+                        ${deadline}
+                    </div>
+                    ${contract.closingDate ? `<div class="text-xs text-gray-500">${formatDate(contract.closingDate)}</div>` : ''}
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <button onclick="viewContract(${contract.id})" class="action-button text-indigo-600 hover:text-indigo-900 mr-2">View</button>
-                    <button onclick="editContract(${contract.id})" class="action-button text-gray-600 hover:text-gray-900">Edit</button>
+                <td class="px-4 py-4 whitespace-nowrap">
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getSignatureStatusColor(signatureStatus)}">
+                        ${signatureStatus}
+                    </span>
+                </td>
+                <td class="px-4 py-4 whitespace-nowrap text-sm font-medium">
+                    <button onclick="viewContract(${contract.id})" class="action-button text-indigo-600 hover:text-indigo-900 mr-1" title="View Contract">View</button>
+                    <button onclick="showDigitalSignatureModal(${contract.id})" class="action-button text-green-600 hover:text-green-900 mr-1" title="Manage Signatures">Sign</button>
+                    <button onclick="editContract(${contract.id})" class="action-button text-gray-600 hover:text-gray-900 mr-1" title="Edit Contract">Edit</button>
+                    <button onclick="deleteContract(${contract.id})" class="action-button text-red-600 hover:text-red-900" title="Delete Contract">Delete</button>
                 </td>
             </tr>
-        `).join('');
+            `;
+        }).join('');
     }
 }
 
@@ -834,8 +868,121 @@ function editContract(id) {
     }
 }
 
+// Delete contract function
+function deleteContract(id) {
+    const contract = contracts.find(c => c.id === id);
+    if (contract) {
+        const confirmDelete = confirm(`Are you sure you want to delete this contract?\n\nProperty: ${contract.propertyAddress}\nSeller: ${contract.sellerName}\nAmount: ${formatCurrency(contract.purchasePrice)}\n\nThis action cannot be undone.`);
+        
+        if (confirmDelete) {
+            // Remove contract from array
+            contracts = contracts.filter(c => c.id !== id);
+            
+            // Save data and update display
+            saveData();
+            updateContractsTable();
+            updateOverviewStats();
+            
+            showSuccessMessage('Contract deleted successfully!');
+        }
+    } else {
+        showErrorMessage('Contract not found!');
+    }
+}
+
 function generateContract() {
     showContractGeneratorModal();
+}
+
+// Templates modal functions
+function showTemplatesModal() {
+    document.getElementById('templatesModal').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+}
+
+function hideTemplatesModal() {
+    document.getElementById('templatesModal').classList.add('hidden');
+    document.body.style.overflow = 'auto';
+}
+
+// Use template function
+function useTemplate(templateType) {
+    hideTemplatesModal();
+    
+    // Pre-fill contract generator with template data
+    const templateData = getTemplateData(templateType);
+    
+    // Show contract generator modal with template data
+    showContractGeneratorModal();
+    
+    // Fill in the form fields with template data
+    setTimeout(() => {
+        if (templateData.sellerName) document.getElementById('sellerName').value = templateData.sellerName;
+        if (templateData.buyerName) document.getElementById('buyerName').value = templateData.buyerName;
+        if (templateData.propertyAddress) document.getElementById('propertyAddress').value = templateData.propertyAddress;
+        if (templateData.purchasePrice) document.getElementById('purchasePrice').value = templateData.purchasePrice;
+        if (templateData.contractType) document.getElementById('contractType').value = templateData.contractType;
+        if (templateData.terms) document.getElementById('terms').value = templateData.terms;
+        if (templateData.closingDate) document.getElementById('closingDate').value = templateData.closingDate;
+    }, 100);
+    
+    showSuccessMessage(`${getTemplateDisplayName(templateType)} template loaded successfully!`);
+}
+
+// Get template data based on type
+function getTemplateData(templateType) {
+    const templates = {
+        'purchase-agreement': {
+            contractType: 'Purchase Agreement',
+            terms: 'TERMS AND CONDITIONS:\n\n1. PURCHASE PRICE: The total purchase price shall be paid as follows:\n   - Earnest money deposit upon execution\n   - Balance at closing through certified funds\n\n2. CLOSING: Closing shall occur within 30 days of contract execution\n\n3. TITLE: Seller shall provide clear and marketable title\n\n4. CONDITION: Property sold in AS-IS condition\n\n5. INSPECTIONS: Buyer shall have 10 days for inspections\n\n6. FINANCING: This contract is contingent upon buyer obtaining financing within 21 days',
+            sellerName: '[SELLER NAME]',
+            buyerName: '[BUYER NAME]',
+            propertyAddress: '[PROPERTY ADDRESS]',
+            purchasePrice: '',
+            closingDate: ''
+        },
+        'assignment-agreement': {
+            contractType: 'Assignment Agreement',
+            terms: 'ASSIGNMENT TERMS:\n\n1. ASSIGNMENT FEE: Assignor shall receive an assignment fee of $[AMOUNT] at closing\n\n2. ORIGINAL CONTRACT: This assignment is subject to all terms of the original purchase contract dated [DATE]\n\n3. ASSIGNEE OBLIGATIONS: Assignee assumes all rights and obligations of the original contract\n\n4. CLOSING: Assignee shall close on the original closing date or as mutually agreed\n\n5. DEFAULT: If assignee defaults, original contract remains in effect with assignor\n\n6. NOTICE: All parties to original contract have been notified of this assignment',
+            sellerName: '[ORIGINAL SELLER]',
+            buyerName: '[ASSIGNEE/END BUYER]',
+            propertyAddress: '[PROPERTY ADDRESS]',
+            purchasePrice: '',
+            closingDate: ''
+        },
+        'option-contract': {
+            contractType: 'Option Contract',
+            terms: 'OPTION TERMS:\n\n1. OPTION FEE: Buyer pays $[AMOUNT] for exclusive option to purchase\n\n2. OPTION PERIOD: Option expires [NUMBER] days from contract date\n\n3. EXERCISE: Option may be exercised by written notice to seller\n\n4. PURCHASE PRICE: Fixed at $[AMOUNT] during option period\n\n5. EXTENSION: Option may be extended for additional $[AMOUNT] fee\n\n6. NON-REFUNDABLE: Option fee is non-refundable but credited toward purchase price\n\n7. MAINTENANCE: Seller maintains property during option period',
+            sellerName: '[SELLER NAME]',
+            buyerName: '[OPTION HOLDER]',
+            propertyAddress: '[PROPERTY ADDRESS]',
+            purchasePrice: '',
+            closingDate: ''
+        },
+        'wholesale-contract': {
+            contractType: 'Wholesale Purchase Agreement',
+            terms: 'WHOLESALE TERMS:\n\n1. ASSIGNMENT RIGHTS: Buyer may assign this contract with written notice\n\n2. AS-IS CONDITION: Property purchased in current condition without warranties\n\n3. QUICK CLOSING: Closing within 14-21 days or as agreed\n\n4. CASH PURCHASE: No financing contingencies\n\n5. INSPECTION PERIOD: 7 days for due diligence and inspections\n\n6. EARNEST MONEY: Minimal deposit, balance at closing\n\n7. MARKETING: Buyer may market property during contract period',
+            sellerName: '[MOTIVATED SELLER]',
+            buyerName: '[WHOLESALER/COMPANY]',
+            propertyAddress: '[DISTRESSED PROPERTY ADDRESS]',
+            purchasePrice: '',
+            closingDate: ''
+        }
+    };
+    
+    return templates[templateType] || {};
+}
+
+// Get template display name
+function getTemplateDisplayName(templateType) {
+    const names = {
+        'purchase-agreement': 'Purchase Agreement',
+        'assignment-agreement': 'Assignment Agreement',
+        'option-contract': 'Option Contract',
+        'wholesale-contract': 'Wholesale Contract'
+    };
+    
+    return names[templateType] || 'Template';
 }
 
 // Buyer CRUD operations
@@ -1268,8 +1415,8 @@ function logout() {
 // DEAL ANALYSIS CALCULATOR FUNCTIONS
 // ==============================================
 
-// Calculate ARV (After Repair Value)
-function calculateARV() {
+// Calculate ARV (After Repair Value) - pure function
+function getARVValue() {
     const comp1 = parseFloat(document.getElementById('comp1').value) || 0;
     const comp2 = parseFloat(document.getElementById('comp2').value) || 0;
     const comp3 = parseFloat(document.getElementById('comp3').value) || 0;
@@ -1285,16 +1432,18 @@ function calculateARV() {
         avgARV = avgARV / compCount;
     }
     
-    document.getElementById('calculatedARV').textContent = formatCurrency(avgARV);
-    
-    // Update profit analysis display
-    updateProfitDisplay();
-    
     return avgARV;
 }
 
-// Calculate total repair costs
-function calculateRepairs() {
+// Calculate ARV and update display
+function calculateARV() {
+    const avgARV = getARVValue();
+    document.getElementById('calculatedARV').textContent = formatCurrency(avgARV);
+    updateProfitDisplay();
+}
+
+// Get total repair costs - pure function
+function getRepairsValue() {
     const kitchenCost = parseFloat(document.getElementById('kitchenCost').value) || 0;
     const bathroomCost = parseFloat(document.getElementById('bathroomCost').value) || 0;
     const flooringCost = parseFloat(document.getElementById('flooringCost').value) || 0;
@@ -1311,13 +1460,17 @@ function calculateRepairs() {
     const contingency = subtotal * 0.10; // 10% contingency
     const totalRepairs = subtotal + contingency;
     
+    return { totalRepairs, contingency };
+}
+
+// Calculate repairs and update display
+function calculateRepairs() {
+    const { totalRepairs, contingency } = getRepairsValue();
+    
     document.getElementById('contingencyCost').textContent = formatCurrency(contingency);
     document.getElementById('totalRepairs').textContent = formatCurrency(totalRepairs);
     
-    // Update profit analysis display
     updateProfitDisplay();
-    
-    return totalRepairs;
 }
 
 // Calculate profit margins
@@ -1327,8 +1480,8 @@ function calculateProfit() {
 
 // Update profit display with all calculations
 function updateProfitDisplay() {
-    const arv = calculateARV();
-    const totalRepairs = calculateRepairs();
+    const arv = getARVValue();
+    const { totalRepairs } = getRepairsValue();
     const purchasePrice = parseFloat(document.getElementById('purchasePrice').value) || 0;
     const assignmentFee = parseFloat(document.getElementById('assignmentFee').value) || 0;
     const marketingCosts = parseFloat(document.getElementById('marketingCosts').value) || 0;
@@ -1340,36 +1493,50 @@ function updateProfitDisplay() {
     const yourProfit = assignmentFee - totalCosts;
     
     // Update profit analysis display
-    document.getElementById('profitARV').textContent = formatCurrency(arv);
-    document.getElementById('profitPurchase').textContent = formatCurrency(purchasePrice);
-    document.getElementById('profitRepairs').textContent = formatCurrency(totalRepairs);
-    document.getElementById('profitAssignment').textContent = formatCurrency(assignmentFee);
-    document.getElementById('profitCosts').textContent = formatCurrency(totalCosts);
-    document.getElementById('buyerProfit').textContent = formatCurrency(buyerProfit);
-    document.getElementById('yourProfit').textContent = formatCurrency(yourProfit);
-    
-    // Update profit color coding
+    const profitARVEl = document.getElementById('profitARV');
+    const profitPurchaseEl = document.getElementById('profitPurchase');
+    const profitRepairsEl = document.getElementById('profitRepairs');
+    const profitAssignmentEl = document.getElementById('profitAssignment');
+    const profitCostsEl = document.getElementById('profitCosts');
     const buyerProfitEl = document.getElementById('buyerProfit');
     const yourProfitEl = document.getElementById('yourProfit');
     
-    if (buyerProfit > 0) {
-        buyerProfitEl.className = 'text-lg font-bold text-green-600';
-    } else {
-        buyerProfitEl.className = 'text-lg font-bold text-red-600';
+    if (profitARVEl) profitARVEl.textContent = formatCurrency(arv);
+    if (profitPurchaseEl) profitPurchaseEl.textContent = formatCurrency(purchasePrice);
+    if (profitRepairsEl) profitRepairsEl.textContent = formatCurrency(totalRepairs);
+    if (profitAssignmentEl) profitAssignmentEl.textContent = formatCurrency(assignmentFee);
+    if (profitCostsEl) profitCostsEl.textContent = formatCurrency(totalCosts);
+    if (buyerProfitEl) buyerProfitEl.textContent = formatCurrency(buyerProfit);
+    if (yourProfitEl) yourProfitEl.textContent = formatCurrency(yourProfit);
+    
+    // Update profit color coding
+    if (buyerProfitEl) {
+        if (buyerProfit > 0) {
+            buyerProfitEl.className = 'text-lg font-bold text-green-600';
+        } else {
+            buyerProfitEl.className = 'text-lg font-bold text-red-600';
+        }
     }
     
-    if (yourProfit > 0) {
-        yourProfitEl.className = 'text-lg font-bold text-green-600';
-    } else {
-        yourProfitEl.className = 'text-lg font-bold text-red-600';
+    if (yourProfitEl) {
+        if (yourProfit > 0) {
+            yourProfitEl.className = 'text-lg font-bold text-green-600';
+        } else {
+            yourProfitEl.className = 'text-lg font-bold text-red-600';
+        }
     }
     
-    // Calculate ROI automatically
-    calculateROI();
+    // Calculate ROI automatically (but don't call recursively)
+    updateROIDisplay();
 }
 
-// Calculate ROI and deal metrics
+// Calculate ROI and deal metrics (public function)
 function calculateROI() {
+    updateROIDisplay();
+}
+
+// Update ROI display with all calculations
+function updateROIDisplay() {
     const assignmentFee = parseFloat(document.getElementById('assignmentFee').value) || 0;
     const marketingCosts = parseFloat(document.getElementById('marketingCosts').value) || 0;
     const otherCosts = parseFloat(document.getElementById('otherCosts').value) || 0;
@@ -1384,9 +1551,9 @@ function calculateROI() {
     
     // Calculate deal score (0-100)
     let dealScore = 0;
-    const arv = calculateARV();
+    const arv = getARVValue();
     const purchasePrice = parseFloat(document.getElementById('purchasePrice').value) || 0;
-    const totalRepairs = calculateRepairs();
+    const { totalRepairs } = getRepairsValue();
     
     if (arv > 0 && purchasePrice > 0) {
         const buyerProfit = arv - purchasePrice - totalRepairs;
@@ -1412,18 +1579,24 @@ function calculateROI() {
     }
     
     // Update ROI display
-    document.getElementById('profitPerHour').textContent = formatCurrency(profitPerHour);
-    document.getElementById('monthlyROI').textContent = formatCurrency(monthlyROI);
-    document.getElementById('dealScore').textContent = Math.round(dealScore) + '/100';
+    const profitPerHourEl = document.getElementById('profitPerHour');
+    const monthlyROIEl = document.getElementById('monthlyROI');
+    const dealScoreEl = document.getElementById('dealScore');
+    const dealEvaluationEl = document.getElementById('dealEvaluation');
+    
+    if (profitPerHourEl) profitPerHourEl.textContent = formatCurrency(profitPerHour);
+    if (monthlyROIEl) monthlyROIEl.textContent = formatCurrency(monthlyROI);
+    if (dealScoreEl) dealScoreEl.textContent = Math.round(dealScore) + '/100';
     
     // Update deal score color
-    const dealScoreEl = document.getElementById('dealScore');
-    if (dealScore >= 80) {
-        dealScoreEl.className = 'text-lg font-bold text-green-600';
-    } else if (dealScore >= 60) {
-        dealScoreEl.className = 'text-lg font-bold text-yellow-600';
-    } else {
-        dealScoreEl.className = 'text-lg font-bold text-red-600';
+    if (dealScoreEl) {
+        if (dealScore >= 80) {
+            dealScoreEl.className = 'text-lg font-bold text-green-600';
+        } else if (dealScore >= 60) {
+            dealScoreEl.className = 'text-lg font-bold text-yellow-600';
+        } else {
+            dealScoreEl.className = 'text-lg font-bold text-red-600';
+        }
     }
     
     // Update deal evaluation
@@ -1440,7 +1613,7 @@ function calculateROI() {
         evaluation = '🛑 BAD DEAL - Negative or very low returns. Avoid this deal.';
     }
     
-    document.getElementById('dealEvaluation').textContent = evaluation;
+    if (dealEvaluationEl) dealEvaluationEl.textContent = evaluation;
 }
 
 // Search comparables with pre-populated external links
@@ -1699,4 +1872,387 @@ function clearAnalysis() {
 function formatNumber(number) {
     if (!number) return '0';
     return new Intl.NumberFormat('en-US').format(number);
+}
+
+// ==============================================
+// ASSIGNMENT CONTRACT MANAGEMENT FUNCTIONS
+// ==============================================
+
+// Assignment Fee Management (2.1)
+function showAssignmentFeeModal() {
+    // Populate buyer dropdown
+    const buyerSelect = document.getElementById('feeStructureBuyer');
+    buyerSelect.innerHTML = '<option value="">Select Buyer</option><option value="new">+ Add New Buyer</option>';
+    
+    buyers.forEach(buyer => {
+        const option = document.createElement('option');
+        option.value = buyer.id;
+        option.textContent = buyer.name;
+        buyerSelect.appendChild(option);
+    });
+    
+    document.getElementById('assignmentFeeModal').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+}
+
+function hideAssignmentFeeModal() {
+    document.getElementById('assignmentFeeModal').classList.add('hidden');
+    document.body.style.overflow = 'auto';
+    document.getElementById('assignmentFeeModal').querySelector('form').reset();
+}
+
+function addAssignmentFeeStructure(event) {
+    event.preventDefault();
+    
+    const buyerId = document.getElementById('feeStructureBuyer').value;
+    const structureType = document.getElementById('feeStructureType').value;
+    const typicalFee = parseFloat(document.getElementById('typicalFeeAmount').value) || 0;
+    const minFee = parseFloat(document.getElementById('minFeeAmount').value) || 0;
+    const maxFee = parseFloat(document.getElementById('maxFeeAmount').value) || 0;
+    const specialConditions = document.getElementById('specialConditions').value;
+    
+    // Get selected property types
+    const propertyTypes = Array.from(document.querySelectorAll('input[name="propertyTypes"]:checked')).map(cb => cb.value);
+    
+    const feeStructure = {
+        id: Date.now(),
+        buyerId: buyerId,
+        buyerName: buyers.find(b => b.id == buyerId)?.name || 'Unknown Buyer',
+        structureType: structureType,
+        typicalFee: typicalFee,
+        minFee: minFee,
+        maxFee: maxFee,
+        propertyTypes: propertyTypes,
+        specialConditions: specialConditions,
+        dateCreated: new Date().toISOString(),
+        lastUsed: null,
+        totalDeals: 0
+    };
+    
+    assignmentFees.push(feeStructure);
+    saveData();
+    updateAssignmentFeesTable();
+    updateAssignmentFeeStats();
+    hideAssignmentFeeModal();
+    
+    showSuccessMessage('Assignment fee structure added successfully!');
+}
+
+function updateAssignmentFeesTable() {
+    const tbody = document.getElementById('assignmentFeesTable');
+    if (!tbody) return;
+    
+    if (assignmentFees.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="5" class="px-4 py-8 text-center text-gray-500">
+                    <div class="text-4xl mb-2">💰</div>
+                    <p class="text-sm">No fee structures yet</p>
+                    <p class="text-xs">Add fee structures to track assignment fees by buyer</p>
+                </td>
+            </tr>
+        `;
+    } else {
+        tbody.innerHTML = assignmentFees.map(fee => `
+            <tr>
+                <td class="px-4 py-4 text-sm font-medium text-gray-900">${fee.buyerName}</td>
+                <td class="px-4 py-4 text-sm text-gray-600">
+                    <span class="capitalize">${fee.structureType}</span>
+                    ${fee.propertyTypes.length > 0 ? `<br><span class="text-xs text-gray-500">${fee.propertyTypes.join(', ').toUpperCase()}</span>` : ''}
+                </td>
+                <td class="px-4 py-4 text-sm text-gray-900">
+                    <div class="font-medium">${formatCurrency(fee.typicalFee)}</div>
+                    <div class="text-xs text-gray-500">${formatCurrency(fee.minFee)} - ${formatCurrency(fee.maxFee)}</div>
+                </td>
+                <td class="px-4 py-4 text-sm text-gray-600">
+                    ${fee.lastUsed ? formatDate(fee.lastUsed) : 'Never'}
+                    <div class="text-xs text-gray-500">${fee.totalDeals} deals</div>
+                </td>
+                <td class="px-4 py-4 text-sm font-medium">
+                    <button onclick="editAssignmentFee(${fee.id})" class="text-indigo-600 hover:text-indigo-900 mr-2">Edit</button>
+                    <button onclick="deleteAssignmentFee(${fee.id})" class="text-red-600 hover:text-red-900">Delete</button>
+                </td>
+            </tr>
+        `).join('');
+    }
+}
+
+function updateAssignmentFeeStats() {
+    if (assignmentFees.length === 0) {
+        document.getElementById('avgAssignmentFee').textContent = '$0';
+        document.getElementById('minAssignmentFee').textContent = '$0';
+        document.getElementById('maxAssignmentFee').textContent = '$0';
+        document.getElementById('feeEfficiency').textContent = '0%';
+        document.getElementById('totalAssignmentFees').textContent = '$0';
+        return;
+    }
+    
+    const fees = assignmentFees.map(f => f.typicalFee);
+    const avgFee = fees.reduce((sum, fee) => sum + fee, 0) / fees.length;
+    const minFee = Math.min(...fees);
+    const maxFee = Math.max(...fees);
+    
+    // Calculate efficiency (average fee as percentage of average purchase price)
+    const avgPurchasePrice = contracts.length > 0 ? 
+        contracts.reduce((sum, c) => sum + (c.purchasePrice || 0), 0) / contracts.length : 250000;
+    const feeEfficiency = avgPurchasePrice > 0 ? (avgFee / avgPurchasePrice) * 100 : 0;
+    
+    // Calculate total pending assignment fees
+    const totalPending = contracts.filter(c => ['active', 'executed'].includes(c.status))
+        .reduce((sum, c) => sum + (c.assignmentFee || 0), 0);
+    
+    document.getElementById('avgAssignmentFee').textContent = formatCurrency(avgFee);
+    document.getElementById('minAssignmentFee').textContent = formatCurrency(minFee);
+    document.getElementById('maxAssignmentFee').textContent = formatCurrency(maxFee);
+    document.getElementById('feeEfficiency').textContent = feeEfficiency.toFixed(1) + '%';
+    document.getElementById('totalAssignmentFees').textContent = formatCurrency(totalPending);
+}
+
+function deleteAssignmentFee(id) {
+    const fee = assignmentFees.find(f => f.id === id);
+    if (fee && confirm(`Delete fee structure for ${fee.buyerName}?`)) {
+        assignmentFees = assignmentFees.filter(f => f.id !== id);
+        saveData();
+        updateAssignmentFeesTable();
+        updateAssignmentFeeStats();
+        showSuccessMessage('Fee structure deleted successfully!');
+    }
+}
+
+// Digital Signature Management (2.3)
+function showDigitalSignatureModal(contractId) {
+    const contract = contracts.find(c => c.id === contractId);
+    if (!contract) return;
+    
+    // Populate contract details
+    document.getElementById('signatureContractTitle').textContent = contract.contractType || 'Purchase Agreement';
+    document.getElementById('signatureProperty').textContent = contract.propertyAddress || 'Unknown Property';
+    document.getElementById('signatureAmount').textContent = formatCurrency(contract.purchasePrice || 0);
+    document.getElementById('signatureDeadline').textContent = formatDate(contract.closingDate);
+    document.getElementById('signatureStatus').textContent = contract.status || 'Draft';
+    
+    // Store current contract ID for signature operations
+    window.currentSignatureContractId = contractId;
+    
+    document.getElementById('digitalSignatureModal').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+}
+
+function hideDigitalSignatureModal() {
+    document.getElementById('digitalSignatureModal').classList.add('hidden');
+    document.body.style.overflow = 'auto';
+}
+
+function requestSignature(party) {
+    const contractId = window.currentSignatureContractId;
+    const contract = contracts.find(c => c.id === contractId);
+    if (!contract) return;
+    
+    // Simulate signature request
+    const email = party === 'seller' ? contract.sellerEmail : contract.buyerEmail;
+    const name = party === 'seller' ? contract.sellerName : contract.buyerName;
+    
+    if (!email) {
+        showErrorMessage(`No email found for ${party}. Please update contact information.`);
+        return;
+    }
+    
+    // Simulate sending signature request
+    showSuccessMessage(`Signature request sent to ${name} (${email})`);
+    
+    // Update contract status
+    if (!contract.signatures) contract.signatures = {};
+    contract.signatures[party + 'Requested'] = new Date().toISOString();
+    
+    saveData();
+    updateContractsTable();
+}
+
+function markSigned(party) {
+    const contractId = window.currentSignatureContractId;
+    const contract = contracts.find(c => c.id === contractId);
+    if (!contract) return;
+    
+    if (!contract.signatures) contract.signatures = {};
+    contract.signatures[party + 'Signed'] = new Date().toISOString();
+    contract.signatures[party + 'SignedBy'] = 'Manual Entry';
+    
+    // Check if both parties have signed
+    if (contract.signatures.sellerSigned && contract.signatures.buyerSigned) {
+        contract.status = 'executed';
+        showSuccessMessage('Contract fully executed! Both parties have signed.');
+    } else {
+        showSuccessMessage(`${party.charAt(0).toUpperCase() + party.slice(1)} signature recorded.`);
+    }
+    
+    saveData();
+    updateContractsTable();
+    updateContractStats();
+}
+
+function integrateDocuSign() {
+    showErrorMessage('DocuSign integration requires API setup. Contact support for implementation.');
+}
+
+function integrateAdobeSign() {
+    showErrorMessage('Adobe Sign integration requires API setup. Contact support for implementation.');
+}
+
+function generateSignatureLink() {
+    const contractId = window.currentSignatureContractId;
+    const baseUrl = window.location.origin + window.location.pathname;
+    const signatureUrl = `${baseUrl}?sign=${contractId}&token=${Math.random().toString(36).substr(2, 9)}`;
+    
+    navigator.clipboard.writeText(signatureUrl).then(() => {
+        showSuccessMessage('Signature link copied to clipboard!');
+    }).catch(() => {
+        alert(`Signature link: ${signatureUrl}`);
+    });
+}
+
+function finalizeSignatures() {
+    const contractId = window.currentSignatureContractId;
+    const contract = contracts.find(c => c.id === contractId);
+    if (!contract) return;
+    
+    if (contract.signatures?.sellerSigned && contract.signatures?.buyerSigned) {
+        contract.status = 'executed';
+        contract.executedDate = new Date().toISOString();
+        
+        saveData();
+        updateContractsTable();
+        updateContractStats();
+        hideDigitalSignatureModal();
+        
+        showSuccessMessage('Contract finalized and marked as executed!');
+    } else {
+        showErrorMessage('Both parties must sign before finalizing the contract.');
+    }
+}
+
+// Helper functions for contract table display
+function calculateDaysUntilDeadline(closingDate) {
+    if (!closingDate) return 'N/A';
+    
+    const today = new Date();
+    const closing = new Date(closingDate);
+    const timeDiff = closing.getTime() - today.getTime();
+    const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
+    
+    if (daysDiff < 0) {
+        return `${Math.abs(daysDiff)} days overdue`;
+    } else if (daysDiff === 0) {
+        return 'Due Today';
+    } else {
+        return `${daysDiff} days`;
+    }
+}
+
+function getContractSignatureStatus(contract) {
+    if (!contract.signatures) return 'Pending';
+    
+    const sellerSigned = contract.signatures.sellerSigned;
+    const buyerSigned = contract.signatures.buyerSigned;
+    
+    if (sellerSigned && buyerSigned) return 'Complete';
+    if (sellerSigned || buyerSigned) return 'Partial';
+    if (contract.signatures.sellerRequested || contract.signatures.buyerRequested) return 'Requested';
+    return 'Pending';
+}
+
+function getSignatureStatusColor(status) {
+    switch(status.toLowerCase()) {
+        case 'complete': return 'bg-green-100 text-green-800';
+        case 'partial': return 'bg-yellow-100 text-yellow-800';
+        case 'requested': return 'bg-blue-100 text-blue-800';
+        case 'pending': return 'bg-gray-100 text-gray-800';
+        default: return 'bg-gray-100 text-gray-800';
+    }
+}
+
+// Contract Status Pipeline (2.4)
+function filterContractsByStatus(status) {
+    // Update active filter button
+    document.querySelectorAll('.pipeline-filter').forEach(btn => btn.classList.remove('active'));
+    event.target.classList.add('active');
+    
+    // Filter contracts table
+    const rows = document.querySelectorAll('#contractsTableBody tr');
+    rows.forEach(row => {
+        if (status === 'all') {
+            row.style.display = '';
+        } else {
+            const statusCell = row.querySelector('td:nth-child(5)'); // Status column (updated from 6 to 5 for new table structure)
+            if (statusCell && statusCell.textContent.toLowerCase().includes(status)) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        }
+    });
+}
+
+// Deadline Management (2.5)
+function updateContractDeadlines() {
+    const now = new Date();
+    const urgentDeadlines = [];
+    
+    contracts.forEach(contract => {
+        if (contract.closingDate && ['active', 'executed'].includes(contract.status)) {
+            const closingDate = new Date(contract.closingDate);
+            const daysUntil = Math.ceil((closingDate - now) / (1000 * 60 * 60 * 24));
+            
+            if (daysUntil <= 7 && daysUntil >= 0) {
+                urgentDeadlines.push({
+                    contract: contract,
+                    daysUntil: daysUntil,
+                    type: 'closing',
+                    urgent: daysUntil <= 3
+                });
+            }
+        }
+        
+        // Check for option expiration deadlines
+        if (contract.optionExpiration && contract.status === 'active') {
+            const optionDate = new Date(contract.optionExpiration);
+            const daysUntil = Math.ceil((optionDate - now) / (1000 * 60 * 60 * 24));
+            
+            if (daysUntil <= 5 && daysUntil >= 0) {
+                urgentDeadlines.push({
+                    contract: contract,
+                    daysUntil: daysUntil,
+                    type: 'option',
+                    urgent: daysUntil <= 1
+                });
+            }
+        }
+    });
+    
+    const deadlineContainer = document.getElementById('urgentDeadlines');
+    if (urgentDeadlines.length === 0) {
+        deadlineContainer.innerHTML = '<p class="text-sm text-red-600">No urgent deadlines</p>';
+    } else {
+        deadlineContainer.innerHTML = urgentDeadlines.map(deadline => `
+            <div class="flex items-center justify-between py-2 ${deadline.urgent ? 'bg-red-100 px-3 rounded' : ''}">
+                <div>
+                    <span class="font-medium">${deadline.contract.propertyAddress}</span>
+                    <span class="text-sm text-gray-600">- ${deadline.type === 'closing' ? 'Closing' : 'Option expires'}</span>
+                </div>
+                <div class="text-right">
+                    <div class="text-sm font-bold ${deadline.urgent ? 'text-red-800' : 'text-red-600'}">
+                        ${deadline.daysUntil === 0 ? 'TODAY' : `${deadline.daysUntil} days`}
+                    </div>
+                    <div class="text-xs text-gray-500">${formatDate(deadline.type === 'closing' ? deadline.contract.closingDate : deadline.contract.optionExpiration)}</div>
+                </div>
+            </div>
+        `).join('');
+    }
+    
+    // Update deadline alert visibility
+    const alertContainer = document.getElementById('deadlineAlerts');
+    if (urgentDeadlines.length > 0) {
+        alertContainer.style.display = 'block';
+    } else {
+        alertContainer.style.display = 'none';
+    }
 }
