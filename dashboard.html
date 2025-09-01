@@ -290,20 +290,66 @@
                 </div>
                 
                 <!-- Buyers Table Container -->
-                <div class="bg-white rounded-lg shadow overflow-hidden">
+                <div class="bg-white rounded-lg shadow overflow-hidden relative">
+                    <!-- Floating Horizontal Scroll Bar -->
+                    <div id="floatingScrollBar" class="hidden fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-4 py-2 rounded-lg shadow-lg z-50">
+                        <div class="flex items-center space-x-4">
+                            <button id="scrollLeft" class="hover:text-blue-300">←</button>
+                            <div class="overflow-x-auto" style="width: 200px;" id="miniScrollContainer">
+                                <div class="h-2 bg-gray-600 rounded" id="miniScrollBar" style="width: 400px;"></div>
+                            </div>
+                            <button id="scrollRight" class="hover:text-blue-300">→</button>
+                        </div>
+                    </div>
+                    
                     <!-- Main Table with Scrolling -->
-                    <div class="overflow-x-auto" id="buyersTableContainer">
+                    <div class="overflow-x-auto max-h-96 overflow-y-auto" id="buyersTableContainer">
                         <table class="min-w-full divide-y divide-gray-200">
                             <thead class="bg-gray-50">
                                 <tr>
-                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name/Company</th>
-                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">City</th>
-                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">State</th>
-                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
+                                    <th onclick="sortBuyersTable('name')" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none">
+                                        <div class="flex items-center">
+                                            Name/Company
+                                            <span id="sort-name" class="ml-1 text-gray-400">⇅</span>
+                                        </div>
+                                    </th>
+                                    <th onclick="sortBuyersTable('type')" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none">
+                                        <div class="flex items-center">
+                                            Type
+                                            <span id="sort-type" class="ml-1 text-gray-400">⇅</span>
+                                        </div>
+                                    </th>
+                                    <th onclick="sortBuyersTable('city')" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none">
+                                        <div class="flex items-center">
+                                            City
+                                            <span id="sort-city" class="ml-1 text-gray-400">⇅</span>
+                                        </div>
+                                    </th>
+                                    <th onclick="sortBuyersTable('state')" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none">
+                                        <div class="flex items-center">
+                                            State
+                                            <span id="sort-state" class="ml-1 text-gray-400">⇅</span>
+                                        </div>
+                                    </th>
+                                    <th onclick="sortBuyersTable('email')" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none">
+                                        <div class="flex items-center">
+                                            Contact
+                                            <span id="sort-email" class="ml-1 text-gray-400">⇅</span>
+                                        </div>
+                                    </th>
                                     <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Criteria</th>
-                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Budget Range</th>
-                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                    <th onclick="sortBuyersTable('budget')" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none">
+                                        <div class="flex items-center">
+                                            Budget Range
+                                            <span id="sort-budget" class="ml-1 text-gray-400">⇅</span>
+                                        </div>
+                                    </th>
+                                    <th onclick="sortBuyersTable('status')" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none">
+                                        <div class="flex items-center">
+                                            Status
+                                            <span id="sort-status" class="ml-1 text-gray-400">⇅</span>
+                                        </div>
+                                    </th>
                                     <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                                 </tr>
                             </thead>
