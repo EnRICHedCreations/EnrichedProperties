@@ -906,11 +906,38 @@ function previewCSV() {
             // Parse CSV headers
             csvHeaders = parseCSVLine(lines[0]);
             
-            // Validate required headers
+            // Validate required headers (only essential fields)
             const requiredHeaders = ['Business_Name', 'Contact_Person', 'Phone_Primary', 'Email_Business'];
             const missingHeaders = requiredHeaders.filter(header => 
                 !csvHeaders.some(csvHeader => csvHeader.toLowerCase() === header.toLowerCase())
             );
+            
+            // Define all supported headers for comprehensive mapping
+            const supportedHeaders = [
+                // Required fields
+                'Business_Name', 'Contact_Person', 'Phone_Primary', 'Email_Business',
+                // Optional contact fields
+                'Phone_Secondary', 'Email_Personal',
+                // Address fields
+                'Address_Street', 'Address_City', 'Address_State', 'Address_Zip',
+                // Investment details
+                'Investment_Focus', 'Cash_Buyer_Status', 'Price_Range_Min', 'Price_Range_Max',
+                'Assignment_Experience', 'Closing_Timeline_Days',
+                // Property criteria
+                'Preferred_Areas', 'Property_Types', 'Condition_Preferences',
+                // Status and tracking
+                'Activity_Level', 'Performance_Score', 'Deals_Completed',
+                'Date_Verified', 'Last_Contact',
+                // Sources and notes
+                'Source_1', 'Source_2', 'Notes'
+            ];
+            
+            // Log detected headers for debugging
+            console.log('CSV Headers detected:', csvHeaders);
+            console.log('Supported headers:', supportedHeaders);
+            
+            // Show header mapping guide
+            displayHeaderMappingGuide();
             
             if (missingHeaders.length > 0) {
                 showErrorMessage(`Missing required headers: ${missingHeaders.join(', ')}`);
@@ -975,6 +1002,87 @@ function parseCSVLine(line) {
     return result;
 }
 
+function displayHeaderMappingGuide() {
+    const headerGuide = document.getElementById('headerMappingGuide');
+    if (!headerGuide) return;
+    
+    const requiredFields = [
+        { header: 'Business_Name', description: 'Company or business entity name (required)', example: 'ABC Investment LLC' },
+        { header: 'Contact_Person', description: 'Primary contact person name (required)', example: 'John Smith' },
+        { header: 'Phone_Primary', description: 'Primary phone number (required)', example: '555-123-4567' },
+        { header: 'Email_Business', description: 'Business email address (required)', example: 'john@abcinvest.com' }
+    ];
+    
+    const optionalFields = [
+        { header: 'Phone_Secondary', description: 'Secondary phone number', example: '555-987-6543' },
+        { header: 'Email_Personal', description: 'Personal email address', example: 'john.smith@gmail.com' },
+        { header: 'Address_Street', description: 'Street address', example: '123 Main St' },
+        { header: 'Address_City', description: 'City', example: 'Houston' },
+        { header: 'Address_State', description: 'State (2-letter code)', example: 'TX' },
+        { header: 'Address_Zip', description: 'ZIP/Postal code', example: '77001' },
+        { header: 'Investment_Focus', description: 'Investment strategy', example: 'Fix & Flip, Buy & Hold' },
+        { header: 'Cash_Buyer_Status', description: 'Cash buyer verification', example: 'Confirmed, Unconfirmed' },
+        { header: 'Price_Range_Min', description: 'Minimum budget', example: '100000' },
+        { header: 'Price_Range_Max', description: 'Maximum budget', example: '500000' },
+        { header: 'Assignment_Experience', description: 'Experience with assignments', example: 'Yes, No, Unknown' },
+        { header: 'Closing_Timeline_Days', description: 'Days to close', example: '30' },
+        { header: 'Preferred_Areas', description: 'Target areas', example: 'Houston Metro, Harris County' },
+        { header: 'Property_Types', description: 'Property types', example: 'SFR, Multi-family' },
+        { header: 'Condition_Preferences', description: 'Property condition preferences', example: 'Distressed, Light rehab' },
+        { header: 'Activity_Level', description: 'Buyer activity level', example: 'Active, Warm, Cold' },
+        { header: 'Performance_Score', description: 'Performance score (0-100)', example: '85' },
+        { header: 'Deals_Completed', description: 'Number of deals closed', example: '5' },
+        { header: 'Date_Verified', description: 'Date verified (YYYY-MM-DD)', example: '2024-01-15' },
+        { header: 'Last_Contact', description: 'Last contact date (YYYY-MM-DD)', example: '2024-01-20' },
+        { header: 'Source_1', description: 'Primary source', example: 'Company website' },
+        { header: 'Source_2', description: 'Secondary source', example: 'Google listing' },
+        { header: 'Notes', description: 'Additional notes', example: 'Prefers distressed properties' }
+    ];
+    
+    let guideHTML = `
+        <div class="mb-4 p-4 bg-blue-50 rounded-lg">
+            <h4 class="font-medium text-blue-900 mb-2">CSV Header Mapping Guide</h4>
+            <div class="text-sm text-blue-800">
+                <div class="mb-3">
+                    <strong>Legend:</strong>
+                    <span class="text-green-600 ml-2">✓ Required</span>
+                    <span class="text-blue-600 ml-2">● Supported</span>
+                    <span class="text-gray-400 ml-2">○ Unmapped</span>
+                </div>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <div>
+                        <h5 class="font-medium text-green-800 mb-2">Required Fields</h5>
+                        <div class="space-y-1">
+                            ${requiredFields.map(field => `
+                                <div class="text-xs">
+                                    <code class="bg-green-100 px-1 rounded">${field.header}</code>
+                                    <span class="text-gray-600">- ${field.description}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h5 class="font-medium text-blue-800 mb-2">Optional Fields (${optionalFields.length} available)</h5>
+                        <div class="space-y-1 max-h-32 overflow-y-auto">
+                            ${optionalFields.slice(0, 10).map(field => `
+                                <div class="text-xs">
+                                    <code class="bg-blue-100 px-1 rounded">${field.header}</code>
+                                    <span class="text-gray-600">- ${field.description}</span>
+                                </div>
+                            `).join('')}
+                            ${optionalFields.length > 10 ? `<div class="text-xs text-gray-500">... and ${optionalFields.length - 10} more</div>` : ''}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    headerGuide.innerHTML = guideHTML;
+}
+
 function displayCSVPreview() {
     const table = document.getElementById('csvPreviewTable');
     const thead = table.querySelector('thead');
@@ -984,12 +1092,42 @@ function displayCSVPreview() {
     thead.innerHTML = '';
     tbody.innerHTML = '';
     
-    // Create header row
+    // Define required and supported headers for status indication
+    const requiredHeaders = ['Business_Name', 'Contact_Person', 'Phone_Primary', 'Email_Business'];
+    const supportedHeaders = [
+        'Business_Name', 'Contact_Person', 'Phone_Primary', 'Email_Business',
+        'Phone_Secondary', 'Email_Personal', 'Address_Street', 'Address_City', 
+        'Address_State', 'Address_Zip', 'Investment_Focus', 'Cash_Buyer_Status', 
+        'Price_Range_Min', 'Price_Range_Max', 'Assignment_Experience', 
+        'Closing_Timeline_Days', 'Preferred_Areas', 'Property_Types', 
+        'Condition_Preferences', 'Activity_Level', 'Performance_Score', 
+        'Deals_Completed', 'Date_Verified', 'Last_Contact', 'Source_1', 'Source_2', 'Notes'
+    ];
+    
+    // Create header row with status indicators
     const headerRow = document.createElement('tr');
     csvHeaders.forEach(header => {
         const th = document.createElement('th');
-        th.className = 'px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider';
-        th.textContent = header;
+        const isRequired = requiredHeaders.some(req => req.toLowerCase() === header.toLowerCase());
+        const isSupported = supportedHeaders.some(sup => sup.toLowerCase() === header.toLowerCase());
+        
+        let statusClass = 'text-gray-500';
+        let statusIcon = '';
+        
+        if (isRequired) {
+            statusClass = 'text-green-600';
+            statusIcon = '✓ ';
+        } else if (isSupported) {
+            statusClass = 'text-blue-600';
+            statusIcon = '● ';
+        } else {
+            statusClass = 'text-gray-400';
+            statusIcon = '○ ';
+        }
+        
+        th.className = `px-4 py-2 text-left text-xs font-medium ${statusClass} uppercase tracking-wider`;
+        th.innerHTML = `${statusIcon}${header}`;
+        th.title = isRequired ? 'Required field' : isSupported ? 'Supported field' : 'Field not mapped';
         headerRow.appendChild(th);
     });
     thead.appendChild(headerRow);
@@ -1129,7 +1267,7 @@ function mapCSVToBuyer(csvRow, setAsActive) {
         phone: getValue('Phone_Primary') || getValue('Phone_Secondary'),
         email: getValue('Email_Business') || getValue('Email_Personal'),
         type: buyerType,
-        status: setAsActive ? 'active' : 'warm',
+        status: getValue('Activity_Level')?.toLowerCase() || (setAsActive ? 'active' : 'warm'),
         minBudget: minBudget,
         maxBudget: maxBudget,
         preferredAreas: getValue('Preferred_Areas') || `${getValue('Address_City')}, ${getValue('Address_State')}`.replace(', ', ''),
@@ -1142,15 +1280,17 @@ function mapCSVToBuyer(csvRow, setAsActive) {
         city: getValue('Address_City'),
         state: getValue('Address_State'),
         
-        // All CSV fields for complete data mapping
+        // All CSV fields for complete data mapping (matching edit modal structure)
         secondaryPhone: getValue('Phone_Secondary'),
         personalEmail: getValue('Email_Personal'),
-        cashBuyerStatus: getValue('Cash_Buyer_Status'),
-        assignmentExperience: getValue('Assignment_Experience'),
+        cashBuyerStatus: getValue('Cash_Buyer_Status') || 'Unconfirmed',
+        assignmentExperience: getValue('Assignment_Experience') || 'Unknown',
         closingTimelineDays: parseInt(getValue('Closing_Timeline_Days')) || null,
         conditionPreferences: getValue('Condition_Preferences'),
         dateVerified: getValue('Date_Verified'),
-        activityLevel: getValue('Activity_Level'),
+        performanceScore: parseInt(getValue('Performance_Score')) || 0,
+        dealsCompleted: parseInt(getValue('Deals_Completed')) || 0,
+        lastContact: getValue('Last_Contact') ? new Date(getValue('Last_Contact')).toISOString() : null,
         source1: getValue('Source_1'),
         source2: getValue('Source_2'),
         
