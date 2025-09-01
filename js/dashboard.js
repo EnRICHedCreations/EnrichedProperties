@@ -4831,3 +4831,197 @@ function updateContractDeadlines() {
         alertContainer.style.display = 'none';
     }
 }
+
+// Sorting functionality for buyers table
+let currentSortField = '';
+let currentSortDirection = 'asc';
+
+function sortBuyersTable(field) {
+    // Toggle sort direction if clicking the same field
+    if (currentSortField === field) {
+        currentSortDirection = currentSortDirection === 'asc' ? 'desc' : 'asc';
+    } else {
+        currentSortField = field;
+        currentSortDirection = 'asc';
+    }
+    
+    // Update sort indicators
+    updateSortIndicators(field, currentSortDirection);
+    
+    // Sort the buyers array
+    buyers.sort((a, b) => {
+        let aValue, bValue;
+        
+        switch(field) {
+            case 'name':
+                aValue = a.name?.toLowerCase() || '';
+                bValue = b.name?.toLowerCase() || '';
+                break;
+            case 'type':
+                aValue = a.type?.toLowerCase() || '';
+                bValue = b.type?.toLowerCase() || '';
+                break;
+            case 'city':
+                aValue = (a.city || a.address?.city || '').toLowerCase();
+                bValue = (b.city || b.address?.city || '').toLowerCase();
+                break;
+            case 'state':
+                aValue = (a.state || a.address?.state || '').toLowerCase();
+                bValue = (b.state || b.address?.state || '').toLowerCase();
+                break;
+            case 'email':
+                aValue = a.email?.toLowerCase() || '';
+                bValue = b.email?.toLowerCase() || '';
+                break;
+            case 'budget':
+                aValue = a.maxBudget || 0;
+                bValue = b.maxBudget || 0;
+                break;
+            case 'status':
+                aValue = a.status?.toLowerCase() || '';
+                bValue = b.status?.toLowerCase() || '';
+                break;
+            default:
+                return 0;
+        }
+        
+        // Handle numeric values
+        if (field === 'budget') {
+            return currentSortDirection === 'asc' ? aValue - bValue : bValue - aValue;
+        }
+        
+        // Handle string values
+        if (aValue < bValue) return currentSortDirection === 'asc' ? -1 : 1;
+        if (aValue > bValue) return currentSortDirection === 'asc' ? 1 : -1;
+        return 0;
+    });
+    
+    // Re-render the table
+    updateBuyersTable();
+    
+    // Save sorted data
+    CloudStorage.saveData('buyers', buyers);
+}
+
+function updateSortIndicators(activeField, direction) {
+    // Reset all indicators
+    const indicators = ['sort-name', 'sort-type', 'sort-city', 'sort-state', 'sort-email', 'sort-budget', 'sort-status'];
+    indicators.forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+            element.textContent = '⇅';
+            element.className = 'ml-1 text-gray-400';
+        }
+    });
+    
+    // Set active indicator
+    const activeIndicator = document.getElementById(`sort-${activeField}`);
+    if (activeIndicator) {
+        activeIndicator.textContent = direction === 'asc' ? '↑' : '↓';
+        activeIndicator.className = 'ml-1 text-blue-600 font-bold';
+    }
+}
+
+// Floating horizontal scroll bar functionality
+let floatingScrollBar;
+let buyersTableContainer;
+
+function initializeFloatingScrollBar() {
+    // Wait for DOM to be ready
+    setTimeout(() => {
+        buyersTableContainer = document.querySelector('#buyers .overflow-x-auto');
+        floatingScrollBar = document.getElementById('floatingScrollBar');
+        
+        if (buyersTableContainer && floatingScrollBar) {
+            // Create scroll content for the floating bar
+            const scrollContent = document.createElement('div');
+            scrollContent.id = 'floatingScrollContent';
+            scrollContent.style.width = '1px';
+            scrollContent.style.height = '1px';
+            floatingScrollBar.appendChild(scrollContent);
+            
+            // Make floating bar scrollable
+            floatingScrollBar.style.overflowX = 'auto';
+            floatingScrollBar.style.overflowY = 'hidden';
+            floatingScrollBar.style.maxWidth = '80vw';
+            
+            // Set up scroll synchronization
+            setupScrollSync();
+            
+            // Monitor table container for scroll necessity
+            monitorScrollNeed();
+        }
+    }, 100);
+}
+
+function setupScrollSync() {
+    if (!buyersTableContainer || !floatingScrollBar) return;
+    
+    let syncingFromTable = false;
+    let syncingFromFloating = false;
+    
+    // Sync floating bar with table container
+    buyersTableContainer.addEventListener('scroll', () => {
+        if (syncingFromFloating) return;
+        syncingFromTable = true;
+        floatingScrollBar.scrollLeft = buyersTableContainer.scrollLeft;
+        setTimeout(() => { syncingFromTable = false; }, 10);
+    });
+    
+    // Sync table container with floating bar
+    floatingScrollBar.addEventListener('scroll', () => {
+        if (syncingFromTable) return;
+        syncingFromFloating = true;
+        buyersTableContainer.scrollLeft = floatingScrollBar.scrollLeft;
+        setTimeout(() => { syncingFromFloating = false; }, 10);
+    });
+}
+
+function monitorScrollNeed() {
+    if (!buyersTableContainer || !floatingScrollBar) return;
+    
+    const checkScrollNeed = () => {
+        const table = buyersTableContainer.querySelector('table');
+        if (table) {
+            const containerWidth = buyersTableContainer.clientWidth;
+            const tableWidth = table.scrollWidth;
+            const needsScroll = tableWidth > containerWidth;
+            
+            if (needsScroll) {
+                // Update floating scroll bar width to match table
+                const scrollContent = document.getElementById('floatingScrollContent');
+                if (scrollContent) {
+                    scrollContent.style.width = `${tableWidth}px`;
+                }
+                floatingScrollBar.classList.remove('hidden');
+            } else {
+                floatingScrollBar.classList.add('hidden');
+            }
+        }
+    };
+    
+    // Check initially and on window resize
+    checkScrollNeed();
+    window.addEventListener('resize', checkScrollNeed);
+    
+    // Check when table content changes
+    const observer = new MutationObserver(checkScrollNeed);
+    observer.observe(buyersTableContainer, { childList: true, subtree: true });
+}
+
+// Initialize floating scroll bar when buyers tab is shown
+function initializeBuyersTab() {
+    initializeFloatingScrollBar();
+}
+
+// Hook into existing tab switching
+const originalShowTab = window.showTab;
+window.showTab = function(tabName) {
+    if (originalShowTab) {
+        originalShowTab(tabName);
+    }
+    
+    if (tabName === 'buyers') {
+        setTimeout(initializeBuyersTab, 100);
+    }
+};
