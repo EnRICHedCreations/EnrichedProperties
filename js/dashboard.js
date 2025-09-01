@@ -228,8 +228,6 @@ function showTab(tabName) {
                 break;
             case 'buyers':
                 updateBuyersTable();
-                // Initialize scroll sync after table is updated
-                setTimeout(initializeBuyersTableScrollSync, 100);
                 break;
             case 'contracts':
                 updateContractsTable();
@@ -302,46 +300,7 @@ function updateOverview() {
     updateContractDeadlines();
 }
 
-// Initialize synchronized horizontal scrolling for buyers table
-function initializeBuyersTableScrollSync() {
-    const topScrollContainer = document.getElementById('topScrollContainer');
-    const mainTableContainer = document.getElementById('buyersTableContainer');
-    
-    if (!topScrollContainer || !mainTableContainer) return;
-    
-    // Sync main table scroll to top scroll bar
-    mainTableContainer.addEventListener('scroll', function() {
-        if (this.isScrolling !== 'main') {
-            topScrollContainer.scrollLeft = this.scrollLeft;
-        }
-    });
-    
-    // Sync top scroll bar to main table
-    topScrollContainer.addEventListener('scroll', function() {
-        if (this.isScrolling !== 'top') {
-            mainTableContainer.scrollLeft = this.scrollLeft;
-        }
-    });
-    
-    // Update top scroll bar width to match table content width
-    const updateScrollBarWidth = () => {
-        const table = mainTableContainer.querySelector('table');
-        if (table) {
-            const scrollBarContent = topScrollContainer.querySelector('div');
-            scrollBarContent.style.width = table.scrollWidth + 'px';
-        }
-    };
-    
-    // Update scroll bar width when table is updated
-    const observer = new MutationObserver(updateScrollBarWidth);
-    const tableBody = document.getElementById('buyersTableBody');
-    if (tableBody) {
-        observer.observe(tableBody, { childList: true, subtree: true });
-    }
-    
-    // Initial width update
-    setTimeout(updateScrollBarWidth, 100);
-}
+// Removed scroll sync functionality - no longer needed without top scroll bar
 
 // Update recent activities
 function updateRecentActivities() {
@@ -600,7 +559,7 @@ function updateBuyersTable() {
     if (buyers.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="7" class="px-6 py-8 text-center text-gray-500">
+                <td colspan="9" class="px-6 py-8 text-center text-gray-500">
                     <div class="text-4xl mb-2">🏦</div>
                     <p class="text-sm">No buyers yet</p>
                     <p class="text-xs">Add your first buyer to start building your network</p>
@@ -610,31 +569,37 @@ function updateBuyersTable() {
     } else {
         tbody.innerHTML = buyers.map(buyer => `
             <tr class="table-row">
-                <td class="px-6 py-4">
+                <td class="px-4 py-4">
                     <div class="text-sm font-medium text-gray-900">${buyer.name}</div>
-                    <div class="text-sm text-gray-500">${buyer.company}</div>
+                    <div class="text-sm text-gray-500">${buyer.company || ''}</div>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap">
+                <td class="px-4 py-4 whitespace-nowrap">
                     <span class="status-badge status-${buyer.type}">${formatBuyerType(buyer.type)}</span>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm text-gray-900">${buyer.email}</div>
-                    <div class="text-sm text-gray-500">${formatPhoneNumber(buyer.phone)}</div>
+                <td class="px-4 py-4 whitespace-nowrap">
+                    <div class="text-sm text-gray-900">${buyer.city || buyer.address?.city || 'N/A'}</div>
                 </td>
-                <td class="px-6 py-4">
+                <td class="px-4 py-4 whitespace-nowrap">
+                    <div class="text-sm text-gray-900">${buyer.state || buyer.address?.state || 'N/A'}</div>
+                </td>
+                <td class="px-4 py-4 whitespace-nowrap">
+                    <div class="text-sm text-gray-900">${buyer.email || 'N/A'}</div>
+                    <div class="text-sm text-gray-500">${formatPhoneNumber(buyer.phone) || 'N/A'}</div>
+                </td>
+                <td class="px-4 py-4">
                     <div class="text-sm text-gray-900">${buyer.preferredAreas || 'Any'}</div>
                     <div class="text-sm text-gray-500">${buyer.propertyTypes || 'All types'}</div>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap">
+                <td class="px-4 py-4 whitespace-nowrap">
                     <div class="text-sm text-gray-900">
                         ${buyer.minBudget ? formatCurrency(buyer.minBudget) : '$0'} - ${buyer.maxBudget ? formatCurrency(buyer.maxBudget) : '∞'}
                     </div>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap">
+                <td class="px-4 py-4 whitespace-nowrap">
                     <span class="status-badge status-${buyer.status}">${buyer.status}</span>
                     <div class="text-xs text-gray-500 mt-1">Score: ${buyer.performanceScore || 0}/100</div>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                <td class="px-4 py-4 whitespace-nowrap text-sm font-medium">
                     <div class="flex flex-wrap gap-1">
                         <button onclick="editBuyer(${buyer.id})" class="action-button text-indigo-600 hover:text-indigo-900 text-xs">Edit</button>
                         <button onclick="addBuyerReferral(${buyer.id})" class="action-button text-green-600 hover:text-green-900 text-xs">Add Referral</button>
@@ -644,9 +609,6 @@ function updateBuyersTable() {
             </tr>
         `).join('');
     }
-    
-    // Initialize scroll synchronization after table is updated
-    setTimeout(initializeBuyersTableScrollSync, 50);
 }
 
 // Modal functions
@@ -1106,9 +1068,6 @@ function importBuyersFromCSV() {
     updateBuyersTable();
     updateDashboardStats();
     
-    // Initialize scroll sync after import
-    setTimeout(initializeBuyersTableScrollSync, 100);
-    
     // Show results
     setTimeout(() => {
         let message = `Import completed! Imported: ${imported}`;
@@ -1178,9 +1137,23 @@ function mapCSVToBuyer(csvRow, setAsActive) {
         notes: getValue('Notes') || `Investment Focus: ${getValue('Investment_Focus')}`,
         dateAdded: new Date().toISOString(),
         lastContact: null,
-        // Additional fields from CSV
+        
+        // Location fields for virtual wholesaling
+        city: getValue('Address_City'),
+        state: getValue('Address_State'),
+        
+        // All CSV fields for complete data mapping
         secondaryPhone: getValue('Phone_Secondary'),
         personalEmail: getValue('Email_Personal'),
+        cashBuyerStatus: getValue('Cash_Buyer_Status'),
+        assignmentExperience: getValue('Assignment_Experience'),
+        closingTimelineDays: parseInt(getValue('Closing_Timeline_Days')) || null,
+        conditionPreferences: getValue('Condition_Preferences'),
+        dateVerified: getValue('Date_Verified'),
+        activityLevel: getValue('Activity_Level'),
+        source1: getValue('Source_1'),
+        source2: getValue('Source_2'),
+        
         address: {
             street: getValue('Address_Street'),
             city: getValue('Address_City'),
@@ -2008,78 +1981,193 @@ function editBuyer(id) {
     
     const formContent = `
         <div class="space-y-4">
-            <div class="grid grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700">Name *</label>
-                    <input type="text" id="editBuyerName" value="${buyer.name || ''}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700">Company</label>
-                    <input type="text" id="editBuyerCompany" value="${buyer.company || ''}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                </div>
-            </div>
-            <div class="grid grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700">Email *</label>
-                    <input type="email" id="editBuyerEmail" value="${buyer.email || ''}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700">Phone *</label>
-                    <input type="tel" id="editBuyerPhone" value="${buyer.phone || ''}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
+            <!-- Basic Information -->
+            <div class="bg-gray-50 p-4 rounded-lg">
+                <h4 class="font-medium text-gray-900 mb-3">Basic Information</h4>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Business Name *</label>
+                        <input type="text" id="editBuyerCompany" value="${buyer.company || ''}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Contact Person *</label>
+                        <input type="text" id="editBuyerName" value="${buyer.name || ''}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
+                    </div>
                 </div>
             </div>
-            <div class="grid grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700">Buyer Type</label>
-                    <select id="editBuyerType" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                        <option value="cash-buyer" ${buyer.type === 'cash-buyer' ? 'selected' : ''}>Cash Buyer</option>
-                        <option value="private-investor" ${buyer.type === 'private-investor' ? 'selected' : ''}>Private Investor</option>
-                        <option value="hedge-fund" ${buyer.type === 'hedge-fund' ? 'selected' : ''}>Hedge Fund</option>
-                        <option value="fix-flip" ${buyer.type === 'fix-flip' ? 'selected' : ''}>Fix & Flip</option>
-                        <option value="buy-hold" ${buyer.type === 'buy-hold' ? 'selected' : ''}>Buy & Hold</option>
-                        <option value="wholesaler" ${buyer.type === 'wholesaler' ? 'selected' : ''}>Wholesaler</option>
-                        <option value="rehabber" ${buyer.type === 'rehabber' ? 'selected' : ''}>Rehabber</option>
-                    </select>
+
+            <!-- Contact Information -->
+            <div class="bg-gray-50 p-4 rounded-lg">
+                <h4 class="font-medium text-gray-900 mb-3">Contact Information</h4>
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Primary Phone *</label>
+                        <input type="tel" id="editBuyerPhone" value="${buyer.phone || ''}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Secondary Phone</label>
+                        <input type="tel" id="editBuyerSecondaryPhone" value="${buyer.secondaryPhone || ''}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                    </div>
                 </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700">Status</label>
-                    <select id="editBuyerStatus" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                        <option value="active" ${buyer.status === 'active' ? 'selected' : ''}>Active</option>
-                        <option value="warm" ${buyer.status === 'warm' ? 'selected' : ''}>Warm</option>
-                        <option value="cold" ${buyer.status === 'cold' ? 'selected' : ''}>Cold</option>
-                        <option value="inactive" ${buyer.status === 'inactive' ? 'selected' : ''}>Inactive</option>
-                    </select>
-                </div>
-            </div>
-            <div class="grid grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700">Min Budget</label>
-                    <input type="number" id="editBuyerMinBudget" value="${buyer.minBudget || ''}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" min="0">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700">Max Budget</label>
-                    <input type="number" id="editBuyerMaxBudget" value="${buyer.maxBudget || ''}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" min="0">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Business Email *</label>
+                        <input type="email" id="editBuyerEmail" value="${buyer.email || ''}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Personal Email</label>
+                        <input type="email" id="editBuyerPersonalEmail" value="${buyer.personalEmail || ''}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                    </div>
                 </div>
             </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700">Preferred Areas</label>
-                <input type="text" id="editBuyerPreferredAreas" value="${buyer.preferredAreas || ''}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" placeholder="e.g., North Dallas, Plano, Richardson">
+
+            <!-- Address Information -->
+            <div class="bg-gray-50 p-4 rounded-lg">
+                <h4 class="font-medium text-gray-900 mb-3">Address Information</h4>
+                <div class="grid grid-cols-1 gap-4 mb-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Street Address</label>
+                        <input type="text" id="editBuyerStreet" value="${buyer.address?.street || ''}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                    </div>
+                </div>
+                <div class="grid grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">City</label>
+                        <input type="text" id="editBuyerCity" value="${buyer.city || buyer.address?.city || ''}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" placeholder="e.g., Houston">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">State</label>
+                        <input type="text" id="editBuyerState" value="${buyer.state || buyer.address?.state || ''}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" placeholder="e.g., TX" maxlength="2">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">ZIP Code</label>
+                        <input type="text" id="editBuyerZip" value="${buyer.address?.zip || ''}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" placeholder="77001">
+                    </div>
+                </div>
             </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700">Property Types</label>
-                <input type="text" id="editBuyerPropertyTypes" value="${buyer.propertyTypes || ''}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" placeholder="e.g., SFR, Condos, Townhomes">
+
+            <!-- Investment Details -->
+            <div class="bg-gray-50 p-4 rounded-lg">
+                <h4 class="font-medium text-gray-900 mb-3">Investment Details</h4>
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Investment Focus</label>
+                        <select id="editBuyerType" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                            <option value="fix-flip" ${buyer.type === 'fix-flip' ? 'selected' : ''}>Fix & Flip</option>
+                            <option value="buy-hold" ${buyer.type === 'buy-hold' ? 'selected' : ''}>Buy & Hold</option>
+                            <option value="wholesale" ${buyer.type === 'wholesale' ? 'selected' : ''}>Wholesale</option>
+                            <option value="private-investor" ${buyer.type === 'private-investor' ? 'selected' : ''}>Private Investor</option>
+                            <option value="hedge-fund" ${buyer.type === 'hedge-fund' ? 'selected' : ''}>Hedge Fund</option>
+                            <option value="cash-buyer" ${buyer.type === 'cash-buyer' ? 'selected' : ''}>Cash Buyer</option>
+                            <option value="other" ${buyer.type === 'other' ? 'selected' : ''}>Other</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Cash Buyer Status</label>
+                        <select id="editBuyerCashStatus" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                            <option value="Confirmed" ${buyer.cashBuyerStatus === 'Confirmed' ? 'selected' : ''}>Confirmed</option>
+                            <option value="Unconfirmed" ${buyer.cashBuyerStatus === 'Unconfirmed' ? 'selected' : ''}>Unconfirmed</option>
+                            <option value="Network" ${buyer.cashBuyerStatus === 'Network' ? 'selected' : ''}>Network</option>
+                            <option value="N/A" ${buyer.cashBuyerStatus === 'N/A' ? 'selected' : ''}>N/A</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Min Budget</label>
+                        <input type="number" id="editBuyerMinBudget" value="${buyer.minBudget || ''}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" min="0">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Max Budget</label>
+                        <input type="number" id="editBuyerMaxBudget" value="${buyer.maxBudget || ''}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" min="0">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Assignment Experience</label>
+                        <select id="editBuyerAssignmentExp" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                            <option value="Yes" ${buyer.assignmentExperience === 'Yes' ? 'selected' : ''}>Yes</option>
+                            <option value="Unknown" ${buyer.assignmentExperience === 'Unknown' ? 'selected' : ''}>Unknown</option>
+                            <option value="No" ${buyer.assignmentExperience === 'No' ? 'selected' : ''}>No</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Closing Timeline (Days)</label>
+                        <input type="number" id="editBuyerClosingDays" value="${buyer.closingTimelineDays || ''}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" min="1" max="90">
+                    </div>
+                </div>
             </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700">Performance Score (0-100)</label>
-                <input type="number" id="editBuyerPerformanceScore" value="${buyer.performanceScore || 0}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" min="0" max="100">
+
+            <!-- Property Criteria -->
+            <div class="bg-gray-50 p-4 rounded-lg">
+                <h4 class="font-medium text-gray-900 mb-3">Property Criteria</h4>
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Preferred Areas</label>
+                        <input type="text" id="editBuyerPreferredAreas" value="${buyer.preferredAreas || ''}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" placeholder="e.g., Houston Metro, Harris County">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Property Types</label>
+                        <input type="text" id="editBuyerPropertyTypes" value="${buyer.propertyTypes || ''}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" placeholder="e.g., SFR, Multi-family">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Condition Preferences</label>
+                    <input type="text" id="editBuyerConditionPref" value="${buyer.conditionPreferences || ''}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" placeholder="e.g., Distressed, Light rehab, Move-in ready">
+                </div>
             </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700">Deals Closed</label>
-                <input type="number" id="editBuyerDealsCompleted" value="${buyer.dealsCompleted || 0}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" min="0" readonly>
+
+            <!-- Status & Tracking -->
+            <div class="bg-gray-50 p-4 rounded-lg">
+                <h4 class="font-medium text-gray-900 mb-3">Status & Tracking</h4>
+                <div class="grid grid-cols-3 gap-4 mb-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Activity Level</label>
+                        <select id="editBuyerStatus" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                            <option value="active" ${buyer.status === 'active' ? 'selected' : ''}>Active</option>
+                            <option value="warm" ${buyer.status === 'warm' ? 'selected' : ''}>Warm</option>
+                            <option value="cold" ${buyer.status === 'cold' ? 'selected' : ''}>Cold</option>
+                            <option value="inactive" ${buyer.status === 'inactive' ? 'selected' : ''}>Inactive</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Performance Score (0-100)</label>
+                        <input type="number" id="editBuyerPerformanceScore" value="${buyer.performanceScore || 0}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" min="0" max="100">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Deals Closed</label>
+                        <input type="number" id="editBuyerDealsCompleted" value="${buyer.dealsCompleted || 0}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" min="0" readonly>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Date Verified</label>
+                        <input type="date" id="editBuyerDateVerified" value="${buyer.dateVerified || ''}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Last Contact</label>
+                        <input type="date" id="editBuyerLastContact" value="${buyer.lastContact ? new Date(buyer.lastContact).toISOString().split('T')[0] : ''}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                    </div>
+                </div>
             </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700">Notes</label>
-                <textarea id="editBuyerNotes" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" placeholder="Any additional notes about this buyer...">${buyer.notes || ''}</textarea>
+
+            <!-- Sources & Notes -->
+            <div class="bg-gray-50 p-4 rounded-lg">
+                <h4 class="font-medium text-gray-900 mb-3">Sources & Notes</h4>
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Source 1</label>
+                        <input type="text" id="editBuyerSource1" value="${buyer.source1 || ''}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" placeholder="e.g., Company website">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Source 2</label>
+                        <input type="text" id="editBuyerSource2" value="${buyer.source2 || ''}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" placeholder="e.g., Google listing">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Notes</label>
+                    <textarea id="editBuyerNotes" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" placeholder="Any additional notes about this buyer...">${buyer.notes || ''}</textarea>
+                </div>
             </div>
         </div>
     `;
@@ -2096,14 +2184,28 @@ function saveEditedBuyer(id) {
     const company = document.getElementById('editBuyerCompany').value.trim();
     const email = document.getElementById('editBuyerEmail').value.trim();
     const phone = document.getElementById('editBuyerPhone').value.trim();
+    const secondaryPhone = document.getElementById('editBuyerSecondaryPhone').value.trim();
+    const personalEmail = document.getElementById('editBuyerPersonalEmail').value.trim();
+    const street = document.getElementById('editBuyerStreet').value.trim();
+    const city = document.getElementById('editBuyerCity').value.trim();
+    const state = document.getElementById('editBuyerState').value.trim();
+    const zip = document.getElementById('editBuyerZip').value.trim();
     const type = document.getElementById('editBuyerType').value;
+    const cashBuyerStatus = document.getElementById('editBuyerCashStatus').value;
+    const assignmentExperience = document.getElementById('editBuyerAssignmentExp').value;
+    const closingTimelineDays = parseInt(document.getElementById('editBuyerClosingDays').value) || null;
     const status = document.getElementById('editBuyerStatus').value;
     const minBudget = parseFloat(document.getElementById('editBuyerMinBudget').value) || null;
     const maxBudget = parseFloat(document.getElementById('editBuyerMaxBudget').value) || null;
     const preferredAreas = document.getElementById('editBuyerPreferredAreas').value.trim();
     const propertyTypes = document.getElementById('editBuyerPropertyTypes').value.trim();
+    const conditionPreferences = document.getElementById('editBuyerConditionPref').value.trim();
     const performanceScore = parseInt(document.getElementById('editBuyerPerformanceScore').value) || 0;
     const dealsCompleted = parseInt(document.getElementById('editBuyerDealsCompleted').value) || 0;
+    const dateVerified = document.getElementById('editBuyerDateVerified').value;
+    const lastContact = document.getElementById('editBuyerLastContact').value;
+    const source1 = document.getElementById('editBuyerSource1').value.trim();
+    const source2 = document.getElementById('editBuyerSource2').value.trim();
     const notes = document.getElementById('editBuyerNotes').value.trim();
     
     // Validate required fields
@@ -2117,15 +2219,36 @@ function saveEditedBuyer(id) {
     buyer.company = company;
     buyer.email = email;
     buyer.phone = phone;
+    buyer.secondaryPhone = secondaryPhone;
+    buyer.personalEmail = personalEmail;
+    buyer.city = city;
+    buyer.state = state;
     buyer.type = type;
     buyer.status = status;
     buyer.minBudget = minBudget;
     buyer.maxBudget = maxBudget;
     buyer.preferredAreas = preferredAreas;
     buyer.propertyTypes = propertyTypes;
+    buyer.conditionPreferences = conditionPreferences;
     buyer.performanceScore = performanceScore;
     buyer.dealsCompleted = dealsCompleted;
     buyer.notes = notes;
+    
+    // CSV-specific fields
+    buyer.cashBuyerStatus = cashBuyerStatus;
+    buyer.assignmentExperience = assignmentExperience;
+    buyer.closingTimelineDays = closingTimelineDays;
+    buyer.dateVerified = dateVerified;
+    buyer.lastContact = lastContact ? new Date(lastContact).toISOString() : buyer.lastContact;
+    buyer.source1 = source1;
+    buyer.source2 = source2;
+    
+    // Update address object
+    if (!buyer.address) buyer.address = {};
+    buyer.address.street = street;
+    buyer.address.city = city;
+    buyer.address.state = state;
+    buyer.address.zip = zip;
     buyer.lastContact = new Date().toISOString();
     
     // Save and update UI
