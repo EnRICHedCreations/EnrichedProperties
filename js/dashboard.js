@@ -4550,11 +4550,235 @@ function clearAnalysis() {
             realtorButton.innerHTML = 'Open Realtor.com';
         }
         
+        // AI Assessment Form
+        document.getElementById('aiSqft').value = '';
+        document.getElementById('aiYearBuilt').value = '';
+        document.getElementById('aiStories').value = '';
+        document.getElementById('aiBedrooms').value = '';
+        document.getElementById('aiBathrooms').value = '';
+        document.getElementById('aiWindows').value = '';
+        document.getElementById('aiHvacUnits').value = '';
+        document.getElementById('aiWaterHeaters').value = '';
+        document.getElementById('aiElectricalPanels').value = '';
+        document.getElementById('aiRoofPercent').value = '';
+        document.getElementById('aiFoundationFeet').value = '';
+        document.getElementById('aiSidingSqft').value = '';
+        document.getElementById('aiFlooringSqft').value = '';
+        document.getElementById('aiPaintRooms').value = '';
+        document.getElementById('aiDoors').value = '';
+        document.getElementById('aiAppliances').value = '';
+        document.getElementById('aiLightFixtures').value = '';
+        document.getElementById('aiPlumbingFixtures').value = '';
+        document.getElementById('aiDeckSqft').value = '';
+        document.getElementById('aiLandscapingSqft').value = '';
+        document.getElementById('aiGarageDoors').value = '';
+        
+        // AI Calculator outputs
+        document.getElementById('aiPromptOutput').value = '';
+        document.getElementById('chatGPTLink').href = '#';
+        document.getElementById('aiStructuralCost').textContent = '$0';
+        document.getElementById('aiInteriorCost').textContent = '$0';
+        document.getElementById('aiSystemsCost').textContent = '$0';
+        document.getElementById('aiAppliancesCost').textContent = '$0';
+        document.getElementById('aiLaborCost').textContent = '$0';
+        document.getElementById('aiSubtotal').textContent = '$0';
+        document.getElementById('aiContingency').textContent = '$0';
+        document.getElementById('aiTotalEstimate').textContent = '$0';
+        
         // Reset all displays
         updateProfitDisplay();
         
         showSuccessMessage('Deal analysis cleared successfully!');
     }
+}
+
+// AI Property Assessment & Smart Calculator Functions
+
+// Update AI Calculator and Prompt Generator
+function updateAICalculator() {
+    const data = collectAIFormData();
+    generateAIPrompt(data);
+    calculateSmartRepairs(data);
+}
+
+// Collect all form data
+function collectAIFormData() {
+    const getValue = (id) => parseFloat(document.getElementById(id)?.value) || 0;
+    
+    return {
+        // Property Details
+        sqft: getValue('aiSqft'),
+        yearBuilt: getValue('aiYearBuilt'),
+        stories: getValue('aiStories'),
+        
+        // Room Counts
+        bedrooms: getValue('aiBedrooms'),
+        bathrooms: getValue('aiBathrooms'),
+        windows: getValue('aiWindows'),
+        
+        // Major Systems
+        hvacUnits: getValue('aiHvacUnits'),
+        waterHeaters: getValue('aiWaterHeaters'),
+        electricalPanels: getValue('aiElectricalPanels'),
+        
+        // Structural & Exterior
+        roofPercent: getValue('aiRoofPercent'),
+        foundationFeet: getValue('aiFoundationFeet'),
+        sidingSqft: getValue('aiSidingSqft'),
+        
+        // Interior
+        flooringSqft: getValue('aiFlooringSqft'),
+        paintRooms: getValue('aiPaintRooms'),
+        doors: getValue('aiDoors'),
+        
+        // Appliances & Fixtures
+        appliances: getValue('aiAppliances'),
+        lightFixtures: getValue('aiLightFixtures'),
+        plumbingFixtures: getValue('aiPlumbingFixtures'),
+        
+        // Outdoor & Other
+        deckSqft: getValue('aiDeckSqft'),
+        landscapingSqft: getValue('aiLandscapingSqft'),
+        garageDoors: getValue('aiGarageDoors')
+    };
+}
+
+// Generate AI Prompt
+function generateAIPrompt(data) {
+    if (!hasAnyInput(data)) {
+        document.getElementById('aiPromptOutput').value = '';
+        document.getElementById('chatGPTLink').href = '#';
+        return;
+    }
+
+    const prompt = `Please provide a detailed repair cost estimate for a residential property with the following specifications:
+
+PROPERTY DETAILS:
+• Square Footage: ${data.sqft} sq ft
+• Year Built: ${data.yearBuilt}
+• Number of Stories: ${data.stories}
+
+REPAIR REQUIREMENTS:
+
+Structural & Exterior:
+• Roof repairs needed: ${data.roofPercent}% of total roof area
+• Foundation issues: ${data.foundationFeet} linear feet
+• Siding repair: ${data.sidingSqft} sq ft
+
+Interior Repairs:
+• Bedrooms needing repair: ${data.bedrooms}
+• Bathrooms needing repair: ${data.bathrooms}
+• Flooring replacement: ${data.flooringSqft} sq ft
+• Interior paint: ${data.paintRooms} rooms
+• Doors needing replacement: ${data.doors}
+• Windows needing replacement: ${data.windows}
+
+Systems & Mechanical:
+• HVAC units needing repair/replace: ${data.hvacUnits}
+• Water heaters needing replacement: ${data.waterHeaters}
+• Electrical panels needing update: ${data.electricalPanels}
+
+Fixtures & Appliances:
+• Kitchen appliances needed: ${data.appliances}
+• Light fixtures needing replacement: ${data.lightFixtures}
+• Plumbing fixtures needing replacement: ${data.plumbingFixtures}
+
+Outdoor & Miscellaneous:
+• Deck/patio repair: ${data.deckSqft} sq ft
+• Landscaping areas: ${data.landscapingSqft} sq ft
+• Garage doors needing repair/replace: ${data.garageDoors}
+
+Please provide:
+1. Itemized cost breakdown for each category
+2. Labor costs and timeline estimates
+3. Total repair cost estimate with 15% contingency
+4. Regional cost considerations
+5. Potential cost-saving alternatives where applicable
+
+Format the response in a clear, organized manner suitable for real estate investment analysis.`;
+
+    document.getElementById('aiPromptOutput').value = prompt;
+    
+    // Update ChatGPT link
+    const encodedPrompt = encodeURIComponent(prompt);
+    document.getElementById('chatGPTLink').href = `https://chat.openai.com/?q=${encodedPrompt}`;
+}
+
+// Check if any input has data
+function hasAnyInput(data) {
+    return Object.values(data).some(value => value > 0);
+}
+
+// Calculate Smart Repair Costs
+function calculateSmartRepairs(data) {
+    // Cost per unit calculations based on industry standards
+    const costs = {
+        // Structural & Exterior
+        roofRepair: (data.sqft * 0.5) * (data.roofPercent / 100) * 8, // $8 per sq ft affected
+        foundation: data.foundationFeet * 150, // $150 per linear foot
+        siding: data.sidingSqft * 12, // $12 per sq ft
+        
+        // Interior
+        flooring: data.flooringSqft * 6, // $6 per sq ft average
+        paintPerRoom: data.paintRooms * 400, // $400 per room
+        doors: data.doors * 250, // $250 per door
+        windows: data.windows * 450, // $450 per window
+        
+        // Systems & Mechanical
+        hvac: data.hvacUnits * 4500, // $4,500 per unit
+        waterHeater: data.waterHeaters * 1200, // $1,200 per unit
+        electricalPanel: data.electricalPanels * 1800, // $1,800 per panel
+        
+        // Appliances & Fixtures
+        appliances: data.appliances * 800, // $800 per appliance average
+        lightFixtures: data.lightFixtures * 150, // $150 per fixture
+        plumbingFixtures: data.plumbingFixtures * 300, // $300 per fixture
+        
+        // Outdoor & Other
+        deck: data.deckSqft * 15, // $15 per sq ft
+        landscaping: data.landscapingSqft * 3, // $3 per sq ft
+        garageDoors: data.garageDoors * 800 // $800 per door
+    };
+    
+    // Category totals
+    const structural = costs.roofRepair + costs.foundation + costs.siding;
+    const interior = costs.flooring + costs.paintPerRoom + costs.doors + costs.windows;
+    const systems = costs.hvac + costs.waterHeater + costs.electricalPanel;
+    const appliances = costs.appliances + costs.lightFixtures + costs.plumbingFixtures;
+    const outdoor = costs.deck + costs.landscaping + costs.garageDoors;
+    
+    // Labor calculation (25% of materials for most items)
+    const labor = (structural + interior + systems + appliances + outdoor) * 0.25;
+    
+    const subtotal = structural + interior + systems + appliances + outdoor + labor;
+    const contingency = subtotal * 0.15; // 15% contingency
+    const total = subtotal + contingency;
+    
+    // Update display
+    document.getElementById('aiStructuralCost').textContent = formatCurrency(structural);
+    document.getElementById('aiInteriorCost').textContent = formatCurrency(interior);
+    document.getElementById('aiSystemsCost').textContent = formatCurrency(systems);
+    document.getElementById('aiAppliancesCost').textContent = formatCurrency(appliances);
+    document.getElementById('aiLaborCost').textContent = formatCurrency(labor + outdoor); // Include outdoor in labor category
+    document.getElementById('aiSubtotal').textContent = formatCurrency(subtotal);
+    document.getElementById('aiContingency').textContent = formatCurrency(contingency);
+    document.getElementById('aiTotalEstimate').textContent = formatCurrency(total);
+}
+
+// Copy AI Prompt to clipboard
+function copyAIPrompt() {
+    const promptText = document.getElementById('aiPromptOutput').value;
+    if (!promptText) {
+        showErrorMessage('No prompt generated yet. Please fill out the assessment form first.');
+        return;
+    }
+    
+    navigator.clipboard.writeText(promptText).then(() => {
+        showSuccessMessage('AI prompt copied to clipboard!');
+    }).catch(err => {
+        console.error('Failed to copy text: ', err);
+        showErrorMessage('Failed to copy prompt. Please select and copy manually.');
+    });
 }
 
 // Helper function to format numbers without currency symbol
