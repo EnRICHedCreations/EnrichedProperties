@@ -713,6 +713,188 @@
                 </div>
             </div>
 
+            <!-- AI Property Assessment & Prompt Generator -->
+            <div class="bg-white rounded-lg shadow p-6 mb-6">
+                <h3 class="text-lg font-semibold mb-4">🤖 AI Property Assessment & Prompt Generator</h3>
+                <p class="text-sm text-gray-600 mb-6">Fill out this comprehensive property assessment form to generate an AI-ready prompt and get accurate repair cost estimates.</p>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                    <!-- Property Details -->
+                    <div class="space-y-4">
+                        <h4 class="font-medium text-gray-900 border-b pb-2">Property Details</h4>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Square Footage</label>
+                            <input type="number" id="aiSqft" class="w-full px-3 py-2 border border-gray-300 rounded-md" placeholder="1500" onchange="updateAICalculator()">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Year Built</label>
+                            <input type="number" id="aiYearBuilt" class="w-full px-3 py-2 border border-gray-300 rounded-md" placeholder="1995" onchange="updateAICalculator()">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Number of Stories</label>
+                            <input type="number" id="aiStories" class="w-full px-3 py-2 border border-gray-300 rounded-md" placeholder="2" min="1" max="4" onchange="updateAICalculator()">
+                        </div>
+                    </div>
+
+                    <!-- Room Counts -->
+                    <div class="space-y-4">
+                        <h4 class="font-medium text-gray-900 border-b pb-2">Room Counts</h4>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Bedrooms Needing Repair</label>
+                            <input type="number" id="aiBedrooms" class="w-full px-3 py-2 border border-gray-300 rounded-md" placeholder="3" min="0" onchange="updateAICalculator()">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Bathrooms Needing Repair</label>
+                            <input type="number" step="0.5" id="aiBathrooms" class="w-full px-3 py-2 border border-gray-300 rounded-md" placeholder="2.5" min="0" onchange="updateAICalculator()">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Windows Needing Replacement</label>
+                            <input type="number" id="aiWindows" class="w-full px-3 py-2 border border-gray-300 rounded-md" placeholder="12" min="0" onchange="updateAICalculator()">
+                        </div>
+                    </div>
+
+                    <!-- Major Systems -->
+                    <div class="space-y-4">
+                        <h4 class="font-medium text-gray-900 border-b pb-2">Major Systems</h4>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">HVAC Units Needing Repair/Replace</label>
+                            <input type="number" id="aiHvacUnits" class="w-full px-3 py-2 border border-gray-300 rounded-md" placeholder="2" min="0" onchange="updateAICalculator()">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Water Heaters Needing Replace</label>
+                            <input type="number" id="aiWaterHeaters" class="w-full px-3 py-2 border border-gray-300 rounded-md" placeholder="1" min="0" onchange="updateAICalculator()">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Electrical Panels Needing Update</label>
+                            <input type="number" id="aiElectricalPanels" class="w-full px-3 py-2 border border-gray-300 rounded-md" placeholder="1" min="0" onchange="updateAICalculator()">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                    <!-- Structural & Exterior -->
+                    <div class="space-y-4">
+                        <h4 class="font-medium text-gray-900 border-b pb-2">Structural & Exterior</h4>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Roof Repair Percentage (%)</label>
+                            <input type="number" id="aiRoofPercent" class="w-full px-3 py-2 border border-gray-300 rounded-md" placeholder="25" min="0" max="100" onchange="updateAICalculator()">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Foundation Issues (Linear Feet)</label>
+                            <input type="number" id="aiFoundationFeet" class="w-full px-3 py-2 border border-gray-300 rounded-md" placeholder="50" min="0" onchange="updateAICalculator()">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Siding Repair (Sq Ft)</label>
+                            <input type="number" id="aiSidingSqft" class="w-full px-3 py-2 border border-gray-300 rounded-md" placeholder="200" min="0" onchange="updateAICalculator()">
+                        </div>
+                    </div>
+
+                    <!-- Interior -->
+                    <div class="space-y-4">
+                        <h4 class="font-medium text-gray-900 border-b pb-2">Interior</h4>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Flooring Replacement (Sq Ft)</label>
+                            <input type="number" id="aiFlooringSqft" class="w-full px-3 py-2 border border-gray-300 rounded-md" placeholder="800" min="0" onchange="updateAICalculator()">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Interior Paint (Rooms)</label>
+                            <input type="number" id="aiPaintRooms" class="w-full px-3 py-2 border border-gray-300 rounded-md" placeholder="8" min="0" onchange="updateAICalculator()">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Doors Needing Replace</label>
+                            <input type="number" id="aiDoors" class="w-full px-3 py-2 border border-gray-300 rounded-md" placeholder="6" min="0" onchange="updateAICalculator()">
+                        </div>
+                    </div>
+
+                    <!-- Appliances & Fixtures -->
+                    <div class="space-y-4">
+                        <h4 class="font-medium text-gray-900 border-b pb-2">Appliances & Fixtures</h4>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Kitchen Appliances Needed</label>
+                            <input type="number" id="aiAppliances" class="w-full px-3 py-2 border border-gray-300 rounded-md" placeholder="4" min="0" max="10" onchange="updateAICalculator()">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Light Fixtures Needing Replace</label>
+                            <input type="number" id="aiLightFixtures" class="w-full px-3 py-2 border border-gray-300 rounded-md" placeholder="8" min="0" onchange="updateAICalculator()">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Plumbing Fixtures Needing Replace</label>
+                            <input type="number" id="aiPlumbingFixtures" class="w-full px-3 py-2 border border-gray-300 rounded-md" placeholder="5" min="0" onchange="updateAICalculator()">
+                        </div>
+                    </div>
+
+                    <!-- Outdoor & Other -->
+                    <div class="space-y-4">
+                        <h4 class="font-medium text-gray-900 border-b pb-2">Outdoor & Other</h4>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Deck/Patio Repair (Sq Ft)</label>
+                            <input type="number" id="aiDeckSqft" class="w-full px-3 py-2 border border-gray-300 rounded-md" placeholder="300" min="0" onchange="updateAICalculator()">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Landscaping Areas (Sq Ft)</label>
+                            <input type="number" id="aiLandscapingSqft" class="w-full px-3 py-2 border border-gray-300 rounded-md" placeholder="500" min="0" onchange="updateAICalculator()">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Garage Door Repair/Replace</label>
+                            <input type="number" id="aiGarageDoors" class="w-full px-3 py-2 border border-gray-300 rounded-md" placeholder="1" min="0" max="3" onchange="updateAICalculator()">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- AI Prompt Output -->
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <h4 class="font-medium text-gray-900 mb-3">🎯 Generated AI Prompt</h4>
+                        <textarea id="aiPromptOutput" class="w-full h-32 px-3 py-2 border border-gray-300 rounded-md text-sm bg-white" readonly placeholder="Fill out the assessment form to generate an AI-ready prompt..."></textarea>
+                        <div class="mt-3 flex space-x-2">
+                            <button onclick="copyAIPrompt()" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors text-sm">Copy Prompt</button>
+                            <a href="#" id="chatGPTLink" target="_blank" class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors text-sm no-underline">Send to ChatGPT</a>
+                        </div>
+                    </div>
+
+                    <!-- Smart Calculator Results -->
+                    <div class="bg-green-50 rounded-lg p-4">
+                        <h4 class="font-medium text-gray-900 mb-3">🧮 Smart Repair Calculator</h4>
+                        <div class="space-y-2 text-sm">
+                            <div class="flex justify-between">
+                                <span>Structural & Exterior:</span>
+                                <span class="font-medium" id="aiStructuralCost">$0</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Interior Repairs:</span>
+                                <span class="font-medium" id="aiInteriorCost">$0</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Systems & Mechanical:</span>
+                                <span class="font-medium" id="aiSystemsCost">$0</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Appliances & Fixtures:</span>
+                                <span class="font-medium" id="aiAppliancesCost">$0</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Labor & Permits:</span>
+                                <span class="font-medium" id="aiLaborCost">$0</span>
+                            </div>
+                            <hr class="my-2">
+                            <div class="flex justify-between">
+                                <span class="font-semibold">Subtotal:</span>
+                                <span class="font-semibold" id="aiSubtotal">$0</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="font-semibold">Contingency (15%):</span>
+                                <span class="font-semibold" id="aiContingency">$0</span>
+                            </div>
+                            <hr class="my-2 border-gray-400">
+                            <div class="flex justify-between text-lg">
+                                <span class="font-bold text-green-800">Total Estimate:</span>
+                                <span class="font-bold text-green-800" id="aiTotalEstimate">$0</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
                 <!-- Profit Analysis -->
                 <div class="bg-white rounded-lg shadow p-6">
