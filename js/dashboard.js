@@ -54,6 +54,9 @@ function initializeDashboard() {
     
     // Check for updates
     checkForUpdates();
+    
+    // Initialize marketing system
+    initializeMarketing();
 }
 
 // Handle keyboard shortcuts
@@ -79,6 +82,14 @@ function handleKeyboardShortcuts(e) {
             case '5':
                 e.preventDefault();
                 showTab('analytics');
+                break;
+            case '6':
+                e.preventDefault();
+                showTab('dealanalysis');
+                break;
+            case '7':
+                e.preventDefault();
+                showTab('marketing');
                 break;
             case '3':
                 if (e.shiftKey) { // Shift+3 for buyers (since 3 is contracts)
@@ -4785,6 +4796,538 @@ function copyAIPrompt() {
 function formatNumber(number) {
     if (!number) return '0';
     return new Intl.NumberFormat('en-US').format(number);
+}
+
+// ================================
+// MARKETING & LEAD GENERATION FUNCTIONS (PHASES 4.1-4.4)
+// ================================
+
+// Global Marketing Variables
+let directMailCampaigns = [];
+let callingLists = [];
+let landingPages = [];
+let marketingMetrics = {
+    totalSpend: 0,
+    totalRevenue: 0,
+    totalLeads: 0,
+    campaigns: 0
+};
+
+// Marketing Sub-Tab Navigation
+function showMarketingSubTab(tabName) {
+    // Hide all sub-content
+    const subContents = document.querySelectorAll('.marketing-sub-content');
+    subContents.forEach(content => content.classList.add('hidden'));
+    
+    // Remove active class from all sub-tabs
+    const subTabs = document.querySelectorAll('.marketing-sub-tab');
+    subTabs.forEach(tab => {
+        tab.classList.remove('active', 'border-indigo-500', 'text-indigo-600');
+        tab.classList.add('border-transparent', 'text-gray-500');
+    });
+    
+    // Show selected sub-content
+    const targetContent = document.getElementById(tabName + '-content');
+    if (targetContent) {
+        targetContent.classList.remove('hidden');
+    }
+    
+    // Activate selected sub-tab
+    const targetTab = document.getElementById(tabName + '-tab');
+    if (targetTab) {
+        targetTab.classList.add('active', 'border-indigo-500', 'text-indigo-600');
+        targetTab.classList.remove('border-transparent', 'text-gray-500');
+    }
+}
+
+// ================================
+// PHASE 4.1: DIRECT MAIL CAMPAIGN MANAGER
+// ================================
+
+// Create Direct Mail Campaign
+function createDirectMailCampaign() {
+    const name = document.getElementById('campaignName').value;
+    const type = document.getElementById('campaignType').value;
+    const listSize = parseInt(document.getElementById('listSize').value) || 0;
+    const costPerPiece = parseFloat(document.getElementById('costPerPiece').value) || 0;
+    const mailDate = document.getElementById('mailDate').value;
+    const expectedResponse = parseFloat(document.getElementById('expectedResponse').value) || 0;
+    
+    if (!name || !mailDate || listSize === 0 || costPerPiece === 0) {
+        showErrorMessage('Please fill in all required fields');
+        return;
+    }
+    
+    // Get selected criteria
+    const criteria = Array.from(document.querySelectorAll('.campaign-criteria:checked'))
+        .map(cb => cb.value);
+    
+    const campaign = {
+        id: Date.now(),
+        name,
+        type,
+        listSize,
+        costPerPiece,
+        mailDate,
+        expectedResponse,
+        criteria,
+        totalCost: listSize * costPerPiece,
+        actualResponses: 0,
+        actualLeads: 0,
+        revenue: 0,
+        status: 'planned',
+        createdAt: new Date().toISOString()
+    };
+    
+    directMailCampaigns.push(campaign);
+    updateDirectMailTable();
+    updateMarketingDashboard();
+    clearDirectMailForm();
+    
+    showSuccessMessage('Direct mail campaign created successfully!');
+}
+
+// Calculate Campaign ROI
+function calculateCampaignROI() {
+    const listSize = parseInt(document.getElementById('listSize').value) || 0;
+    const costPerPiece = parseFloat(document.getElementById('costPerPiece').value) || 0;
+    const expectedResponse = parseFloat(document.getElementById('expectedResponse').value) || 0;
+    
+    if (listSize === 0 || costPerPiece === 0) {
+        showErrorMessage('Please enter list size and cost per piece');
+        return;
+    }
+    
+    const totalCost = listSize * costPerPiece;
+    const expectedResponses = Math.round((listSize * expectedResponse) / 100);
+    const costPerResponse = expectedResponses > 0 ? totalCost / expectedResponses : 0;
+    const expectedLeads = Math.round(expectedResponses * 0.6); // Assume 60% of responses become leads
+    
+    // Estimate ROI based on average deal value ($15,000 assignment fee)
+    const avgDealValue = 15000;
+    const expectedDeals = Math.round(expectedLeads * 0.1); // Assume 10% close rate
+    const expectedRevenue = expectedDeals * avgDealValue;
+    const netProfit = expectedRevenue - totalCost;
+    const roi = totalCost > 0 ? ((netProfit / totalCost) * 100) : 0;
+    
+    // Update projections display
+    document.getElementById('projectedCost').textContent = formatCurrency(totalCost);
+    document.getElementById('projectedResponses').textContent = expectedResponses.toString();
+    document.getElementById('projectedCostPerResponse').textContent = formatCurrency(costPerResponse);
+    document.getElementById('projectedLeads').textContent = expectedLeads.toString();
+    document.getElementById('projectedROI').textContent = roi.toFixed(1) + '%';
+    
+    // Color code ROI
+    const roiElement = document.getElementById('projectedROI');
+    if (roi >= 300) {
+        roiElement.className = 'text-green-600 font-semibold';
+    } else if (roi >= 100) {
+        roiElement.className = 'text-blue-600 font-semibold';
+    } else if (roi >= 0) {
+        roiElement.className = 'text-yellow-600 font-semibold';
+    } else {
+        roiElement.className = 'text-red-600 font-semibold';
+    }
+}
+
+// Update Direct Mail Campaigns Table
+function updateDirectMailTable() {
+    const tbody = document.getElementById('directMailCampaignsTable');
+    
+    if (directMailCampaigns.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="px-6 py-4 text-center text-gray-500">No campaigns created yet</td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = directMailCampaigns.map(campaign => {
+        const roi = campaign.totalCost > 0 ? (((campaign.revenue - campaign.totalCost) / campaign.totalCost) * 100) : 0;
+        const roiClass = roi >= 100 ? 'text-green-600' : roi >= 0 ? 'text-blue-600' : 'text-red-600';
+        
+        return `
+            <tr>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${campaign.name}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 capitalize">${campaign.type}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${formatNumber(campaign.listSize)}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${formatCurrency(campaign.totalCost)}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${campaign.actualResponses}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium ${roiClass}">${roi.toFixed(1)}%</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <button onclick="editCampaign(${campaign.id})" class="text-indigo-600 hover:text-indigo-900 mr-2">Edit</button>
+                    <button onclick="deleteCampaign(${campaign.id})" class="text-red-600 hover:text-red-900">Delete</button>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+// Clear Direct Mail Form
+function clearDirectMailForm() {
+    document.getElementById('campaignName').value = '';
+    document.getElementById('listSize').value = '';
+    document.getElementById('costPerPiece').value = '';
+    document.getElementById('mailDate').value = '';
+    document.getElementById('expectedResponse').value = '';
+    document.querySelectorAll('.campaign-criteria').forEach(cb => cb.checked = false);
+    
+    // Clear projections
+    document.getElementById('projectedCost').textContent = '$0';
+    document.getElementById('projectedResponses').textContent = '0';
+    document.getElementById('projectedCostPerResponse').textContent = '$0';
+    document.getElementById('projectedLeads').textContent = '0';
+    document.getElementById('projectedROI').textContent = '0%';
+}
+
+// ================================
+// PHASE 4.2: COLD CALLING LISTS
+// ================================
+
+// Create Calling List
+function createCallingList() {
+    const name = document.getElementById('callingListName').value;
+    const targetCount = parseInt(document.getElementById('targetCount').value) || 0;
+    const skipTraceCost = parseFloat(document.getElementById('skipTraceCost').value) || 0;
+    const provider = document.getElementById('skipTraceProvider').value;
+    
+    if (!name || targetCount === 0) {
+        showErrorMessage('Please fill in list name and target count');
+        return;
+    }
+    
+    // Get selected criteria
+    const criteria = Array.from(document.querySelectorAll('.calling-criteria:checked'))
+        .map(cb => cb.value);
+    
+    const list = {
+        id: Date.now(),
+        name,
+        targetCount,
+        skipTraceCost,
+        provider,
+        criteria,
+        totalCost: targetCount * skipTraceCost,
+        called: 0,
+        contacts: 0,
+        leads: 0,
+        appointments: 0,
+        status: 'active',
+        createdAt: new Date().toISOString()
+    };
+    
+    callingLists.push(list);
+    updateCallingListsTable();
+    updateMarketingDashboard();
+    clearCallingForm();
+    
+    showSuccessMessage('Calling list created successfully!');
+}
+
+// Upload CSV for Calling List
+function uploadCSV() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.csv';
+    input.onchange = function(event) {
+        const file = event.target.files[0];
+        if (file) {
+            // In a real implementation, you would parse the CSV file
+            showSuccessMessage('CSV upload functionality would be implemented here');
+        }
+    };
+    input.click();
+}
+
+// Start Calling Session
+function startCallingSession() {
+    showSuccessMessage('Calling session started! This would integrate with your dialer system.');
+    // Update call tracking numbers
+    updateCallTracking();
+}
+
+// Log Call Result
+function logCall() {
+    // In a real implementation, this would open a modal to log call results
+    showSuccessMessage('Call logging functionality would be implemented here');
+}
+
+// Update Call Tracking
+function updateCallTracking() {
+    // Simulate call tracking data
+    const callsMade = Math.floor(Math.random() * 50) + 10;
+    const contacts = Math.floor(callsMade * 0.3);
+    const appointments = Math.floor(contacts * 0.2);
+    
+    document.getElementById('callsMadeToday').textContent = callsMade.toString();
+    document.getElementById('contactRate').textContent = ((contacts / callsMade) * 100).toFixed(1) + '%';
+    document.getElementById('appointmentsSet').textContent = appointments.toString();
+    document.getElementById('callConversionRate').textContent = ((appointments / callsMade) * 100).toFixed(1) + '%';
+}
+
+// Update Calling Lists Table
+function updateCallingListsTable() {
+    const tbody = document.getElementById('callingListsTable');
+    
+    if (callingLists.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-4 text-center text-gray-500">No calling lists created yet</td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = callingLists.map(list => `
+        <tr>
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${list.name}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${formatNumber(list.targetCount)}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${list.called}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${list.contacts}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${list.leads}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                <button onclick="editList(${list.id})" class="text-indigo-600 hover:text-indigo-900 mr-2">Edit</button>
+                <button onclick="deleteList(${list.id})" class="text-red-600 hover:text-red-900">Delete</button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+// Clear Calling Form
+function clearCallingForm() {
+    document.getElementById('callingListName').value = '';
+    document.getElementById('targetCount').value = '';
+    document.getElementById('skipTraceCost').value = '';
+    document.querySelectorAll('.calling-criteria').forEach(cb => cb.checked = false);
+}
+
+// ================================
+// PHASE 4.3: MARKETING ROI ANALYTICS
+// ================================
+
+// Update Marketing Dashboard Overview
+function updateMarketingDashboard() {
+    // Calculate totals from all campaigns
+    const totalCampaigns = directMailCampaigns.length + callingLists.length;
+    const totalSpend = directMailCampaigns.reduce((sum, c) => sum + c.totalCost, 0) + 
+                     callingLists.reduce((sum, l) => sum + l.totalCost, 0);
+    const totalLeads = directMailCampaigns.reduce((sum, c) => sum + c.actualLeads, 0) + 
+                      callingLists.reduce((sum, l) => sum + l.leads, 0);
+    const totalRevenue = directMailCampaigns.reduce((sum, c) => sum + c.revenue, 0);
+    
+    const roi = totalSpend > 0 ? (((totalRevenue - totalSpend) / totalSpend) * 100) : 0;
+    const costPerLead = totalLeads > 0 ? totalSpend / totalLeads : 0;
+    
+    // Update dashboard metrics
+    document.getElementById('activeCampaigns').textContent = totalCampaigns.toString();
+    document.getElementById('totalLeadsGenerated').textContent = totalLeads.toString();
+    document.getElementById('marketingROI').textContent = roi.toFixed(1) + '%';
+    document.getElementById('costPerLead').textContent = formatCurrency(costPerLead);
+    
+    // Update ROI analytics section
+    document.getElementById('totalMarketingSpend').textContent = formatCurrency(totalSpend);
+    document.getElementById('totalMarketingRevenue').textContent = formatCurrency(totalRevenue);
+    document.getElementById('totalMarketingProfit').textContent = formatCurrency(totalRevenue - totalSpend);
+    document.getElementById('overallMarketingROI').textContent = roi.toFixed(1) + '%';
+    
+    // Update channel-specific ROI (simplified for demo)
+    document.getElementById('directMailROI').textContent = '150.0%';
+    document.getElementById('coldCallingROI').textContent = '120.0%';
+    document.getElementById('digitalAdsROI').textContent = '80.0%';
+    document.getElementById('referralsROI').textContent = '300.0%';
+    
+    // Update cost per lead by channel
+    document.getElementById('directMailCPL').textContent = '$85';
+    document.getElementById('coldCallingCPL').textContent = '$45';
+    
+    // Update lead quality metrics
+    document.getElementById('appointmentRate').textContent = '25.0%';
+    document.getElementById('contractRate').textContent = '12.0%';
+    document.getElementById('closeRate').textContent = '8.0%';
+}
+
+// ================================
+// PHASE 4.4: LANDING PAGE BUILDER
+// ================================
+
+// Update Page Preview
+function updatePagePreview() {
+    const template = document.getElementById('pageTemplate').value;
+    const headline = document.getElementById('pageHeadline').value || 'Get a Cash Offer in 24 Hours';
+    const subheadline = document.getElementById('pageSubheadline').value || 'No repairs, no commissions, no hassles. Sell your house fast for cash.';
+    const buttonText = document.getElementById('buttonText').value || 'Get My Cash Offer';
+    const primaryColor = document.getElementById('primaryColor').value;
+    
+    const preview = document.getElementById('pagePreview');
+    
+    let templateContent = '';
+    
+    switch (template) {
+        case 'cash-offer':
+            templateContent = `
+                <div class="text-center">
+                    <h3 class="text-lg font-bold mb-2">${headline}</h3>
+                    <p class="text-sm text-gray-600 mb-4">${subheadline}</p>
+                    <form class="space-y-2">
+                        <input type="text" placeholder="Property Address" class="w-full px-2 py-1 border rounded text-xs">
+                        <input type="text" placeholder="Your Name" class="w-full px-2 py-1 border rounded text-xs">
+                        <input type="text" placeholder="Phone Number" class="w-full px-2 py-1 border rounded text-xs">
+                        <button style="background-color: ${primaryColor}" class="w-full text-white py-2 rounded text-xs">${buttonText}</button>
+                    </form>
+                </div>
+            `;
+            break;
+        case 'foreclosure-help':
+            templateContent = `
+                <div class="text-center">
+                    <h3 class="text-lg font-bold mb-2 text-red-600">Stop Foreclosure Now!</h3>
+                    <p class="text-sm text-gray-600 mb-4">We can help you avoid foreclosure and save your credit.</p>
+                    <form class="space-y-2">
+                        <input type="text" placeholder="Property Address" class="w-full px-2 py-1 border rounded text-xs">
+                        <input type="text" placeholder="Your Name" class="w-full px-2 py-1 border rounded text-xs">
+                        <input type="text" placeholder="Phone Number" class="w-full px-2 py-1 border rounded text-xs">
+                        <button class="w-full bg-red-600 text-white py-2 rounded text-xs">Get Help Now</button>
+                    </form>
+                </div>
+            `;
+            break;
+        default:
+            templateContent = `
+                <div class="text-center">
+                    <h3 class="text-lg font-bold mb-2">${headline}</h3>
+                    <p class="text-sm text-gray-600 mb-4">${subheadline}</p>
+                    <form class="space-y-2">
+                        <input type="text" placeholder="Property Address" class="w-full px-2 py-1 border rounded text-xs">
+                        <input type="text" placeholder="Your Name" class="w-full px-2 py-1 border rounded text-xs">
+                        <input type="text" placeholder="Phone Number" class="w-full px-2 py-1 border rounded text-xs">
+                        <button style="background-color: ${primaryColor}" class="w-full text-white py-2 rounded text-xs">${buttonText}</button>
+                    </form>
+                </div>
+            `;
+    }
+    
+    preview.innerHTML = templateContent;
+}
+
+// Generate Landing Page
+function generateLandingPage() {
+    const pageName = document.getElementById('pageName').value;
+    const template = document.getElementById('pageTemplate').value;
+    
+    if (!pageName) {
+        showErrorMessage('Please enter a page name');
+        return;
+    }
+    
+    updatePagePreview();
+    showSuccessMessage('Landing page generated successfully!');
+}
+
+// Save Landing Page
+function saveLandingPage() {
+    const pageName = document.getElementById('pageName').value;
+    const template = document.getElementById('pageTemplate').value;
+    const source = document.getElementById('pageSource').value;
+    const headline = document.getElementById('pageHeadline').value;
+    const phone = document.getElementById('pagePhone').value;
+    
+    if (!pageName) {
+        showErrorMessage('Please enter a page name');
+        return;
+    }
+    
+    const page = {
+        id: Date.now(),
+        name: pageName,
+        template,
+        source,
+        headline,
+        phone,
+        views: 0,
+        conversions: 0,
+        conversionRate: 0,
+        status: 'draft',
+        createdAt: new Date().toISOString()
+    };
+    
+    landingPages.push(page);
+    updateLandingPagesTable();
+    clearLandingPageForm();
+    
+    showSuccessMessage('Landing page saved successfully!');
+}
+
+// Publish Page
+function publishPage() {
+    showSuccessMessage('Page publishing functionality would integrate with your hosting provider');
+}
+
+// Update Landing Pages Table
+function updateLandingPagesTable() {
+    const tbody = document.getElementById('landingPagesTable');
+    
+    if (landingPages.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-4 text-center text-gray-500">No landing pages created yet</td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = landingPages.map(page => `
+        <tr>
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${page.name}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 capitalize">${page.template.replace('-', ' ')}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${formatNumber(page.views)}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${page.conversions}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${page.conversionRate.toFixed(1)}%</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                <button onclick="editPage(${page.id})" class="text-indigo-600 hover:text-indigo-900 mr-2">Edit</button>
+                <button onclick="deletePage(${page.id})" class="text-red-600 hover:text-red-900">Delete</button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+// Clear Landing Page Form
+function clearLandingPageForm() {
+    document.getElementById('pageName').value = '';
+    document.getElementById('pageHeadline').value = '';
+    document.getElementById('pagePhone').value = '';
+    document.getElementById('pageSubheadline').value = '';
+    document.getElementById('buttonText').value = '';
+    document.getElementById('primaryColor').value = '#3b82f6';
+}
+
+// ================================
+// MARKETING UTILITY FUNCTIONS
+// ================================
+
+// Export Marketing Data
+function exportMarketingData() {
+    const data = {
+        directMailCampaigns,
+        callingLists,
+        landingPages,
+        marketingMetrics
+    };
+    
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'marketing_data_' + new Date().toISOString().split('T')[0] + '.json';
+    a.click();
+    URL.revokeObjectURL(url);
+    
+    showSuccessMessage('Marketing data exported successfully!');
+}
+
+// Add Campaign Modal (placeholder)
+function showAddCampaignModal() {
+    showSuccessMessage('Campaign creation modal would be implemented here');
+}
+
+// Initialize Marketing Dashboard on Load
+function initializeMarketing() {
+    updateMarketingDashboard();
+    updateDirectMailTable();
+    updateCallingListsTable();
+    updateLandingPagesTable();
+    updatePagePreview();
+    
+    // Set default marketing sub-tab
+    showMarketingSubTab('direct-mail');
 }
 
 // ==============================================
