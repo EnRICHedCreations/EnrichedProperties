@@ -251,15 +251,13 @@ function showTab(tabName) {
                 updateProfitDisplay();
                 break;
             case 'marketing':
-                // Initialize Marketing displays
-                initializeMarketing();
+                // Marketing initialization will be handled by showTabWithExtensions
                 break;
         }
     }
 }
 
-// Make showTab globally accessible
-window.showTab = showTab;
+// showTab will be made globally accessible at the end of the file
 
 // Update dashboard stats
 function updateDashboardStats() {
@@ -5942,17 +5940,24 @@ function initializeBuyersTab() {
     initializeFloatingScrollBar();
 }
 
-// Hook into existing tab switching
-const originalShowTab = window.showTab;
-window.showTab = function(tabName) {
-    if (originalShowTab) {
-        originalShowTab(tabName);
-    }
+// Override showTab to add special handling for buyers and marketing
+const originalShowTab = showTab;
+function showTabWithExtensions(tabName) {
+    // Call the original showTab function first
+    originalShowTab(tabName);
     
+    // Add special handling for specific tabs
     if (tabName === 'buyers') {
         setTimeout(initializeBuyersTab, 100);
+    } else if (tabName === 'marketing') {
+        setTimeout(() => {
+            initializeMarketing();
+        }, 100);
     }
-};
+}
+
+// Replace the global showTab with our extended version
+window.showTab = showTabWithExtensions;
 
 // Make marketing functions globally accessible for onclick handlers
 window.showMarketingSubTab = showMarketingSubTab;
