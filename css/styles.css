@@ -22,6 +22,27 @@ html {
     border-bottom-color: #3b82f6;
 }
 
+/* Marketing sub-tab styles */
+.marketing-sub-tab {
+    border-bottom-color: transparent;
+    color: #6b7280;
+    transition: all 0.2s ease-in-out;
+}
+
+.marketing-sub-tab:hover {
+    color: #3b82f6;
+    border-bottom-color: #ddd6fe;
+}
+
+.marketing-sub-tab.active {
+    color: #3b82f6;
+    border-bottom-color: #3b82f6;
+}
+
+.marketing-sub-content {
+    animation: fadeIn 0.3s ease-in-out;
+}
+
 .tab-content {
     animation: fadeIn 0.3s ease-in-out;
 }
