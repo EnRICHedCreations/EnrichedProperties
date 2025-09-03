@@ -252,6 +252,7 @@ function showTab(tabName) {
                 break;
             case 'marketing':
                 // Initialize Marketing displays
+                console.log('Marketing tab clicked');
                 initializeMarketing();
                 break;
         }
@@ -4816,12 +4817,16 @@ let marketingMetrics = {
 
 // Marketing Sub-Tab Navigation
 function showMarketingSubTab(tabName) {
+    console.log('showMarketingSubTab called with:', tabName);
+    
     // Hide all sub-content
     const subContents = document.querySelectorAll('.marketing-sub-content');
+    console.log('Found sub-contents:', subContents.length);
     subContents.forEach(content => content.classList.add('hidden'));
     
     // Remove active class from all sub-tabs
     const subTabs = document.querySelectorAll('.marketing-sub-tab');
+    console.log('Found sub-tabs:', subTabs.length);
     subTabs.forEach(tab => {
         tab.classList.remove('active', 'border-indigo-500', 'text-indigo-600');
         tab.classList.add('border-transparent', 'text-gray-500');
@@ -4829,12 +4834,14 @@ function showMarketingSubTab(tabName) {
     
     // Show selected sub-content
     const targetContent = document.getElementById(tabName + '-content');
+    console.log('Target content element:', targetContent);
     if (targetContent) {
         targetContent.classList.remove('hidden');
     }
     
     // Activate selected sub-tab
     const targetTab = document.getElementById(tabName + '-tab');
+    console.log('Target tab element:', targetTab);
     if (targetTab) {
         targetTab.classList.add('active', 'border-indigo-500', 'text-indigo-600');
         targetTab.classList.remove('border-transparent', 'text-gray-500');
@@ -5330,19 +5337,27 @@ function showAddCampaignModal() {
 
 // Initialize Marketing Dashboard on Load
 function initializeMarketing() {
+    console.log('initializeMarketing called');
     try {
+        console.log('Updating marketing dashboard...');
         updateMarketingDashboard();
+        
+        console.log('Updating tables...');
         updateDirectMailTable();
         updateCallingListsTable();
         updateLandingPagesTable();
         
         // Only update page preview if elements exist
         if (document.getElementById('pageTemplate')) {
+            console.log('Updating page preview...');
             updatePagePreview();
         }
         
         // Set default marketing sub-tab
+        console.log('Setting default sub-tab...');
         showMarketingSubTab('direct-mail');
+        
+        console.log('Marketing initialization complete');
     } catch (error) {
         console.error('Error initializing marketing:', error);
     }
