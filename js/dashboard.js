@@ -54,9 +54,6 @@ function initializeDashboard() {
     
     // Check for updates
     checkForUpdates();
-    
-    // Initialize marketing system
-    initializeMarketing();
 }
 
 // Handle keyboard shortcuts
@@ -252,6 +249,10 @@ function showTab(tabName) {
             case 'dealanalysis':
                 // Initialize Deal Analysis displays
                 updateProfitDisplay();
+                break;
+            case 'marketing':
+                // Initialize Marketing displays
+                initializeMarketing();
                 break;
         }
     }
@@ -5100,43 +5101,52 @@ function clearCallingForm() {
 
 // Update Marketing Dashboard Overview
 function updateMarketingDashboard() {
-    // Calculate totals from all campaigns
-    const totalCampaigns = directMailCampaigns.length + callingLists.length;
-    const totalSpend = directMailCampaigns.reduce((sum, c) => sum + c.totalCost, 0) + 
-                     callingLists.reduce((sum, l) => sum + l.totalCost, 0);
-    const totalLeads = directMailCampaigns.reduce((sum, c) => sum + c.actualLeads, 0) + 
-                      callingLists.reduce((sum, l) => sum + l.leads, 0);
-    const totalRevenue = directMailCampaigns.reduce((sum, c) => sum + c.revenue, 0);
-    
-    const roi = totalSpend > 0 ? (((totalRevenue - totalSpend) / totalSpend) * 100) : 0;
-    const costPerLead = totalLeads > 0 ? totalSpend / totalLeads : 0;
-    
-    // Update dashboard metrics
-    document.getElementById('activeCampaigns').textContent = totalCampaigns.toString();
-    document.getElementById('totalLeadsGenerated').textContent = totalLeads.toString();
-    document.getElementById('marketingROI').textContent = roi.toFixed(1) + '%';
-    document.getElementById('costPerLead').textContent = formatCurrency(costPerLead);
-    
-    // Update ROI analytics section
-    document.getElementById('totalMarketingSpend').textContent = formatCurrency(totalSpend);
-    document.getElementById('totalMarketingRevenue').textContent = formatCurrency(totalRevenue);
-    document.getElementById('totalMarketingProfit').textContent = formatCurrency(totalRevenue - totalSpend);
-    document.getElementById('overallMarketingROI').textContent = roi.toFixed(1) + '%';
-    
-    // Update channel-specific ROI (simplified for demo)
-    document.getElementById('directMailROI').textContent = '150.0%';
-    document.getElementById('coldCallingROI').textContent = '120.0%';
-    document.getElementById('digitalAdsROI').textContent = '80.0%';
-    document.getElementById('referralsROI').textContent = '300.0%';
-    
-    // Update cost per lead by channel
-    document.getElementById('directMailCPL').textContent = '$85';
-    document.getElementById('coldCallingCPL').textContent = '$45';
-    
-    // Update lead quality metrics
-    document.getElementById('appointmentRate').textContent = '25.0%';
-    document.getElementById('contractRate').textContent = '12.0%';
-    document.getElementById('closeRate').textContent = '8.0%';
+    try {
+        // Calculate totals from all campaigns
+        const totalCampaigns = directMailCampaigns.length + callingLists.length;
+        const totalSpend = directMailCampaigns.reduce((sum, c) => sum + c.totalCost, 0) + 
+                         callingLists.reduce((sum, l) => sum + l.totalCost, 0);
+        const totalLeads = directMailCampaigns.reduce((sum, c) => sum + c.actualLeads, 0) + 
+                          callingLists.reduce((sum, l) => sum + l.leads, 0);
+        const totalRevenue = directMailCampaigns.reduce((sum, c) => sum + c.revenue, 0);
+        
+        const roi = totalSpend > 0 ? (((totalRevenue - totalSpend) / totalSpend) * 100) : 0;
+        const costPerLead = totalLeads > 0 ? totalSpend / totalLeads : 0;
+        
+        // Update dashboard metrics (with null checks)
+        const updateElement = (id, value) => {
+            const element = document.getElementById(id);
+            if (element) element.textContent = value;
+        };
+        
+        updateElement('activeCampaigns', totalCampaigns.toString());
+        updateElement('totalLeadsGenerated', totalLeads.toString());
+        updateElement('marketingROI', roi.toFixed(1) + '%');
+        updateElement('costPerLead', formatCurrency(costPerLead));
+        
+        // Update ROI analytics section
+        updateElement('totalMarketingSpend', formatCurrency(totalSpend));
+        updateElement('totalMarketingRevenue', formatCurrency(totalRevenue));
+        updateElement('totalMarketingProfit', formatCurrency(totalRevenue - totalSpend));
+        updateElement('overallMarketingROI', roi.toFixed(1) + '%');
+        
+        // Update channel-specific ROI (simplified for demo)
+        updateElement('directMailROI', '150.0%');
+        updateElement('coldCallingROI', '120.0%');
+        updateElement('digitalAdsROI', '80.0%');
+        updateElement('referralsROI', '300.0%');
+        
+        // Update cost per lead by channel
+        updateElement('directMailCPL', '$85');
+        updateElement('coldCallingCPL', '$45');
+        
+        // Update lead quality metrics
+        updateElement('appointmentRate', '25.0%');
+        updateElement('contractRate', '12.0%');
+        updateElement('closeRate', '8.0%');
+    } catch (error) {
+        console.error('Error updating marketing dashboard:', error);
+    }
 }
 
 // ================================
@@ -5320,14 +5330,22 @@ function showAddCampaignModal() {
 
 // Initialize Marketing Dashboard on Load
 function initializeMarketing() {
-    updateMarketingDashboard();
-    updateDirectMailTable();
-    updateCallingListsTable();
-    updateLandingPagesTable();
-    updatePagePreview();
-    
-    // Set default marketing sub-tab
-    showMarketingSubTab('direct-mail');
+    try {
+        updateMarketingDashboard();
+        updateDirectMailTable();
+        updateCallingListsTable();
+        updateLandingPagesTable();
+        
+        // Only update page preview if elements exist
+        if (document.getElementById('pageTemplate')) {
+            updatePagePreview();
+        }
+        
+        // Set default marketing sub-tab
+        showMarketingSubTab('direct-mail');
+    } catch (error) {
+        console.error('Error initializing marketing:', error);
+    }
 }
 
 // ==============================================
