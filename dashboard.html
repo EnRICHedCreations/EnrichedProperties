@@ -62,7 +62,7 @@
                 <button onclick="showTab('dealanalysis')" id="dealanalysis-tab" class="tab-button whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm">
                     Deal Analysis
                 </button>
-                <button onclick="showTab('marketing')" id="marketing-tab" class="tab-button whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm">
+                <button onclick="showTab('test-marketing')" id="marketing-tab" class="tab-button whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm">
                     Marketing
                 </button>
             </nav>
@@ -208,6 +208,12 @@
                     </table>
                 </div>
             </div>
+        </div>
+
+        <!-- TEST MARKETING TAB -->
+        <div id="test-marketing-content" class="tab-content hidden">
+            <h1 style="color: red; font-size: 48px; background: yellow; padding: 50px;">TEST MARKETING TAB WORKS!</h1>
+            <p>This is a simple test marketing tab.</p>
         </div>
 
         <!-- Buyers Tab -->
@@ -2384,10 +2390,6 @@
         </div>
     </div>
 
-    <!-- TEST MARKETING CONTENT -->
-    <div style="background: orange; color: white; font-size: 48px; padding: 50px; position: fixed; top: 0; left: 0; z-index: 99999;">
-        MARKETING TEST - IF YOU SEE THIS, THE HTML IS LOADING
-    </div>
 
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
