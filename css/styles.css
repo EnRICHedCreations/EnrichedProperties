@@ -59,24 +59,6 @@ html {
     }
 }
 
-/* Override Tailwind hidden class for marketing content */
-#marketing-content {
-    display: block !important;
-    visibility: visible !important;
-    position: relative !important;
-    z-index: 9999 !important;
-    background: red !important;
-    min-height: 200px !important;
-    border: 10px solid blue !important;
-}
-
-#marketing-content.hidden {
-    display: block !important;
-}
-
-#marketing-content:not(.hidden) {
-    display: block !important;
-}
 
 /* Custom scrollbar */
 ::-webkit-scrollbar {
