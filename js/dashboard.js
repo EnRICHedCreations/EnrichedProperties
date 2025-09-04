@@ -257,11 +257,20 @@ function showTab(tabName) {
                 console.log('Marketing content classes:', selectedContent.className);
                 console.log('Marketing content computed display:', window.getComputedStyle(selectedContent).display);
                 console.log('Marketing content computed visibility:', window.getComputedStyle(selectedContent).visibility);
+                console.log('Marketing content position:', window.getComputedStyle(selectedContent).position);
+                console.log('Marketing content z-index:', window.getComputedStyle(selectedContent).zIndex);
+                console.log('Marketing content width:', window.getComputedStyle(selectedContent).width);
+                console.log('Marketing content height:', window.getComputedStyle(selectedContent).height);
                 selectedContent.style.display = 'block';
                 selectedContent.style.visibility = 'visible';
                 selectedContent.style.backgroundColor = 'red';
                 selectedContent.style.minHeight = '500px';
                 selectedContent.style.border = '10px solid blue';
+                selectedContent.style.position = 'relative';
+                selectedContent.style.zIndex = '9999';
+                selectedContent.style.width = '100%';
+                selectedContent.style.left = '0';
+                selectedContent.style.top = '0';
                 setTimeout(() => {
                     console.log('About to initialize marketing...');
                     try {
