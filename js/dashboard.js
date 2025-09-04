@@ -4854,8 +4854,15 @@ function showMarketingSubTab(tabName) {
         targetContent.classList.remove('hidden');
         targetContent.style.display = 'block';
         targetContent.style.visibility = 'visible';
+        targetContent.style.height = 'auto';
+        targetContent.style.overflow = 'visible';
+        targetContent.style.opacity = '1';
+        targetContent.style.minHeight = '200px';
+        targetContent.style.backgroundColor = 'yellow';
         console.log('Showing sub-content:', targetContent.id, 'classes:', targetContent.className);
         console.log('Computed style:', window.getComputedStyle(targetContent).display);
+        console.log('Height:', window.getComputedStyle(targetContent).height);
+        console.log('Overflow:', window.getComputedStyle(targetContent).overflow);
     } else {
         console.error('Target content not found for:', tabName + '-content');
     }
