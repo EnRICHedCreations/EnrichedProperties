@@ -254,6 +254,11 @@ function showTab(tabName) {
                 break;
             case 'marketing':
                 console.log('Marketing tab clicked, selectedContent:', selectedContent);
+                console.log('Marketing content classes:', selectedContent.className);
+                console.log('Marketing content computed display:', window.getComputedStyle(selectedContent).display);
+                console.log('Marketing content computed visibility:', window.getComputedStyle(selectedContent).visibility);
+                selectedContent.style.display = 'block';
+                selectedContent.style.visibility = 'visible';
                 setTimeout(() => {
                     console.log('About to initialize marketing...');
                     initializeMarketing();
