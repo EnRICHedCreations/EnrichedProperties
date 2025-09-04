@@ -259,6 +259,9 @@ function showTab(tabName) {
                 console.log('Marketing content computed visibility:', window.getComputedStyle(selectedContent).visibility);
                 selectedContent.style.display = 'block';
                 selectedContent.style.visibility = 'visible';
+                selectedContent.style.backgroundColor = 'red';
+                selectedContent.style.minHeight = '500px';
+                selectedContent.style.border = '10px solid blue';
                 setTimeout(() => {
                     console.log('About to initialize marketing...');
                     try {
