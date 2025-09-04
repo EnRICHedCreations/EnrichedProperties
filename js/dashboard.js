@@ -253,7 +253,9 @@ function showTab(tabName) {
                 updateProfitDisplay();
                 break;
             case 'marketing':
-                initializeMarketing();
+                setTimeout(() => {
+                    initializeMarketing();
+                }, 50);
                 break;
         }
     }
