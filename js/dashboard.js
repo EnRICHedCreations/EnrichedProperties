@@ -257,8 +257,8 @@ function showTab(tabName) {
                 // Initialize Marketing displays and force visibility
                 const marketingContent = document.getElementById('marketing-content');
                 if (marketingContent) {
-                    marketingContent.style.display = 'block';
-                    marketingContent.style.visibility = 'visible';
+                    marketingContent.classList.add('marketing-force-visible');
+                    console.log('Marketing content forced visible with CSS class');
                 }
                 setTimeout(() => {
                     initializeMarketing();
