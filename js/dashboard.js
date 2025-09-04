@@ -206,8 +206,68 @@ function setupEventListeners() {
     });
 }
 
-// Tab management function has been moved to the end of the file as showTabOriginal
-// and wrapped in the window.showTab override function
+// Tab management
+function showTab(tabName) {
+    currentTab = tabName;
+    
+    // Update tab buttons
+    document.querySelectorAll('.tab-button').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    const tabButton = document.getElementById(`${tabName}-tab`);
+    if (tabButton) {
+        tabButton.classList.add('active');
+    }
+    
+    // Hide all content
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.add('hidden');
+    });
+    
+    // Show selected content
+    const selectedContent = document.getElementById(`${tabName}-content`);
+    if (selectedContent) {
+        selectedContent.classList.remove('hidden');
+        
+        // Load content based on tab
+        switch(tabName) {
+            case 'overview':
+                updateOverview();
+                break;
+            case 'leads':
+                updateLeadsTable();
+                break;
+            case 'buyers':
+                updateBuyersTable();
+                break;
+            case 'contracts':
+                updateContractsTable();
+                break;
+            case 'properties':
+                updatePropertiesGrid();
+                break;
+            case 'analytics':
+                updateAnalytics();
+                break;
+            case 'dealanalysis':
+                updateProfitDisplay();
+                break;
+            case 'marketing':
+                // Force marketing content visible
+                const marketingContent = document.getElementById('marketing-content');
+                if (marketingContent) {
+                    marketingContent.classList.add('marketing-force-visible');
+                }
+                setTimeout(() => {
+                    initializeMarketing();
+                }, 50);
+                break;
+        }
+    }
+}
+
+// Make showTab immediately available globally
+window.showTab = showTab;
 
 // Update dashboard stats
 function updateDashboardStats() {
@@ -5891,76 +5951,15 @@ function initializeBuyersTab() {
 }
 
 // Hook into existing tab switching for buyers only
+const originalShowTab = showTab;
 window.showTab = function(tabName) {
     // Call the original showTab logic
-    showTabOriginal(tabName);
+    originalShowTab(tabName);
     
     if (tabName === 'buyers') {
         setTimeout(initializeBuyersTab, 100);
     }
 };
-
-// Rename the original function to avoid conflicts
-function showTabOriginal(tabName) {
-    currentTab = tabName;
-    
-    // Update tab buttons
-    document.querySelectorAll('.tab-button').forEach(btn => {
-        btn.classList.remove('active');
-    });
-    const tabButton = document.getElementById(`${tabName}-tab`);
-    if (tabButton) {
-        tabButton.classList.add('active');
-    }
-    
-    // Hide all content
-    document.querySelectorAll('.tab-content').forEach(content => {
-        content.classList.add('hidden');
-    });
-    
-    // Show selected content
-    const selectedContent = document.getElementById(`${tabName}-content`);
-    if (selectedContent) {
-        selectedContent.classList.remove('hidden');
-        
-        // Load content based on tab
-        switch(tabName) {
-            case 'overview':
-                updateOverview();
-                break;
-            case 'leads':
-                updateLeadsTable();
-                break;
-            case 'buyers':
-                updateBuyersTable();
-                break;
-            case 'contracts':
-                updateContractsTable();
-                break;
-            case 'properties':
-                updatePropertiesGrid();
-                break;
-            case 'analytics':
-                updateAnalytics();
-                break;
-            case 'dealanalysis':
-                // Initialize Deal Analysis displays
-                updateProfitDisplay();
-                break;
-            case 'marketing':
-                // Initialize Marketing displays and force visibility
-                const marketingContent = document.getElementById('marketing-content');
-                if (marketingContent) {
-                    marketingContent.classList.add('marketing-force-visible');
-                    console.log('Marketing content forced visible with CSS class');
-                }
-                setTimeout(() => {
-                    initializeMarketing();
-                }, 50);
-                break;
-        }
-    }
-}
 
 // Make marketing functions globally accessible for onclick handlers
 window.showMarketingSubTab = showMarketingSubTab;
