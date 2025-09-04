@@ -4832,6 +4832,7 @@ function showMarketingSubTab(tabName) {
     subContents.forEach(content => {
         console.log('Hiding sub-content:', content.id);
         content.classList.add('hidden');
+        content.style.display = 'none';
     });
     
     // Remove active class from all sub-tabs
@@ -4846,7 +4847,10 @@ function showMarketingSubTab(tabName) {
     console.log('Target content element:', targetContent, 'for tabName:', tabName);
     if (targetContent) {
         targetContent.classList.remove('hidden');
+        targetContent.style.display = 'block';
+        targetContent.style.visibility = 'visible';
         console.log('Showing sub-content:', targetContent.id, 'classes:', targetContent.className);
+        console.log('Computed style:', window.getComputedStyle(targetContent).display);
     } else {
         console.error('Target content not found for:', tabName + '-content');
     }
