@@ -208,13 +208,19 @@ function setupEventListeners() {
 
 // Tab management
 function showTab(tabName) {
+    console.log('showTab called with:', tabName);
     currentTab = tabName;
     
     // Update tab buttons
     document.querySelectorAll('.tab-button').forEach(btn => {
         btn.classList.remove('active');
     });
-    document.getElementById(`${tabName}-tab`).classList.add('active');
+    const tabButton = document.getElementById(`${tabName}-tab`);
+    if (tabButton) {
+        tabButton.classList.add('active');
+    } else {
+        console.log('Tab button not found:', `${tabName}-tab`);
+    }
     
     // Hide all content
     document.querySelectorAll('.tab-content').forEach(content => {
@@ -223,8 +229,10 @@ function showTab(tabName) {
     
     // Show selected content
     const selectedContent = document.getElementById(`${tabName}-content`);
+    console.log('Selected content element:', selectedContent);
     if (selectedContent) {
         selectedContent.classList.remove('hidden');
+        console.log('Removed hidden class from:', `${tabName}-content`);
         
         // Load content based on tab
         switch(tabName) {
@@ -252,6 +260,12 @@ function showTab(tabName) {
                 break;
             case 'marketing':
                 // Initialize Marketing displays
+                console.log('Marketing case reached');
+                const marketingContent = document.getElementById('marketing-content');
+                console.log('Marketing content element:', marketingContent);
+                if (marketingContent) {
+                    console.log('Marketing content classes:', marketingContent.className);
+                }
                 setTimeout(() => {
                     initializeMarketing();
                 }, 50);
