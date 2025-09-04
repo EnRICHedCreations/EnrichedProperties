@@ -268,8 +268,6 @@ function showTab(tabName) {
     }
 }
 
-// Make showTab immediately available globally
-window.showTab = showTab;
 
 // Update dashboard stats
 function updateDashboardStats() {
