@@ -276,8 +276,6 @@ function showTab(tabName) {
     }
 }
 
-// Make showTab globally available immediately
-window.showTab = showTab;
 
 
 // Update dashboard stats
@@ -5996,10 +5994,13 @@ function initializeBuyersTab() {
     initializeFloatingScrollBar();
 }
 
+// Store original showTab function before wrapping
+const originalShowTabFunction = showTab;
+
 // Hook into existing tab switching for buyers only
 window.showTab = function(tabName) {
     // Call the original showTab logic
-    showTab(tabName);
+    originalShowTabFunction(tabName);
     
     if (tabName === 'buyers') {
         setTimeout(initializeBuyersTab, 100);
