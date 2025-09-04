@@ -63,10 +63,15 @@ html {
 #marketing-content {
     display: block !important;
     visibility: visible !important;
+    position: relative !important;
+    z-index: 9999 !important;
+    background: red !important;
+    min-height: 200px !important;
+    border: 10px solid blue !important;
 }
 
 #marketing-content.hidden {
-    display: none !important;
+    display: block !important;
 }
 
 #marketing-content:not(.hidden) {
