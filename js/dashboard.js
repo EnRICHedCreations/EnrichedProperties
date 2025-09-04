@@ -4862,6 +4862,20 @@ function showMarketingSubTab(tabName) {
         targetContent.style.opacity = '1';
         targetContent.style.minHeight = '200px';
         targetContent.style.backgroundColor = 'yellow';
+        
+        // Force all child elements to be visible
+        const allChildren = targetContent.querySelectorAll('*');
+        allChildren.forEach(child => {
+            child.style.display = 'block';
+            child.style.visibility = 'visible';
+            child.style.opacity = '1';
+            if (child.tagName === 'INPUT' || child.tagName === 'SELECT' || child.tagName === 'TEXTAREA') {
+                child.style.display = 'block';
+            }
+            if (child.tagName === 'LABEL') {
+                child.style.display = 'block';
+            }
+        });
         console.log('Showing sub-content:', targetContent.id, 'classes:', targetContent.className);
         console.log('Computed style:', window.getComputedStyle(targetContent).display);
         console.log('Height:', window.getComputedStyle(targetContent).height);
