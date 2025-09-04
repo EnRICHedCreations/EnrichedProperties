@@ -261,7 +261,12 @@ function showTab(tabName) {
                 selectedContent.style.visibility = 'visible';
                 setTimeout(() => {
                     console.log('About to initialize marketing...');
-                    initializeMarketing();
+                    try {
+                        initializeMarketing();
+                        console.log('Marketing initialization completed');
+                    } catch (error) {
+                        console.error('Marketing initialization failed:', error);
+                    }
                 }, 50);
                 break;
         }
