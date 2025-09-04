@@ -4855,7 +4855,7 @@ function showMarketingSubTab(tabName) {
 // ================================
 
 // Create Direct Mail Campaign
-function createDirectMailCampaign() {
+async function createDirectMailCampaign() {
     const name = document.getElementById('campaignName').value;
     const type = document.getElementById('campaignType').value;
     const listSize = parseInt(document.getElementById('listSize').value) || 0;
@@ -4889,12 +4889,25 @@ function createDirectMailCampaign() {
         createdAt: new Date().toISOString()
     };
     
-    directMailCampaigns.push(campaign);
-    updateDirectMailTable();
-    updateMarketingDashboard();
-    clearDirectMailForm();
-    
-    showSuccessMessage('Direct mail campaign created successfully!');
+    try {
+        // Get existing campaigns from cloud storage
+        const existingCampaigns = await CloudStorage.loadData('DirectMailCampaigns', []);
+        existingCampaigns.push(campaign);
+        
+        // Save to cloud storage
+        await CloudStorage.saveData('DirectMailCampaigns', existingCampaigns);
+        
+        // Update global array with the complete array from cloud storage
+        directMailCampaigns = existingCampaigns;
+        updateDirectMailTable();
+        updateMarketingDashboard();
+        clearDirectMailForm();
+        
+        showSuccessMessage('Direct mail campaign created successfully!');
+    } catch (error) {
+        showErrorMessage('Failed to create campaign. Please try again.');
+        console.error('Error creating campaign:', error);
+    }
 }
 
 // Calculate Campaign ROI
@@ -5337,9 +5350,34 @@ function showAddCampaignModal() {
     showSuccessMessage('Campaign creation modal would be implemented here');
 }
 
-// Initialize Marketing Dashboard on Load
-function initializeMarketing() {
+// Load Marketing Data from Cloud Storage
+async function loadMarketingData() {
     try {
+        // Load all marketing data from cloud storage
+        directMailCampaigns = await CloudStorage.loadData('DirectMailCampaigns', []);
+        callingLists = await CloudStorage.loadData('CallingLists', []);
+        landingPages = await CloudStorage.loadData('LandingPages', []);
+        
+        console.log('Marketing data loaded:', { 
+            campaigns: directMailCampaigns.length, 
+            lists: callingLists.length, 
+            pages: landingPages.length 
+        });
+        
+        return true;
+    } catch (error) {
+        console.error('Error loading marketing data:', error);
+        return false;
+    }
+}
+
+// Initialize Marketing Dashboard on Load
+async function initializeMarketing() {
+    try {
+        // Load data from cloud storage first
+        await loadMarketingData();
+        
+        // Then update all the UI components
         updateMarketingDashboard();
         updateDirectMailTable();
         updateCallingListsTable();
@@ -5961,9 +5999,193 @@ window.showTab = function(tabName) {
     }
 };
 
+// ================================
+// PREVIEW CAMPAIGN FUNCTIONALITY
+// ================================
+function previewCampaign() {
+    const name = document.getElementById('campaignName').value;
+    const type = document.getElementById('campaignType').value;
+    const listSize = parseInt(document.getElementById('listSize').value) || 0;
+    const costPerPiece = parseFloat(document.getElementById('costPerPiece').value) || 0;
+    const mailDate = document.getElementById('mailDate').value;
+    const expectedResponse = parseFloat(document.getElementById('expectedResponse').value) || 0;
+    
+    if (!name) {
+        showErrorMessage('Please enter a campaign name to preview');
+        return;
+    }
+    
+    // Create preview modal content
+    const previewContent = `
+        <div class="bg-white p-6 rounded-lg max-w-2xl mx-auto">
+            <h3 class="text-xl font-bold mb-4">Campaign Preview: ${name}</h3>
+            <div class="grid grid-cols-2 gap-4 text-sm">
+                <div><strong>Campaign Type:</strong> ${type || 'Not specified'}</div>
+                <div><strong>List Size:</strong> ${listSize || 'Not specified'}</div>
+                <div><strong>Cost per Piece:</strong> $${costPerPiece || '0.00'}</div>
+                <div><strong>Mail Date:</strong> ${mailDate || 'Not specified'}</div>
+                <div><strong>Expected Response:</strong> ${expectedResponse || '0'}%</div>
+                <div><strong>Total Cost:</strong> $${(listSize * costPerPiece).toFixed(2)}</div>
+            </div>
+            
+            <div class="mt-6 p-4 bg-gray-50 rounded">
+                <h4 class="font-semibold mb-2">Campaign Projections:</h4>
+                <div class="text-sm space-y-1">
+                    <div>Expected Responses: ${Math.round(listSize * (expectedResponse / 100))}</div>
+                    <div>Cost per Response: $${listSize > 0 && expectedResponse > 0 ? ((listSize * costPerPiece) / (listSize * (expectedResponse / 100))).toFixed(2) : '0.00'}</div>
+                    <div>Break-even Deal Value: $${listSize > 0 && expectedResponse > 0 ? (((listSize * costPerPiece) / (listSize * (expectedResponse / 100))) * 10).toFixed(2) : '0.00'}</div>
+                </div>
+            </div>
+            
+            <div class="mt-6 flex justify-end space-x-3">
+                <button onclick="closeCampaignPreview()" class="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300">Close</button>
+                <button onclick="createCampaignFromPreview(); closeCampaignPreview();" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Create Campaign</button>
+            </div>
+        </div>
+    `;
+    
+    // Create and show modal
+    const modal = document.createElement('div');
+    modal.id = 'campaignPreviewModal';
+    modal.className = 'fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center';
+    modal.innerHTML = previewContent;
+    document.body.appendChild(modal);
+}
+
+function closeCampaignPreview() {
+    const modal = document.getElementById('campaignPreviewModal');
+    if (modal) {
+        modal.remove();
+    }
+}
+
+async function createCampaignFromPreview() {
+    await createDirectMailCampaign();
+}
+
+// ================================
+// UPLOAD CSV FUNCTIONALITY
+// ================================
+function uploadLeadList() {
+    // Create file input modal
+    const modalContent = `
+        <div class="bg-white p-6 rounded-lg max-w-md mx-auto">
+            <h3 class="text-xl font-bold mb-4">Upload Lead List</h3>
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Select CSV File</label>
+                <input type="file" id="leadListFile" accept=".csv" class="w-full px-3 py-2 border border-gray-300 rounded-md file:mr-4 file:py-1 file:px-3 file:rounded file:border-0 file:text-sm file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+            </div>
+            <div class="mb-4 text-xs text-gray-500">
+                <p>Expected CSV format: Name, Address, City, State, ZIP, Phone, Email</p>
+            </div>
+            <div class="flex justify-end space-x-3">
+                <button onclick="closeUploadModal()" class="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300">Cancel</button>
+                <button onclick="processLeadListUpload()" class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">Upload</button>
+            </div>
+        </div>
+    `;
+    
+    // Create and show modal
+    const modal = document.createElement('div');
+    modal.id = 'uploadLeadModal';
+    modal.className = 'fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center';
+    modal.innerHTML = modalContent;
+    document.body.appendChild(modal);
+}
+
+function processLeadListUpload() {
+    const fileInput = document.getElementById('leadListFile');
+    const file = fileInput.files[0];
+    
+    if (!file) {
+        showErrorMessage('Please select a CSV file');
+        return;
+    }
+    
+    if (!file.name.toLowerCase().endsWith('.csv')) {
+        showErrorMessage('Please select a valid CSV file');
+        return;
+    }
+    
+    const reader = new FileReader();
+    reader.onload = async function(e) {
+        const csv = e.target.result;
+        const lines = csv.split('\n');
+        const headers = lines[0].split(',').map(h => h.trim());
+        
+        // Validate CSV format
+        const requiredColumns = ['name', 'address', 'city', 'state'];
+        const hasRequiredColumns = requiredColumns.every(col => 
+            headers.some(header => header.toLowerCase().includes(col))
+        );
+        
+        if (!hasRequiredColumns) {
+            showErrorMessage('CSV must contain at least: Name, Address, City, State columns');
+            return;
+        }
+        
+        // Process the data
+        const leads = [];
+        for (let i = 1; i < lines.length; i++) {
+            if (lines[i].trim()) {
+                const values = lines[i].split(',').map(v => v.trim());
+                if (values.length >= headers.length) {
+                    const lead = {};
+                    headers.forEach((header, index) => {
+                        lead[header.toLowerCase()] = values[index] || '';
+                    });
+                    leads.push(lead);
+                }
+            }
+        }
+        
+        try {
+            // Store leads in cloud storage
+            const existingLeads = await CloudStorage.loadData('LeadLists', []);
+            const newLeadList = {
+                id: Date.now(),
+                name: `Imported ${new Date().toLocaleDateString()}`,
+                leads: leads,
+                uploadDate: new Date().toISOString(),
+                count: leads.length
+            };
+            
+            existingLeads.push(newLeadList);
+            await CloudStorage.saveData('LeadLists', existingLeads);
+            
+            // Update list size field with uploaded count
+            const listSizeField = document.getElementById('listSize');
+            if (listSizeField) {
+                listSizeField.value = leads.length;
+            }
+            
+            showSuccessMessage(`Successfully uploaded ${leads.length} leads`);
+            closeUploadModal();
+        } catch (error) {
+            showErrorMessage('Failed to upload leads. Please try again.');
+            console.error('Error uploading leads:', error);
+        }
+    };
+    
+    reader.readAsText(file);
+}
+
+function closeUploadModal() {
+    const modal = document.getElementById('uploadLeadModal');
+    if (modal) {
+        modal.remove();
+    }
+}
+
 // Make marketing functions globally accessible for onclick handlers
 window.showMarketingSubTab = showMarketingSubTab;
 window.createDirectMailCampaign = createDirectMailCampaign;
+window.previewCampaign = previewCampaign;
+window.uploadLeadList = uploadLeadList;
+window.closeCampaignPreview = closeCampaignPreview;
+window.createCampaignFromPreview = createCampaignFromPreview;
+window.closeUploadModal = closeUploadModal;
+window.processLeadListUpload = processLeadListUpload;
 window.calculateCampaignROI = calculateCampaignROI;
 window.createCallingList = createCallingList;
 window.uploadCSV = uploadCSV;
