@@ -47,6 +47,7 @@ html {
     animation: fadeIn 0.3s ease-in-out;
 }
 
+
 @keyframes fadeIn {
     from {
         opacity: 0;
@@ -56,6 +57,20 @@ html {
         opacity: 1;
         transform: translateY(0);
     }
+}
+
+/* Override Tailwind hidden class for marketing content */
+#marketing-content {
+    display: block !important;
+    visibility: visible !important;
+}
+
+#marketing-content.hidden {
+    display: none !important;
+}
+
+#marketing-content:not(.hidden) {
+    display: block !important;
 }
 
 /* Custom scrollbar */
