@@ -276,6 +276,9 @@ function showTab(tabName) {
     }
 }
 
+// Make showTab globally available immediately
+window.showTab = showTab;
+
 
 // Update dashboard stats
 function updateDashboardStats() {
@@ -5994,10 +5997,9 @@ function initializeBuyersTab() {
 }
 
 // Hook into existing tab switching for buyers only
-const originalShowTab = showTab;
 window.showTab = function(tabName) {
     // Call the original showTab logic
-    originalShowTab(tabName);
+    showTab(tabName);
     
     if (tabName === 'buyers') {
         setTimeout(initializeBuyersTab, 100);
