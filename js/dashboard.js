@@ -271,6 +271,9 @@ function showTab(tabName) {
                 selectedContent.style.width = '100%';
                 selectedContent.style.left = '0';
                 selectedContent.style.top = '0';
+                
+                // Force content by injecting visible text
+                selectedContent.innerHTML = '<h1 style="color: white; font-size: 48px; padding: 50px;">MARKETING TAB IS WORKING!</h1>' + selectedContent.innerHTML;
                 setTimeout(() => {
                     console.log('About to initialize marketing...');
                     try {
