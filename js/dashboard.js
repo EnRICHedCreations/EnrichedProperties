@@ -253,16 +253,7 @@ function showTab(tabName) {
                 updateProfitDisplay();
                 break;
             case 'marketing':
-                // Force marketing content visible
-                const marketingContent = document.getElementById('marketing-content');
-                if (marketingContent) {
-                    marketingContent.classList.remove('hidden');
-                    marketingContent.classList.add('marketing-force-visible');
-                    console.log('Marketing content classes:', marketingContent.className);
-                }
-                setTimeout(() => {
-                    initializeMarketing();
-                }, 50);
+                initializeMarketing();
                 break;
         }
     }
