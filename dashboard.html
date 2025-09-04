@@ -295,30 +295,400 @@
 
             <!-- Direct Mail Content -->
             <div id="direct-mail-content" class="marketing-sub-content">
-                <div class="bg-white rounded-lg shadow p-6">
-                    <h3 class="text-lg font-semibold mb-4">📮 Direct Mail Campaign Manager</h3>
-                    <p class="text-gray-600 mb-4">Create and manage direct mail campaigns for motivated sellers.</p>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Campaign Name</label>
-                            <input type="text" class="w-full px-3 py-2 border border-gray-300 rounded-md" placeholder="Pre-Foreclosure Q4 2024">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Target List Size</label>
-                            <input type="number" class="w-full px-3 py-2 border border-gray-300 rounded-md" placeholder="1000">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+                    <!-- Campaign Creation -->
+                    <div class="lg:col-span-2">
+                        <div class="bg-white rounded-lg shadow p-6">
+                            <h3 class="text-lg font-semibold mb-4">📮 Direct Mail Campaign Manager</h3>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Campaign Name</label>
+                                    <input type="text" id="campaignName" class="w-full px-3 py-2 border border-gray-300 rounded-md" placeholder="Pre-Foreclosure Q4 2024">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Campaign Type</label>
+                                    <select id="campaignType" class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                                        <option value="postcard">Postcards</option>
+                                        <option value="letter">Letters</option>
+                                        <option value="package">Package</option>
+                                        <option value="catalog">Catalog</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Target List Size</label>
+                                    <input type="number" id="listSize" class="w-full px-3 py-2 border border-gray-300 rounded-md" placeholder="1000">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Cost Per Piece</label>
+                                    <input type="number" step="0.01" id="costPerPiece" class="w-full px-3 py-2 border border-gray-300 rounded-md" placeholder="0.85">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Mail Date</label>
+                                    <input type="date" id="mailDate" class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Expected Response Rate (%)</label>
+                                    <input type="number" step="0.01" id="expectedResponse" class="w-full px-3 py-2 border border-gray-300 rounded-md" placeholder="2.5">
+                                </div>
+                            </div>
+
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Target Criteria</label>
+                                <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
+                                    <label class="flex items-center">
+                                        <input type="checkbox" class="campaign-criteria" value="pre-foreclosure"> Pre-Foreclosure
+                                    </label>
+                                    <label class="flex items-center">
+                                        <input type="checkbox" class="campaign-criteria" value="probate"> Probate
+                                    </label>
+                                    <label class="flex items-center">
+                                        <input type="checkbox" class="campaign-criteria" value="tax-delinquent"> Tax Delinquent
+                                    </label>
+                                    <label class="flex items-center">
+                                        <input type="checkbox" class="campaign-criteria" value="absentee-owner"> Absentee Owner
+                                    </label>
+                                    <label class="flex items-center">
+                                        <input type="checkbox" class="campaign-criteria" value="code-violations"> Code Violations
+                                    </label>
+                                    <label class="flex items-center">
+                                        <input type="checkbox" class="campaign-criteria" value="divorce"> Divorce
+                                    </label>
+                                    <label class="flex items-center">
+                                        <input type="checkbox" class="campaign-criteria" value="bankruptcy"> Bankruptcy
+                                    </label>
+                                    <label class="flex items-center">
+                                        <input type="checkbox" class="campaign-criteria" value="vacant"> Vacant Properties
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Data Sources</label>
+                                <div class="space-y-2">
+                                    <label class="flex items-center">
+                                        <input type="checkbox" class="data-sources" value="county-clerk" checked>
+                                        <span class="ml-2">County Clerk Records</span>
+                                    </label>
+                                    <label class="flex items-center">
+                                        <input type="checkbox" class="data-sources" value="tax-assessor">
+                                        <span class="ml-2">Tax Assessor Database</span>
+                                    </label>
+                                    <label class="flex items-center">
+                                        <input type="checkbox" class="data-sources" value="probate-court">
+                                        <span class="ml-2">Probate Court Records</span>
+                                    </label>
+                                    <label class="flex items-center">
+                                        <input type="checkbox" class="data-sources" value="mls">
+                                        <span class="ml-2">MLS Data</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="flex space-x-3">
+                                <button onclick="createDirectMailCampaign()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                                    Create Campaign
+                                </button>
+                                <button onclick="previewCampaign()" class="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors">
+                                    Preview
+                                </button>
+                                <button onclick="uploadLeadList()" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
+                                    Upload CSV
+                                </button>
+                            </div>
                         </div>
                     </div>
-                    <button class="mt-4 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
-                        Create Campaign
-                    </button>
+
+                    <!-- Campaign Stats -->
+                    <div>
+                        <div class="bg-white rounded-lg shadow p-6 mb-6">
+                            <h4 class="text-md font-semibold mb-3">Campaign ROI Calculator</h4>
+                            <div class="space-y-2 text-sm">
+                                <div class="flex justify-between">
+                                    <span>Total Cost:</span>
+                                    <span id="totalCost">$0</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span>Expected Responses:</span>
+                                    <span id="expectedResponses">0</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span>Cost Per Response:</span>
+                                    <span id="costPerResponse">$0</span>
+                                </div>
+                                <div class="flex justify-between font-semibold">
+                                    <span>Break-even per deal:</span>
+                                    <span id="breakEven">$0</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg shadow p-6">
+                            <h4 class="text-md font-semibold mb-3">Public Data Sources</h4>
+                            <div class="space-y-3 text-xs">
+                                <div>
+                                    <h5 class="font-medium">County Records:</h5>
+                                    <p class="text-gray-600">clerk.county.gov/records</p>
+                                </div>
+                                <div>
+                                    <h5 class="font-medium">Tax Records:</h5>
+                                    <p class="text-gray-600">assessor.county.gov/search</p>
+                                </div>
+                                <div>
+                                    <h5 class="font-medium">Foreclosure Filings:</h5>
+                                    <p class="text-gray-600">courthouse.gov/foreclosures</p>
+                                </div>
+                                <button onclick="openDataSourceGuide()" class="text-blue-600 hover:underline">
+                                    View Complete Guide →
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Active Campaigns Table -->
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h4 class="text-lg font-semibold">Active Direct Mail Campaigns</h4>
+                        <button onclick="exportCampaignData()" class="text-sm bg-gray-100 px-3 py-1 rounded hover:bg-gray-200">
+                            Export CSV
+                        </button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Campaign</th>
+                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
+                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">List Size</th>
+                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Cost</th>
+                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Mail Date</th>
+                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Response Rate</th>
+                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">ROI</th>
+                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="directMailTableBody" class="divide-y divide-gray-200">
+                                <tr class="text-center text-gray-500">
+                                    <td colspan="8" class="py-8">
+                                        <div class="text-4xl mb-2">📮</div>
+                                        <p>No campaigns created yet</p>
+                                        <p class="text-xs">Create your first direct mail campaign to get started</p>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
 
-            <!-- Other sub-content divs (hidden initially) -->
+            <!-- Cold Calling Content -->
             <div id="cold-calling-content" class="marketing-sub-content hidden">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+                    <!-- Call Campaign Manager -->
+                    <div class="lg:col-span-2">
+                        <div class="bg-white rounded-lg shadow p-6">
+                            <h3 class="text-lg font-semibold mb-4">📞 Cold Calling Campaign Manager</h3>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Campaign Name</label>
+                                    <input type="text" id="callingCampaignName" class="w-full px-3 py-2 border border-gray-300 rounded-md" placeholder="Probate Cold Calling Q4">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Call Time Preference</label>
+                                    <select id="callTimePreference" class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                                        <option value="morning">Morning (9AM-12PM)</option>
+                                        <option value="afternoon">Afternoon (12PM-5PM)</option>
+                                        <option value="evening">Evening (5PM-8PM)</option>
+                                        <option value="anytime">Anytime</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Target List Size</label>
+                                    <input type="number" id="callingListSize" class="w-full px-3 py-2 border border-gray-300 rounded-md" placeholder="500">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Calls Per Day Goal</label>
+                                    <input type="number" id="callsPerDay" class="w-full px-3 py-2 border border-gray-300 rounded-md" placeholder="50">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Skip Tracing Budget</label>
+                                    <input type="number" step="0.01" id="skipTracingBudget" class="w-full px-3 py-2 border border-gray-300 rounded-md" placeholder="200.00">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Expected Connect Rate (%)</label>
+                                    <input type="number" step="0.1" id="expectedConnectRate" class="w-full px-3 py-2 border border-gray-300 rounded-md" placeholder="15">
+                                </div>
+                            </div>
+
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Lead Source Priority</label>
+                                <div class="grid grid-cols-2 md:grid-cols-3 gap-2">
+                                    <label class="flex items-center">
+                                        <input type="checkbox" class="calling-criteria" value="probate"> Probate
+                                    </label>
+                                    <label class="flex items-center">
+                                        <input type="checkbox" class="calling-criteria" value="pre-foreclosure"> Pre-Foreclosure
+                                    </label>
+                                    <label class="flex items-center">
+                                        <input type="checkbox" class="calling-criteria" value="divorce"> Divorce
+                                    </label>
+                                    <label class="flex items-center">
+                                        <input type="checkbox" class="calling-criteria" value="expired-listings"> Expired Listings
+                                    </label>
+                                    <label class="flex items-center">
+                                        <input type="checkbox" class="calling-criteria" value="fsbo"> FSBO
+                                    </label>
+                                    <label class="flex items-center">
+                                        <input type="checkbox" class="calling-criteria" value="high-equity"> High Equity
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Skip Tracing Services</label>
+                                <div class="space-y-2">
+                                    <label class="flex items-center">
+                                        <input type="checkbox" class="skip-tracing-services" value="whitepages" checked>
+                                        <span class="ml-2">WhitePages Pro ($0.30/search)</span>
+                                    </label>
+                                    <label class="flex items-center">
+                                        <input type="checkbox" class="skip-tracing-services" value="truepeoplesearch">
+                                        <span class="ml-2">TruePeopleSearch (Free)</span>
+                                    </label>
+                                    <label class="flex items-center">
+                                        <input type="checkbox" class="skip-tracing-services" value="spokeo">
+                                        <span class="ml-2">Spokeo ($0.95/search)</span>
+                                    </label>
+                                    <label class="flex items-center">
+                                        <input type="checkbox" class="skip-tracing-services" value="beenverified">
+                                        <span class="ml-2">BeenVerified ($1.20/search)</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="flex space-x-3">
+                                <button onclick="createCallingCampaign()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                                    Create Campaign
+                                </button>
+                                <button onclick="generateCallingScript()" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
+                                    Generate Script
+                                </button>
+                                <button onclick="uploadCallingList()" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors">
+                                    Upload List
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Call Scripts -->
+                        <div class="bg-white rounded-lg shadow p-6 mt-6">
+                            <h4 class="text-md font-semibold mb-3">Call Scripts & Compliance</h4>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <h5 class="font-medium mb-2">Probate Script:</h5>
+                                    <textarea id="probateScript" class="w-full px-3 py-2 border border-gray-300 rounded-md text-xs" rows="4" placeholder="Hi [NAME], I'm calling about the property at [ADDRESS]. I understand you may be going through a difficult time with the recent loss..."></textarea>
+                                </div>
+                                <div>
+                                    <h5 class="font-medium mb-2">Pre-Foreclosure Script:</h5>
+                                    <textarea id="preforeclosureScript" class="w-full px-3 py-2 border border-gray-300 rounded-md text-xs" rows="4" placeholder="Hi [NAME], I'm calling about your property at [ADDRESS]. I specialize in helping homeowners avoid foreclosure..."></textarea>
+                                </div>
+                            </div>
+                            <div class="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded">
+                                <p class="text-xs text-yellow-800">
+                                    <strong>TCPA Compliance:</strong> Always verify consent before calling. Add opt-out language. Record calls only with consent. Follow Do Not Call Registry rules.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Call Tracking Stats -->
+                    <div>
+                        <div class="bg-white rounded-lg shadow p-6 mb-6">
+                            <h4 class="text-md font-semibold mb-3">Daily Call Tracker</h4>
+                            <div class="space-y-3">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm">Calls Today:</span>
+                                    <span class="font-semibold" id="callsToday">0</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm">Connects:</span>
+                                    <span class="font-semibold" id="connectsToday">0</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm">Appointments:</span>
+                                    <span class="font-semibold" id="appointmentsToday">0</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm">Connect Rate:</span>
+                                    <span class="font-semibold" id="connectRate">0%</span>
+                                </div>
+                                <button onclick="logCall()" class="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700">
+                                    Log Call
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg shadow p-6">
+                            <h4 class="text-md font-semibold mb-3">Skip Tracing Tools</h4>
+                            <div class="space-y-3 text-xs">
+                                <div>
+                                    <h5 class="font-medium">Free Resources:</h5>
+                                    <p class="text-gray-600">TruePeopleSearch, FastPeopleSearch</p>
+                                </div>
+                                <div>
+                                    <h5 class="font-medium">Paid Services:</h5>
+                                    <p class="text-gray-600">WhitePages Pro, Spokeo, BeenVerified</p>
+                                </div>
+                                <div>
+                                    <h5 class="font-medium">Bulk Services:</h5>
+                                    <p class="text-gray-600">BatchSkipTracing, DataTree</p>
+                                </div>
+                                <button onclick="openSkipTracingGuide()" class="text-blue-600 hover:underline">
+                                    Skip Tracing Guide →
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Active Calling Lists -->
                 <div class="bg-white rounded-lg shadow p-6">
-                    <h3 class="text-lg font-semibold mb-4">📞 Cold Calling Manager</h3>
-                    <p>Cold calling campaigns will be available soon.</p>
+                    <div class="flex justify-between items-center mb-4">
+                        <h4 class="text-lg font-semibold">Active Calling Lists</h4>
+                        <div class="space-x-2">
+                            <button onclick="exportCallingData()" class="text-sm bg-gray-100 px-3 py-1 rounded hover:bg-gray-200">
+                                Export CSV
+                            </button>
+                            <button onclick="importFromCRM()" class="text-sm bg-blue-100 px-3 py-1 rounded hover:bg-blue-200">
+                                Import from CRM
+                            </button>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Campaign</th>
+                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Total Leads</th>
+                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Called</th>
+                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Connected</th>
+                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Appointments</th>
+                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Connect Rate</th>
+                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="callingListsTableBody" class="divide-y divide-gray-200">
+                                <tr class="text-center text-gray-500">
+                                    <td colspan="7" class="py-8">
+                                        <div class="text-4xl mb-2">📞</div>
+                                        <p>No calling lists created yet</p>
+                                        <p class="text-xs">Create your first calling campaign to get started</p>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
 
