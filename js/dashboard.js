@@ -253,36 +253,11 @@ function showTab(tabName) {
                 updateProfitDisplay();
                 break;
             case 'marketing':
-                console.log('Marketing tab clicked, selectedContent:', selectedContent);
-                console.log('Marketing content classes:', selectedContent.className);
-                console.log('Marketing content computed display:', window.getComputedStyle(selectedContent).display);
-                console.log('Marketing content computed visibility:', window.getComputedStyle(selectedContent).visibility);
-                console.log('Marketing content position:', window.getComputedStyle(selectedContent).position);
-                console.log('Marketing content z-index:', window.getComputedStyle(selectedContent).zIndex);
-                console.log('Marketing content width:', window.getComputedStyle(selectedContent).width);
-                console.log('Marketing content height:', window.getComputedStyle(selectedContent).height);
-                selectedContent.style.display = 'block';
-                selectedContent.style.visibility = 'visible';
-                selectedContent.style.backgroundColor = 'red';
-                selectedContent.style.minHeight = '500px';
-                selectedContent.style.border = '10px solid blue';
-                selectedContent.style.position = 'relative';
-                selectedContent.style.zIndex = '9999';
-                selectedContent.style.width = '100%';
-                selectedContent.style.left = '0';
-                selectedContent.style.top = '0';
-                
-                // Force content by injecting visible text
-                selectedContent.innerHTML = '<h1 style="color: white; font-size: 48px; padding: 50px;">MARKETING TAB IS WORKING!</h1>' + selectedContent.innerHTML;
-                setTimeout(() => {
-                    console.log('About to initialize marketing...');
-                    try {
-                        initializeMarketing();
-                        console.log('Marketing initialization completed');
-                    } catch (error) {
-                        console.error('Marketing initialization failed:', error);
-                    }
-                }, 50);
+                // Force visibility and initialize
+                selectedContent.style.display = 'block !important';
+                selectedContent.style.visibility = 'visible !important';
+                selectedContent.classList.remove('hidden');
+                initializeMarketing();
                 break;
         }
     }
@@ -4848,15 +4823,10 @@ let marketingMetrics = {
 
 // Marketing Sub-Tab Navigation
 function showMarketingSubTab(tabName) {
-    console.log('showMarketingSubTab called with:', tabName);
-    
     // Hide all sub-content
     const subContents = document.querySelectorAll('.marketing-sub-content');
-    console.log('Found sub-content elements:', subContents.length);
     subContents.forEach(content => {
-        console.log('Hiding sub-content:', content.id);
         content.classList.add('hidden');
-        content.style.display = 'none';
     });
     
     // Remove active class from all sub-tabs
@@ -4868,36 +4838,8 @@ function showMarketingSubTab(tabName) {
     
     // Show selected sub-content
     const targetContent = document.getElementById(tabName + '-content');
-    console.log('Target content element:', targetContent, 'for tabName:', tabName);
     if (targetContent) {
         targetContent.classList.remove('hidden');
-        targetContent.style.display = 'block';
-        targetContent.style.visibility = 'visible';
-        targetContent.style.height = 'auto';
-        targetContent.style.overflow = 'visible';
-        targetContent.style.opacity = '1';
-        targetContent.style.minHeight = '200px';
-        targetContent.style.backgroundColor = 'yellow';
-        
-        // Force all child elements to be visible
-        const allChildren = targetContent.querySelectorAll('*');
-        allChildren.forEach(child => {
-            child.style.display = 'block';
-            child.style.visibility = 'visible';
-            child.style.opacity = '1';
-            if (child.tagName === 'INPUT' || child.tagName === 'SELECT' || child.tagName === 'TEXTAREA') {
-                child.style.display = 'block';
-            }
-            if (child.tagName === 'LABEL') {
-                child.style.display = 'block';
-            }
-        });
-        console.log('Showing sub-content:', targetContent.id, 'classes:', targetContent.className);
-        console.log('Computed style:', window.getComputedStyle(targetContent).display);
-        console.log('Height:', window.getComputedStyle(targetContent).height);
-        console.log('Overflow:', window.getComputedStyle(targetContent).overflow);
-    } else {
-        console.error('Target content not found for:', tabName + '-content');
     }
     
     // Activate selected sub-tab
