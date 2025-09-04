@@ -208,7 +208,6 @@ function setupEventListeners() {
 
 // Tab management
 function showTab(tabName) {
-    console.log('showTab called with:', tabName);
     currentTab = tabName;
     
     // Update tab buttons
@@ -218,8 +217,6 @@ function showTab(tabName) {
     const tabButton = document.getElementById(`${tabName}-tab`);
     if (tabButton) {
         tabButton.classList.add('active');
-    } else {
-        console.log('Tab button not found:', `${tabName}-tab`);
     }
     
     // Hide all content
@@ -229,10 +226,8 @@ function showTab(tabName) {
     
     // Show selected content
     const selectedContent = document.getElementById(`${tabName}-content`);
-    console.log('Selected content element:', selectedContent);
     if (selectedContent) {
         selectedContent.classList.remove('hidden');
-        console.log('Removed hidden class from:', `${tabName}-content`);
         
         // Load content based on tab
         switch(tabName) {
@@ -259,12 +254,11 @@ function showTab(tabName) {
                 updateProfitDisplay();
                 break;
             case 'marketing':
-                // Initialize Marketing displays
-                console.log('Marketing case reached');
+                // Initialize Marketing displays and force visibility
                 const marketingContent = document.getElementById('marketing-content');
-                console.log('Marketing content element:', marketingContent);
                 if (marketingContent) {
-                    console.log('Marketing content classes:', marketingContent.className);
+                    marketingContent.style.display = 'block';
+                    marketingContent.style.visibility = 'visible';
                 }
                 setTimeout(() => {
                     initializeMarketing();
