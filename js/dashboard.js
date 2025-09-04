@@ -253,7 +253,9 @@ function showTab(tabName) {
                 updateProfitDisplay();
                 break;
             case 'marketing':
+                console.log('Marketing tab clicked, selectedContent:', selectedContent);
                 setTimeout(() => {
+                    console.log('About to initialize marketing...');
                     initializeMarketing();
                 }, 50);
                 break;
@@ -4822,9 +4824,15 @@ let marketingMetrics = {
 
 // Marketing Sub-Tab Navigation
 function showMarketingSubTab(tabName) {
+    console.log('showMarketingSubTab called with:', tabName);
+    
     // Hide all sub-content
     const subContents = document.querySelectorAll('.marketing-sub-content');
-    subContents.forEach(content => content.classList.add('hidden'));
+    console.log('Found sub-content elements:', subContents.length);
+    subContents.forEach(content => {
+        console.log('Hiding sub-content:', content.id);
+        content.classList.add('hidden');
+    });
     
     // Remove active class from all sub-tabs
     const subTabs = document.querySelectorAll('.marketing-sub-tab');
@@ -4835,8 +4843,12 @@ function showMarketingSubTab(tabName) {
     
     // Show selected sub-content
     const targetContent = document.getElementById(tabName + '-content');
+    console.log('Target content element:', targetContent, 'for tabName:', tabName);
     if (targetContent) {
         targetContent.classList.remove('hidden');
+        console.log('Showing sub-content:', targetContent.id, 'classes:', targetContent.className);
+    } else {
+        console.error('Target content not found for:', tabName + '-content');
     }
     
     // Activate selected sub-tab
