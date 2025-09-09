@@ -8285,7 +8285,7 @@ function saveCallLog() {
 
 let currentSmsLead = null;
 let smsTemplates = {
-    introduction: "Hi {firstName}, this is Rich with Enriched Property Solutions. I buy houses and I'm interested in {propertyAddress}. Would you consider selling? You can answer to this text directly, this is not an automated message. You can reply STOP if not interested to opt out.",
+    introduction: "Hi {firstName}, this is Rich. I buy houses and I'm interested in {propertyAddress}. Would you consider selling? (Reply STOP to opt out)",
     followup: "Hi {firstName}, it's Rich again about {propertyAddress}. Any thoughts on selling? I can close fast with cash.",
     cash_offer: "Hi {firstName}, Rich here. I can make you a cash offer on {propertyAddress} today. Want to chat for 2 minutes?",
     appointment: "Hi {firstName}, Rich here. I'd love to take a quick look at {propertyAddress}. When would work for you this week?"
@@ -8412,10 +8412,12 @@ function updateCharCount() {
     charCount.textContent = message.length;
     
     // Change color based on length
-    if (message.length > 140) {
+    if (message.length > 1500) {
         charCount.className = 'text-red-500';
-    } else if (message.length > 120) {
+    } else if (message.length > 1200) {
         charCount.className = 'text-yellow-500';
+    } else if (message.length > 160) {
+        charCount.className = 'text-blue-500'; // Blue to indicate concatenated SMS
     } else {
         charCount.className = 'text-gray-500';
     }
@@ -8432,8 +8434,8 @@ async function sendSms() {
         return;
     }
     
-    if (message.length > 160) {
-        showErrorMessage('Message is too long (160 characters max)');
+    if (message.length > 1600) {
+        showErrorMessage('Message is too long (1600 characters max)');
         return;
     }
     
