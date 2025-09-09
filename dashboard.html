@@ -6,6 +6,8 @@
     <title>Dashboard - Enriched Properties LLC</title>
     <link rel="stylesheet" href="css/styles.css">
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Include Twilio Voice SDK for browser-based calling -->
+    <script src="https://sdk.twilio.com/js/voice/releases/2.11.1/twilio.min.js"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -162,50 +164,353 @@
 
         <!-- Leads Management Tab -->
         <div id="leads-content" class="tab-content hidden">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-2xl font-bold text-gray-900">Leads Management</h2>
-                <button onclick="showAddLeadModal()" class="bg-secondary text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors">
-                    Add New Lead
-                </button>
+            <!-- Twilio Dialer Panel (Hidden by default) -->
+            <div id="dialerPanel" class="fixed top-4 right-4 bg-white rounded-lg shadow-xl border-2 border-blue-500 p-4 z-50 min-w-[300px] hidden">
+                <div class="flex justify-between items-center mb-3">
+                    <h3 class="font-semibold text-gray-900">📞 Dialer</h3>
+                    <button onclick="closeDialer()" class="text-gray-400 hover:text-gray-600 text-xl">&times;</button>
+                </div>
+                
+                <div id="dialerContent">
+                    <!-- Lead Info -->
+                    <div class="text-center mb-3">
+                        <div class="text-lg font-semibold text-gray-800" id="currentLeadName"></div>
+                        <div class="text-blue-600 font-medium" id="currentPhoneNumber"></div>
+                        <div class="text-sm text-gray-500" id="currentAddress"></div>
+                    </div>
+
+                    <!-- Service Selection -->
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Choose Service:</label>
+                        <div class="space-y-2">
+                            <label class="flex items-center space-x-2 p-2 border rounded hover:bg-gray-50">
+                                <input type="radio" name="callService" value="google_voice" class="text-green-600" checked onchange="updateCallServiceNote()">
+                                <span class="text-sm font-medium">📞 Google Voice</span>
+                                <span class="text-xs text-green-600">(FREE)</span>
+                            </label>
+                            <label class="flex items-center space-x-2 p-2 border rounded hover:bg-gray-50">
+                                <input type="radio" name="callService" value="twilio" class="text-green-600" onchange="updateCallServiceNote()">
+                                <span class="text-sm font-medium">🔵 Twilio (Phone)</span>
+                                <span class="text-xs text-orange-600">(~$0.50/hour)</span>
+                            </label>
+                            <label class="flex items-center space-x-2 p-2 border rounded hover:bg-gray-50">
+                                <input type="radio" name="callService" value="twilio_browser" class="text-green-600" onchange="updateCallServiceNote()">
+                                <span class="text-sm font-medium">💻 Twilio (Computer)</span>
+                                <span class="text-xs text-orange-600">(~$0.50/hour)</span>
+                            </label>
+                        </div>
+                        <div class="text-xs text-gray-500 mt-2 p-2 bg-gray-50 rounded">
+                            <span id="callServiceNote">Google Voice: Free calls, manual dialing</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Start Call Button -->
+                    <div class="mb-4">
+                        <button onclick="startSelectedCall()" class="w-full bg-green-600 text-white py-3 px-4 rounded-lg hover:bg-green-700 font-medium">
+                            📞 Start Call
+                        </button>
+                    </div>
+                
+                    <!-- Dialing State (Hidden Initially) -->
+                    <div id="dialingState" class="text-center hidden">
+                        <div class="text-sm text-gray-600 mb-2">Call in Progress</div>
+                        
+                        <div class="flex justify-center mb-4">
+                            <div class="animate-pulse bg-green-500 rounded-full h-16 w-16 flex items-center justify-center">
+                                <div class="text-white text-2xl">📞</div>
+                            </div>
+                        </div>
+                        
+                        <div class="text-lg font-mono" id="callTimer">00:00</div>
+                    </div>
+                    
+                    <!-- Call Controls -->
+                    <div class="flex justify-center space-x-3 mb-4">
+                        <button id="muteBtn" onclick="toggleMute()" class="p-3 bg-gray-100 rounded-full hover:bg-gray-200">
+                            <span id="muteIcon">🔊</span>
+                        </button>
+                        <button id="recordBtn" onclick="toggleRecording()" class="p-3 bg-red-100 rounded-full hover:bg-red-200">
+                            <span id="recordIcon">⏺️</span>
+                        </button>
+                        <button onclick="hangUp()" class="p-3 bg-red-500 text-white rounded-full hover:bg-red-600">
+                            📞
+                        </button>
+                    </div>
+                    
+                    <!-- Call Disposition -->
+                    <div id="callDisposition" class="border-t pt-3">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Call Result:</label>
+                        <select id="callOutcome" class="w-full border border-gray-300 rounded-lg px-3 py-2 mb-3">
+                            <option value="">Select outcome...</option>
+                            <option value="interested">✅ Interested</option>
+                            <option value="not_interested">❌ Not Interested</option>
+                            <option value="callback">📅 Schedule Callback</option>
+                            <option value="no_answer">📵 No Answer</option>
+                            <option value="wrong_number">📞 Wrong Number</option>
+                            <option value="voicemail">📧 Left Voicemail</option>
+                            <option value="do_not_call">🚫 Do Not Call</option>
+                        </select>
+                        
+                        <textarea id="callNotes" placeholder="Call notes..." class="w-full border border-gray-300 rounded-lg px-3 py-2 mb-3" rows="3"></textarea>
+                        
+                        <button onclick="saveCallLog()" class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700">
+                            Save & Next Call
+                        </button>
+                    </div>
+                </div>
             </div>
 
-            <div class="bg-white rounded-lg shadow overflow-hidden">
-                <div class="px-6 py-4 border-b border-gray-200">
-                    <div class="flex justify-between items-center">
-                        <div class="flex space-x-4">
-                            <select class="border border-gray-300 rounded-lg px-3 py-2">
-                                <option>All Status</option>
-                                <option>New</option>
-                                <option>Contacted</option>
-                                <option>Qualified</option>
-                                <option>Under Contract</option>
-                                <option>Closed</option>
-                            </select>
-                            <input type="text" placeholder="Search leads..." class="border border-gray-300 rounded-lg px-3 py-2 w-64">
+            <!-- SMS Modal -->
+            <div id="smsModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 hidden">
+                <div class="bg-white rounded-lg shadow-xl w-full max-w-md max-h-screen overflow-hidden flex flex-col">
+                    <div class="flex justify-between items-center p-4 border-b shrink-0">
+                        <h3 class="text-lg font-medium text-gray-900">💬 Send SMS</h3>
+                        <button onclick="closeSmsModal()" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+                    </div>
+                    <div class="p-4 overflow-y-auto flex-1">
+                        <div class="mb-3">
+                            <div class="text-sm font-medium text-gray-700" id="smsLeadInfo">Lead Info</div>
+                            <div class="text-sm text-blue-600" id="smsPhoneNumber">Phone Number</div>
                         </div>
-                        <div class="flex space-x-2">
-                            <button class="px-4 py-2 text-sm bg-gray-100 rounded-lg hover:bg-gray-200">Export CSV</button>
-                            <button class="px-4 py-2 text-sm bg-gray-100 rounded-lg hover:bg-gray-200">Bulk Actions</button>
+                        
+                        <div class="mb-3">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">SMS Service:</label>
+                            <div class="flex space-x-2">
+                                <label class="flex items-center space-x-2 flex-1">
+                                    <input type="radio" name="smsService" value="google_voice" class="text-blue-600" checked>
+                                    <span class="text-sm">📞 Google Voice (Free)</span>
+                                </label>
+                                <label class="flex items-center space-x-2 flex-1">
+                                    <input type="radio" name="smsService" value="twilio" class="text-blue-600">
+                                    <span class="text-sm">🔵 Twilio (Business)</span>
+                                </label>
+                            </div>
+                            <div class="text-xs text-gray-500 mt-1">
+                                <span id="serviceNote">Google Voice: Free for personal use, 1000 SMS/day limit</span>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Quick Templates:</label>
+                            <div class="grid grid-cols-1 gap-1.5">
+                                <button onclick="useTemplate('introduction')" class="text-left p-2 bg-gray-50 rounded hover:bg-gray-100 text-xs">
+                                    <div class="font-medium text-sm">🏠 Introduction</div>
+                                    <div class="text-gray-600 truncate">Hi [Name], interested in buying [Address]...</div>
+                                </button>
+                                <button onclick="useTemplate('followup')" class="text-left p-2 bg-gray-50 rounded hover:bg-gray-100 text-xs">
+                                    <div class="font-medium text-sm">📅 Follow-up</div>
+                                    <div class="text-gray-600 truncate">Following up on [Address]...</div>
+                                </button>
+                                <button onclick="useTemplate('cash_offer')" class="text-left p-2 bg-gray-50 rounded hover:bg-gray-100 text-xs">
+                                    <div class="font-medium text-sm">💰 Cash Offer</div>
+                                    <div class="text-gray-600 truncate">Can make cash offer on [Address]...</div>
+                                </button>
+                                <button onclick="useTemplate('appointment')" class="text-left p-2 bg-gray-50 rounded hover:bg-gray-100 text-xs">
+                                    <div class="font-medium text-sm">📋 Schedule Visit</div>
+                                    <div class="text-gray-600 truncate">Schedule time to see [Address]...</div>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Message:</label>
+                            <textarea id="smsMessage" class="w-full border border-gray-300 rounded-lg px-3 py-2" rows="3" 
+                                placeholder="Type your message..." maxlength="160"></textarea>
+                            <div class="text-right text-xs text-gray-500 mt-1">
+                                <span id="smsCharCount">0</span>/160 characters
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Schedule Send (Optional):</label>
+                            <input type="datetime-local" id="smsSchedule" class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                        </div>
+                        
+                    </div>
+                    <div class="p-4 border-t shrink-0 bg-gray-50">
+                        <div class="flex space-x-3">
+                            <button onclick="sendSms()" class="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700">
+                                Send SMS
+                            </button>
+                            <button onclick="closeSmsModal()" class="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <h2 class="text-2xl font-bold text-gray-900">Lead Management Pipeline</h2>
+                    <p class="text-gray-600">Track your leads through the wholesaling process</p>
+                </div>
+                <div class="flex space-x-3">
+                    <button onclick="startAutoDialer()" class="bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition-colors">
+                        📞 Start Dialing
+                    </button>
+                    <button onclick="showBulkSmsModal()" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors">
+                        💬 Bulk SMS
+                    </button>
+                    <button onclick="importLeadsFromCSV()" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
+                        📤 Import Leads
+                    </button>
+                    <button onclick="showAddLeadModal()" class="bg-secondary text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors">
+                        + Add Lead
+                    </button>
+                </div>
+            </div>
+
+            <!-- Pipeline Overview Stats -->
+            <div class="grid grid-cols-2 md:grid-cols-6 gap-4 mb-8">
+                <div class="bg-white rounded-lg shadow p-4 text-center">
+                    <div class="text-2xl font-bold text-blue-600" id="newLeadsCount">0</div>
+                    <div class="text-sm text-gray-600">New Leads</div>
+                </div>
+                <div class="bg-white rounded-lg shadow p-4 text-center">
+                    <div class="text-2xl font-bold text-yellow-600" id="contactedCount">0</div>
+                    <div class="text-sm text-gray-600">Contacted</div>
+                </div>
+                <div class="bg-white rounded-lg shadow p-4 text-center">
+                    <div class="text-2xl font-bold text-purple-600" id="qualifiedCount">0</div>
+                    <div class="text-sm text-gray-600">Qualified</div>
+                </div>
+                <div class="bg-white rounded-lg shadow p-4 text-center">
+                    <div class="text-2xl font-bold text-orange-600" id="underContractCount">0</div>
+                    <div class="text-sm text-gray-600">Under Contract</div>
+                </div>
+                <div class="bg-white rounded-lg shadow p-4 text-center">
+                    <div class="text-2xl font-bold text-green-600" id="closedCount">0</div>
+                    <div class="text-sm text-gray-600">Closed</div>
+                </div>
+                <div class="bg-white rounded-lg shadow p-4 text-center">
+                    <div class="text-2xl font-bold text-red-600" id="deadCount">0</div>
+                    <div class="text-sm text-gray-600">Dead</div>
+                </div>
+            </div>
+
+            <!-- Pipeline Kanban View -->
+            <div class="bg-gray-50 rounded-lg p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-semibold">Pipeline View</h3>
+                    <div class="flex space-x-3">
+                        <button onclick="togglePipelineView('kanban')" id="kanbanViewBtn" class="px-3 py-2 text-sm bg-blue-600 text-white rounded-lg">📋 Kanban</button>
+                        <button onclick="togglePipelineView('list')" id="listViewBtn" class="px-3 py-2 text-sm bg-gray-200 text-gray-700 rounded-lg">📄 List</button>
+                    </div>
+                </div>
+
+                <!-- Kanban Pipeline -->
+                <div id="kanbanView" class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                    <!-- New Leads -->
+                    <div class="bg-white rounded-lg shadow-sm">
+                        <div class="bg-blue-500 text-white px-4 py-3 rounded-t-lg">
+                            <h4 class="font-semibold">🆕 New Leads</h4>
+                            <div class="text-sm opacity-90">Just imported/added</div>
+                        </div>
+                        <div class="p-3 space-y-3 min-h-64" id="newLeadsColumn" ondrop="dropLead(event, 'new')" ondragover="allowDrop(event)">
+                            <!-- Lead cards will be populated here -->
+                        </div>
+                    </div>
+
+                    <!-- Contacted -->
+                    <div class="bg-white rounded-lg shadow-sm">
+                        <div class="bg-yellow-500 text-white px-4 py-3 rounded-t-lg">
+                            <h4 class="font-semibold">📞 Contacted</h4>
+                            <div class="text-sm opacity-90">Initial contact made</div>
+                        </div>
+                        <div class="p-3 space-y-3 min-h-64" id="contactedColumn" ondrop="dropLead(event, 'contacted')" ondragover="allowDrop(event)">
+                            <!-- Lead cards will be populated here -->
+                        </div>
+                    </div>
+
+                    <!-- Qualified -->
+                    <div class="bg-white rounded-lg shadow-sm">
+                        <div class="bg-purple-500 text-white px-4 py-3 rounded-t-lg">
+                            <h4 class="font-semibold">✅ Qualified</h4>
+                            <div class="text-sm opacity-90">Motivated seller</div>
+                        </div>
+                        <div class="p-3 space-y-3 min-h-64" id="qualifiedColumn" ondrop="dropLead(event, 'qualified')" ondragover="allowDrop(event)">
+                            <!-- Lead cards will be populated here -->
+                        </div>
+                    </div>
+
+                    <!-- Under Contract -->
+                    <div class="bg-white rounded-lg shadow-sm">
+                        <div class="bg-orange-500 text-white px-4 py-3 rounded-t-lg">
+                            <h4 class="font-semibold">📝 Under Contract</h4>
+                            <div class="text-sm opacity-90">Deal in progress</div>
+                        </div>
+                        <div class="p-3 space-y-3 min-h-64" id="underContractColumn" ondrop="dropLead(event, 'under_contract')" ondragover="allowDrop(event)">
+                            <!-- Lead cards will be populated here -->
+                        </div>
+                    </div>
+
+                    <!-- Closed -->
+                    <div class="bg-white rounded-lg shadow-sm">
+                        <div class="bg-green-500 text-white px-4 py-3 rounded-t-lg">
+                            <h4 class="font-semibold">💰 Closed</h4>
+                            <div class="text-sm opacity-90">Deal completed</div>
+                        </div>
+                        <div class="p-3 space-y-3 min-h-64" id="closedColumn" ondrop="dropLead(event, 'closed')" ondragover="allowDrop(event)">
+                            <!-- Lead cards will be populated here -->
+                        </div>
+                    </div>
+
+                    <!-- Dead -->
+                    <div class="bg-white rounded-lg shadow-sm">
+                        <div class="bg-red-500 text-white px-4 py-3 rounded-t-lg">
+                            <h4 class="font-semibold">💀 Dead</h4>
+                            <div class="text-sm opacity-90">Not interested/viable</div>
+                        </div>
+                        <div class="p-3 space-y-3 min-h-64" id="deadColumn" ondrop="dropLead(event, 'dead')" ondragover="allowDrop(event)">
+                            <!-- Lead cards will be populated here -->
                         </div>
                     </div>
                 </div>
 
-                <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Property</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Est. Value</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="leadsTableBody" class="bg-white divide-y divide-gray-200">
-                            <!-- Leads will be populated by JavaScript -->
-                        </tbody>
-                    </table>
+                <!-- List View -->
+                <div id="listView" class="hidden">
+                    <div class="bg-white rounded-lg shadow overflow-hidden">
+                        <div class="px-6 py-4 border-b border-gray-200">
+                            <div class="flex justify-between items-center">
+                                <div class="flex space-x-4">
+                                    <select id="statusFilter" onchange="filterLeads()" class="border border-gray-300 rounded-lg px-3 py-2">
+                                        <option value="">All Status</option>
+                                        <option value="new">New</option>
+                                        <option value="contacted">Contacted</option>
+                                        <option value="qualified">Qualified</option>
+                                        <option value="under_contract">Under Contract</option>
+                                        <option value="closed">Closed</option>
+                                        <option value="dead">Dead</option>
+                                    </select>
+                                    <input type="text" id="searchInput" onkeyup="filterLeads()" placeholder="Search leads..." class="border border-gray-300 rounded-lg px-3 py-2 w-64">
+                                </div>
+                                <div class="flex space-x-2">
+                                    <button onclick="exportLeads()" class="px-4 py-2 text-sm bg-gray-100 rounded-lg hover:bg-gray-200">Export CSV</button>
+                                    <button onclick="bulkActions()" class="px-4 py-2 text-sm bg-gray-100 rounded-lg hover:bg-gray-200">Bulk Actions</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Property</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Owner</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Est. Value</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Contact</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="leadsTableBody" class="bg-white divide-y divide-gray-200">
+                                    <!-- Leads will be populated by JavaScript -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -468,7 +773,7 @@
                                     <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
                                 </tr>
                             </thead>
-                            <tbody id="directMailTableBody" class="divide-y divide-gray-200">
+                            <tbody id="directMailCampaignsTable" class="divide-y divide-gray-200">
                                 <tr class="text-center text-gray-500">
                                     <td colspan="8" class="py-8">
                                         <div class="text-4xl mb-2">📮</div>
@@ -678,7 +983,7 @@
                                     <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
                                 </tr>
                             </thead>
-                            <tbody id="callingListsTableBody" class="divide-y divide-gray-200">
+                            <tbody id="coldCallingListsTable" class="divide-y divide-gray-200">
                                 <tr class="text-center text-gray-500">
                                     <td colspan="7" class="py-8">
                                         <div class="text-4xl mb-2">📞</div>
@@ -1158,51 +1463,19 @@
                     </div>
                 </div>
 
-                <!-- Repair Cost Estimator -->
+                <!-- Simple Repair Cost Input -->
                 <div class="bg-white rounded-lg shadow p-6">
-                    <h3 class="text-lg font-semibold mb-4">🔨 Repair Cost Estimator</h3>
-                    <div class="space-y-3">
-                        <div class="flex justify-between items-center">
-                            <label class="text-sm">Kitchen Renovation</label>
-                            <input type="number" id="kitchenCost" class="w-24 px-2 py-1 border border-gray-300 rounded text-right" placeholder="0" onchange="calculateRepairs()">
+                    <h3 class="text-lg font-semibold mb-4">🔨 Estimated Repairs</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Total Estimated Repair Costs</label>
+                            <input type="number" id="totalRepairsInput" 
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg text-lg font-semibold text-right" 
+                                   placeholder="0" 
+                                   onchange="updateSimpleRepairs()">
+                            <p class="text-xs text-gray-500 mt-1">Enter your total estimated repair costs for this property</p>
                         </div>
-                        <div class="flex justify-between items-center">
-                            <label class="text-sm">Bathroom(s)</label>
-                            <input type="number" id="bathroomCost" class="w-24 px-2 py-1 border border-gray-300 rounded text-right" placeholder="0" onchange="calculateRepairs()">
-                        </div>
-                        <div class="flex justify-between items-center">
-                            <label class="text-sm">Flooring</label>
-                            <input type="number" id="flooringCost" class="w-24 px-2 py-1 border border-gray-300 rounded text-right" placeholder="0" onchange="calculateRepairs()">
-                        </div>
-                        <div class="flex justify-between items-center">
-                            <label class="text-sm">Paint (Interior/Exterior)</label>
-                            <input type="number" id="paintCost" class="w-24 px-2 py-1 border border-gray-300 rounded text-right" placeholder="0" onchange="calculateRepairs()">
-                        </div>
-                        <div class="flex justify-between items-center">
-                            <label class="text-sm">Roof Repairs</label>
-                            <input type="number" id="roofCost" class="w-24 px-2 py-1 border border-gray-300 rounded text-right" placeholder="0" onchange="calculateRepairs()">
-                        </div>
-                        <div class="flex justify-between items-center">
-                            <label class="text-sm">HVAC System</label>
-                            <input type="number" id="hvacCost" class="w-24 px-2 py-1 border border-gray-300 rounded text-right" placeholder="0" onchange="calculateRepairs()">
-                        </div>
-                        <div class="flex justify-between items-center">
-                            <label class="text-sm">Electrical</label>
-                            <input type="number" id="electricalCost" class="w-24 px-2 py-1 border border-gray-300 rounded text-right" placeholder="0" onchange="calculateRepairs()">
-                        </div>
-                        <div class="flex justify-between items-center">
-                            <label class="text-sm">Plumbing</label>
-                            <input type="number" id="plumbingCost" class="w-24 px-2 py-1 border border-gray-300 rounded text-right" placeholder="0" onchange="calculateRepairs()">
-                        </div>
-                        <div class="flex justify-between items-center">
-                            <label class="text-sm">Landscaping</label>
-                            <input type="number" id="landscapingCost" class="w-24 px-2 py-1 border border-gray-300 rounded text-right" placeholder="0" onchange="calculateRepairs()">
-                        </div>
-                        <div class="flex justify-between items-center">
-                            <label class="text-sm font-semibold">Contingency (10%)</label>
-                            <span class="text-sm font-semibold" id="contingencyCost">$0</span>
-                        </div>
-                        <hr class="my-2">
+                        
                         <div class="bg-orange-50 border border-orange-200 rounded-lg p-3">
                             <div class="flex justify-between items-center">
                                 <span class="font-semibold text-orange-800">Total Repairs:</span>
@@ -1431,6 +1704,10 @@
                                 <span class="text-sm font-medium" id="profitRepairs">$0</span>
                             </div>
                             <div class="flex justify-between">
+                                <span class="text-sm">Closing Fees (10%):</span>
+                                <span class="text-sm font-medium" id="profitClosingFees">$0</span>
+                            </div>
+                            <div class="flex justify-between">
                                 <span class="text-sm">Assignment Fee:</span>
                                 <span class="text-sm font-medium text-green-600" id="profitAssignment">$0</span>
                             </div>
@@ -1543,6 +1820,131 @@
                 </div>
             </div>
 
+            <!-- Custom Percentage Calculator -->
+            <div class="bg-white rounded-lg shadow p-6 mb-6">
+                <h3 class="text-lg font-semibold mb-4">📊 Custom Percentage Calculator</h3>
+                <p class="text-sm text-gray-600 mb-4">Formula: (ARV × X%) - Repairs = Max Offer</p>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-4">
+                    <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                        <div class="text-center">
+                            <span class="text-xs font-medium text-gray-600 uppercase tracking-wide">ARV</span>
+                            <div class="text-lg font-bold text-gray-800 mt-1" id="customARV">$0</div>
+                            <div class="text-xs text-gray-500 mt-1">After Repair Value</div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <label class="text-xs font-medium text-blue-600 uppercase tracking-wide block mb-2">Percentage</label>
+                        <input type="number" id="customPercentage" 
+                               class="w-full text-center text-lg font-bold bg-transparent border-0 focus:ring-0 p-0" 
+                               placeholder="75" min="1" max="100" step="0.1"
+                               oninput="calculateCustomOffer()">
+                        <div class="text-xs text-blue-500 mt-1">% of ARV</div>
+                    </div>
+                    
+                    <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                        <div class="text-center">
+                            <span class="text-xs font-medium text-gray-600 uppercase tracking-wide">Repairs</span>
+                            <div class="text-lg font-bold text-gray-800 mt-1" id="customRepairs">$0</div>
+                            <div class="text-xs text-gray-500 mt-1">Total Repair Costs</div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                        <div class="text-center">
+                            <span class="text-xs font-medium text-green-600 uppercase tracking-wide">Max Offer</span>
+                            <div class="text-lg font-bold text-green-600 mt-1" id="customMaxOffer">$0</div>
+                            <div class="text-xs text-green-500 mt-1">Your Calculated Offer</div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                        <div class="text-center">
+                            <span class="text-xs font-medium text-purple-600 uppercase tracking-wide">Spread</span>
+                            <div class="text-lg font-bold text-purple-600 mt-1" id="customSpread">$0</div>
+                            <div class="text-xs text-purple-500 mt-1">ARV - Max Offer</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <h4 class="font-semibold text-blue-800 text-sm mb-2">💡 How to Use:</h4>
+                    <div class="text-xs text-blue-700 space-y-1">
+                        <div>• <strong>Enter your percentage</strong> - Common ranges: 65%-80% for different markets/strategies</div>
+                        <div>• <strong>Calculation updates automatically</strong> - Uses your ARV and repair estimates from above</div>
+                        <div>• <strong>Compare with Rapid Offer System</strong> - Use both calculators to validate your offers</div>
+                        <div>• <strong>Adjust percentage based on</strong> - Market conditions, competition, profit targets</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Buyer-Focused Profit Calculator -->
+            <div class="bg-white rounded-lg shadow p-6 mb-6">
+                <h3 class="text-lg font-semibold mb-4">🎯 Buyer-Focused Profit Calculator</h3>
+                <p class="text-sm text-gray-600 mb-4">Formula: ARV - Repairs - Closing Cost - Buyer Profit = MAO</p>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 mb-4">
+                    <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                        <div class="text-center">
+                            <span class="text-xs font-medium text-gray-600 uppercase tracking-wide">ARV</span>
+                            <div class="text-lg font-bold text-gray-800 mt-1" id="buyerFocusedARV">$0</div>
+                            <div class="text-xs text-gray-500 mt-1">After Repair Value</div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                        <div class="text-center">
+                            <span class="text-xs font-medium text-gray-600 uppercase tracking-wide">Repairs</span>
+                            <div class="text-lg font-bold text-gray-800 mt-1" id="buyerFocusedRepairs">$0</div>
+                            <div class="text-xs text-gray-500 mt-1">Total Repair Costs</div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                        <div class="text-center">
+                            <span class="text-xs font-medium text-orange-600 uppercase tracking-wide">Closing Costs</span>
+                            <div class="text-lg font-bold text-orange-800 mt-1" id="buyerFocusedClosing">$0</div>
+                            <div class="text-xs text-orange-500 mt-1">10% of ARV</div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                        <div class="text-center">
+                            <span class="text-xs font-medium text-purple-600 uppercase tracking-wide">Buyer Profit</span>
+                            <div class="text-lg font-bold text-purple-800 mt-1" id="buyerFocusedProfit">$0</div>
+                            <div class="text-xs text-purple-500 mt-1">Based on Repair Level</div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                        <div class="text-center">
+                            <span class="text-xs font-medium text-green-600 uppercase tracking-wide">MAO</span>
+                            <div class="text-lg font-bold text-green-600 mt-1" id="buyerFocusedMAO">$0</div>
+                            <div class="text-xs text-green-500 mt-1">Max Allowable Offer</div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <div class="text-center">
+                            <span class="text-xs font-medium text-blue-600 uppercase tracking-wide">LAO</span>
+                            <div class="text-lg font-bold text-blue-600 mt-1" id="buyerFocusedLAO">$0</div>
+                            <div class="text-xs text-blue-500 mt-1">MAO × 70%</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                    <h4 class="font-semibold text-green-800 text-sm mb-2">💰 Buyer Profit Structure:</h4>
+                    <div class="text-xs text-green-700 space-y-1">
+                        <div>• <strong>Under $30k repairs:</strong> $30k buyer profit required</div>
+                        <div>• <strong>$30k-$50k repairs:</strong> Same as repair amount for profit</div>
+                        <div>• <strong>$50k-$80k repairs:</strong> $50k buyer profit required</div>
+                        <div>• <strong>Over $80k repairs:</strong> Contact for custom calculation</div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Market Comparables -->
             <div class="bg-white rounded-lg shadow p-6">
                 <h3 class="text-lg font-semibold mb-4">🏘️ Market Comparables Research</h3>
@@ -1631,10 +2033,18 @@
                         <input type="text" id="leadLastName" class="w-full px-4 py-3 border border-gray-300 rounded-lg" required>
                     </div>
                 </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                     <div>
                         <label class="block text-gray-700 text-sm font-semibold mb-2">Phone</label>
                         <input type="tel" id="leadPhone" class="w-full px-4 py-3 border border-gray-300 rounded-lg" required>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 text-sm font-semibold mb-2">Phone Type</label>
+                        <select id="leadPhoneType" class="w-full px-4 py-3 border border-gray-300 rounded-lg">
+                            <option value="mobile">Mobile</option>
+                            <option value="landline">Landline</option>
+                            <option value="work">Work</option>
+                        </select>
                     </div>
                     <div>
                         <label class="block text-gray-700 text-sm font-semibold mb-2">Email</label>
@@ -2170,6 +2580,7 @@
         </div>
     </div>
 
+
     <!-- Templates Modal -->
     <div id="templatesModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center">
         <div class="bg-white rounded-2xl p-8 m-4 w-full max-w-4xl max-h-screen overflow-y-auto">
@@ -2293,595 +2704,8 @@
             </div>
         </div>
 
-        <!-- Marketing Tab -->
-        <div id="marketing-content" class="tab-content hidden">
-            <h1 style="color: red; font-size: 48px; background: yellow; padding: 50px;">MARKETING TAB WORKS!</h1>
-            <p style="font-size: 24px; color: blue;">This is the marketing content that should be visible.</p>
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-2xl font-bold text-gray-900">Marketing & Lead Generation</h2>
-                <div class="flex space-x-2">
-                    <button onclick="showAddCampaignModal()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
-                        + New Campaign
-                    </button>
-                    <button onclick="exportMarketingData()" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
-                        Export Data
-                    </button>
-                </div>
-            </div>
 
-            <!-- Marketing Dashboard Overview -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                <div class="bg-white rounded-lg shadow p-6">
-                    <div class="flex items-center">
-                        <div class="p-2 bg-blue-100 rounded-lg">
-                            <div class="text-blue-600 text-2xl">📮</div>
-                        </div>
-                        <div class="ml-4">
-                            <p class="text-sm font-medium text-gray-600">Active Campaigns</p>
-                            <p class="text-2xl font-semibold text-gray-900" id="activeCampaigns">0</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="bg-white rounded-lg shadow p-6">
-                    <div class="flex items-center">
-                        <div class="p-2 bg-green-100 rounded-lg">
-                            <div class="text-green-600 text-2xl">📞</div>
-                        </div>
-                        <div class="ml-4">
-                            <p class="text-sm font-medium text-gray-600">Leads Generated</p>
-                            <p class="text-2xl font-semibold text-gray-900" id="totalLeadsGenerated">0</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="bg-white rounded-lg shadow p-6">
-                    <div class="flex items-center">
-                        <div class="p-2 bg-purple-100 rounded-lg">
-                            <div class="text-purple-600 text-2xl">💰</div>
-                        </div>
-                        <div class="ml-4">
-                            <p class="text-sm font-medium text-gray-600">Marketing ROI</p>
-                            <p class="text-2xl font-semibold text-gray-900" id="marketingROI">0%</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="bg-white rounded-lg shadow p-6">
-                    <div class="flex items-center">
-                        <div class="p-2 bg-orange-100 rounded-lg">
-                            <div class="text-orange-600 text-2xl">📊</div>
-                        </div>
-                        <div class="ml-4">
-                            <p class="text-sm font-medium text-gray-600">Cost Per Lead</p>
-                            <p class="text-2xl font-semibold text-gray-900" id="costPerLead">$0</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Campaign Tabs -->
-            <div class="border-b border-gray-200 mb-6">
-                <nav class="-mb-px flex space-x-8">
-                    <button onclick="showMarketingSubTab('direct-mail')" id="direct-mail-tab" class="marketing-sub-tab active whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm">
-                        Direct Mail
-                    </button>
-                    <button onclick="showMarketingSubTab('cold-calling')" id="cold-calling-tab" class="marketing-sub-tab whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm">
-                        Cold Calling
-                    </button>
-                    <button onclick="showMarketingSubTab('marketing-analytics')" id="marketing-analytics-tab" class="marketing-sub-tab whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm">
-                        ROI Analytics
-                    </button>
-                    <button onclick="showMarketingSubTab('landing-pages')" id="landing-pages-tab" class="marketing-sub-tab whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm">
-                        Landing Pages
-                    </button>
-                </nav>
-            </div>
-
-            <!-- Direct Mail Campaign Manager (4.1) -->
-            <div id="direct-mail-content" class="marketing-sub-content">
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-                    <!-- Campaign Creation -->
-                    <div class="lg:col-span-2">
-                        <div class="bg-white rounded-lg shadow p-6">
-                            <h3 class="text-lg font-semibold mb-4">📮 Direct Mail Campaign Manager</h3>
-                            
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">Campaign Name</label>
-                                    <input type="text" id="campaignName" class="w-full px-3 py-2 border border-gray-300 rounded-md" placeholder="Pre-Foreclosure Q4 2024">
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">Campaign Type</label>
-                                    <select id="campaignType" class="w-full px-3 py-2 border border-gray-300 rounded-md">
-                                        <option value="postcard">Postcards</option>
-                                        <option value="letter">Letters</option>
-                                        <option value="package">Package</option>
-                                        <option value="catalog">Catalog</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">Target List Size</label>
-                                    <input type="number" id="listSize" class="w-full px-3 py-2 border border-gray-300 rounded-md" placeholder="1000">
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">Cost Per Piece</label>
-                                    <input type="number" step="0.01" id="costPerPiece" class="w-full px-3 py-2 border border-gray-300 rounded-md" placeholder="0.85">
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">Mail Date</label>
-                                    <input type="date" id="mailDate" class="w-full px-3 py-2 border border-gray-300 rounded-md">
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">Expected Response Rate (%)</label>
-                                    <input type="number" step="0.01" id="expectedResponse" class="w-full px-3 py-2 border border-gray-300 rounded-md" placeholder="2.5">
-                                </div>
-                            </div>
-
-                            <div class="mb-4">
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Target Criteria</label>
-                                <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
-                                    <label class="flex items-center">
-                                        <input type="checkbox" class="campaign-criteria" value="pre-foreclosure"> Pre-Foreclosure
-                                    </label>
-                                    <label class="flex items-center">
-                                        <input type="checkbox" class="campaign-criteria" value="probate"> Probate
-                                    </label>
-                                    <label class="flex items-center">
-                                        <input type="checkbox" class="campaign-criteria" value="tax-delinquent"> Tax Delinquent
-                                    </label>
-                                    <label class="flex items-center">
-                                        <input type="checkbox" class="campaign-criteria" value="absentee-owner"> Absentee Owner
-                                    </label>
-                                    <label class="flex items-center">
-                                        <input type="checkbox" class="campaign-criteria" value="high-equity"> High Equity
-                                    </label>
-                                    <label class="flex items-center">
-                                        <input type="checkbox" class="campaign-criteria" value="code-violations"> Code Violations
-                                    </label>
-                                    <label class="flex items-center">
-                                        <input type="checkbox" class="campaign-criteria" value="divorce"> Divorce
-                                    </label>
-                                    <label class="flex items-center">
-                                        <input type="checkbox" class="campaign-criteria" value="bankruptcy"> Bankruptcy
-                                    </label>
-                                </div>
-                            </div>
-
-                            <div class="flex space-x-3">
-                                <button onclick="createDirectMailCampaign()" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors">
-                                    Create Campaign
-                                </button>
-                                <button onclick="calculateCampaignROI()" class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors">
-                                    Calculate ROI
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Campaign Stats -->
-                    <div>
-                        <div class="bg-white rounded-lg shadow p-6">
-                            <h4 class="font-medium text-gray-900 mb-4">Campaign Projections</h4>
-                            <div class="space-y-3 text-sm">
-                                <div class="flex justify-between">
-                                    <span>Total Cost:</span>
-                                    <span class="font-medium" id="projectedCost">$0</span>
-                                </div>
-                                <div class="flex justify-between">
-                                    <span>Expected Responses:</span>
-                                    <span class="font-medium" id="projectedResponses">0</span>
-                                </div>
-                                <div class="flex justify-between">
-                                    <span>Cost Per Response:</span>
-                                    <span class="font-medium" id="projectedCostPerResponse">$0</span>
-                                </div>
-                                <div class="flex justify-between">
-                                    <span>Expected Leads:</span>
-                                    <span class="font-medium" id="projectedLeads">0</span>
-                                </div>
-                                <hr>
-                                <div class="flex justify-between font-semibold">
-                                    <span>ROI Projection:</span>
-                                    <span class="text-green-600" id="projectedROI">0%</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Active Campaigns Table -->
-                <div class="bg-white rounded-lg shadow p-6">
-                    <h4 class="font-medium text-gray-900 mb-4">Active Direct Mail Campaigns</h4>
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full divide-y divide-gray-200">
-                            <thead class="bg-gray-50">
-                                <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Campaign</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">List Size</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cost</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Responses</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ROI</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="directMailCampaignsTable" class="bg-white divide-y divide-gray-200">
-                                <tr>
-                                    <td colspan="7" class="px-6 py-4 text-center text-gray-500">No campaigns created yet</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Cold Calling Lists (4.2) -->
-            <div id="cold-calling-content" class="marketing-sub-content hidden">
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-                    <!-- List Management -->
-                    <div class="bg-white rounded-lg shadow p-6">
-                        <h3 class="text-lg font-semibold mb-4">📞 Cold Calling List Manager</h3>
-                        
-                        <div class="space-y-4">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">List Name</label>
-                                <input type="text" id="callingListName" class="w-full px-3 py-2 border border-gray-300 rounded-md" placeholder="FSBO High-Equity Q4">
-                            </div>
-                            
-                            <div class="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">Target Count</label>
-                                    <input type="number" id="targetCount" class="w-full px-3 py-2 border border-gray-300 rounded-md" placeholder="500">
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">Skip Trace Cost</label>
-                                    <input type="number" step="0.01" id="skipTraceCost" class="w-full px-3 py-2 border border-gray-300 rounded-md" placeholder="0.15">
-                                </div>
-                            </div>
-
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Skip Trace Provider</label>
-                                <select id="skipTraceProvider" class="w-full px-3 py-2 border border-gray-300 rounded-md">
-                                    <option value="batch-leads">BatchLeads</option>
-                                    <option value="spokeo">Spokeo</option>
-                                    <option value="truepeoplesearch">TruePeopleSearch</option>
-                                    <option value="intelius">Intelius</option>
-                                    <option value="whitepages">WhitePages Pro</option>
-                                    <option value="smartzip">SmartZip</option>
-                                </select>
-                            </div>
-
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Lead Source Criteria</label>
-                                <div class="grid grid-cols-2 gap-2 text-sm">
-                                    <label class="flex items-center">
-                                        <input type="checkbox" class="calling-criteria" value="fsbo"> FSBO
-                                    </label>
-                                    <label class="flex items-center">
-                                        <input type="checkbox" class="calling-criteria" value="expired-listings"> Expired Listings
-                                    </label>
-                                    <label class="flex items-center">
-                                        <input type="checkbox" class="calling-criteria" value="high-equity"> High Equity
-                                    </label>
-                                    <label class="flex items-center">
-                                        <input type="checkbox" class="calling-criteria" value="tired-landlords"> Tired Landlords
-                                    </label>
-                                    <label class="flex items-center">
-                                        <input type="checkbox" class="calling-criteria" value="pre-foreclosure"> Pre-Foreclosure
-                                    </label>
-                                    <label class="flex items-center">
-                                        <input type="checkbox" class="calling-criteria" value="probate"> Probate
-                                    </label>
-                                </div>
-                            </div>
-
-                            <div class="flex space-x-3">
-                                <button onclick="createCallingList()" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors">
-                                    Create List
-                                </button>
-                                <button onclick="uploadCSV()" class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors">
-                                    Upload CSV
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Call Tracking -->
-                    <div class="bg-white rounded-lg shadow p-6">
-                        <h4 class="font-medium text-gray-900 mb-4">📊 Call Tracking</h4>
-                        <div class="space-y-4">
-                            <div class="flex justify-between items-center p-3 bg-gray-50 rounded">
-                                <span class="text-sm">Calls Made Today:</span>
-                                <span class="font-semibold" id="callsMadeToday">0</span>
-                            </div>
-                            <div class="flex justify-between items-center p-3 bg-gray-50 rounded">
-                                <span class="text-sm">Contact Rate:</span>
-                                <span class="font-semibold" id="contactRate">0%</span>
-                            </div>
-                            <div class="flex justify-between items-center p-3 bg-gray-50 rounded">
-                                <span class="text-sm">Appointments Set:</span>
-                                <span class="font-semibold" id="appointmentsSet">0</span>
-                            </div>
-                            <div class="flex justify-between items-center p-3 bg-green-50 rounded">
-                                <span class="text-sm">Conversion Rate:</span>
-                                <span class="font-semibold text-green-600" id="callConversionRate">0%</span>
-                            </div>
-                        </div>
-
-                        <div class="mt-4 pt-4 border-t">
-                            <h5 class="font-medium mb-2">Quick Actions</h5>
-                            <div class="space-y-2">
-                                <button onclick="startCallingSession()" class="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition-colors">
-                                    Start Calling Session
-                                </button>
-                                <button onclick="logCall()" class="w-full bg-gray-600 text-white py-2 rounded-md hover:bg-gray-700 transition-colors">
-                                    Log Call Result
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Calling Lists Table -->
-                <div class="bg-white rounded-lg shadow p-6">
-                    <h4 class="font-medium text-gray-900 mb-4">Active Calling Lists</h4>
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full divide-y divide-gray-200">
-                            <thead class="bg-gray-50">
-                                <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">List Name</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Count</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Called</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contacts</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Leads</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="callingListsTable" class="bg-white divide-y divide-gray-200">
-                                <tr>
-                                    <td colspan="6" class="px-6 py-4 text-center text-gray-500">No calling lists created yet</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Marketing ROI Analytics (4.3) -->
-            <div id="old-marketing-analytics-content" class="marketing-sub-content hidden">
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-                    <!-- ROI Overview -->
-                    <div class="bg-white rounded-lg shadow p-6">
-                        <h3 class="text-lg font-semibold mb-4">📊 Marketing ROI Analytics</h3>
-                        
-                        <div class="space-y-4">
-                            <div class="bg-gradient-to-r from-blue-50 to-blue-100 p-4 rounded-lg">
-                                <h4 class="font-medium text-blue-900">Overall Marketing Performance</h4>
-                                <div class="grid grid-cols-2 gap-4 mt-2 text-sm">
-                                    <div>
-                                        <span class="text-blue-700">Total Spent:</span>
-                                        <div class="font-semibold text-blue-900" id="totalMarketingSpend">$0</div>
-                                    </div>
-                                    <div>
-                                        <span class="text-blue-700">Total Revenue:</span>
-                                        <div class="font-semibold text-blue-900" id="totalMarketingRevenue">$0</div>
-                                    </div>
-                                    <div>
-                                        <span class="text-blue-700">Net Profit:</span>
-                                        <div class="font-semibold text-blue-900" id="totalMarketingProfit">$0</div>
-                                    </div>
-                                    <div>
-                                        <span class="text-blue-700">ROI:</span>
-                                        <div class="font-semibold text-blue-900" id="overallMarketingROI">0%</div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Channel Comparison -->
-                            <div class="space-y-2">
-                                <h4 class="font-medium">Channel Performance</h4>
-                                <div class="space-y-2 text-sm">
-                                    <div class="flex justify-between items-center p-2 bg-gray-50 rounded">
-                                        <span>Direct Mail:</span>
-                                        <span class="font-medium" id="directMailROI">0%</span>
-                                    </div>
-                                    <div class="flex justify-between items-center p-2 bg-gray-50 rounded">
-                                        <span>Cold Calling:</span>
-                                        <span class="font-medium" id="coldCallingROI">0%</span>
-                                    </div>
-                                    <div class="flex justify-between items-center p-2 bg-gray-50 rounded">
-                                        <span>Digital Ads:</span>
-                                        <span class="font-medium" id="digitalAdsROI">0%</span>
-                                    </div>
-                                    <div class="flex justify-between items-center p-2 bg-gray-50 rounded">
-                                        <span>Referrals:</span>
-                                        <span class="font-medium" id="referralsROI">0%</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Cost Analysis -->
-                    <div class="bg-white rounded-lg shadow p-6">
-                        <h4 class="font-medium text-gray-900 mb-4">Cost Per Lead Analysis</h4>
-                        <div class="space-y-4">
-                            <div class="grid grid-cols-2 gap-4 text-sm">
-                                <div class="p-3 bg-blue-50 rounded">
-                                    <div class="text-blue-600 font-medium">Direct Mail</div>
-                                    <div class="text-lg font-bold" id="directMailCPL">$0</div>
-                                    <div class="text-xs text-blue-500">per lead</div>
-                                </div>
-                                <div class="p-3 bg-green-50 rounded">
-                                    <div class="text-green-600 font-medium">Cold Calling</div>
-                                    <div class="text-lg font-bold" id="coldCallingCPL">$0</div>
-                                    <div class="text-xs text-green-500">per lead</div>
-                                </div>
-                            </div>
-
-                            <div class="pt-4 border-t">
-                                <h5 class="font-medium mb-2">Lead Quality Metrics</h5>
-                                <div class="space-y-2 text-sm">
-                                    <div class="flex justify-between">
-                                        <span>Appointment Rate:</span>
-                                        <span class="font-medium" id="appointmentRate">0%</span>
-                                    </div>
-                                    <div class="flex justify-between">
-                                        <span>Contract Rate:</span>
-                                        <span class="font-medium" id="contractRate">0%</span>
-                                    </div>
-                                    <div class="flex justify-between">
-                                        <span>Close Rate:</span>
-                                        <span class="font-medium" id="closeRate">0%</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Performance Charts -->
-                <div class="bg-white rounded-lg shadow p-6">
-                    <h4 class="font-medium text-gray-900 mb-4">Monthly Performance Trends</h4>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <canvas id="roiTrendChart" width="400" height="200"></canvas>
-                        </div>
-                        <div>
-                            <canvas id="leadSourceChart" width="400" height="200"></canvas>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Landing Page Builder (4.4) -->
-            <div id="landing-pages-content" class="marketing-sub-content hidden">
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-                    <!-- Page Builder -->
-                    <div class="lg:col-span-2">
-                        <div class="bg-white rounded-lg shadow p-6">
-                            <h3 class="text-lg font-semibold mb-4">🎨 Landing Page Builder</h3>
-                            
-                            <div class="space-y-4">
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-1">Page Name</label>
-                                        <input type="text" id="pageName" class="w-full px-3 py-2 border border-gray-300 rounded-md" placeholder="Cash Offer Landing">
-                                    </div>
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-1">Campaign Source</label>
-                                        <select id="pageSource" class="w-full px-3 py-2 border border-gray-300 rounded-md">
-                                            <option value="direct-mail">Direct Mail</option>
-                                            <option value="google-ads">Google Ads</option>
-                                            <option value="facebook-ads">Facebook Ads</option>
-                                            <option value="cold-calling">Cold Calling</option>
-                                            <option value="referral">Referral</option>
-                                        </select>
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">Page Template</label>
-                                    <select id="pageTemplate" class="w-full px-3 py-2 border border-gray-300 rounded-md" onchange="updatePagePreview()">
-                                        <option value="cash-offer">Cash Offer - Quick Sale</option>
-                                        <option value="sell-fast">Sell Fast - No Repairs</option>
-                                        <option value="foreclosure-help">Foreclosure Help</option>
-                                        <option value="inherited-property">Inherited Property</option>
-                                        <option value="rental-problems">Rental Property Problems</option>
-                                    </select>
-                                </div>
-
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-1">Headline</label>
-                                        <input type="text" id="pageHeadline" class="w-full px-3 py-2 border border-gray-300 rounded-md" placeholder="Get a Cash Offer in 24 Hours">
-                                    </div>
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
-                                        <input type="text" id="pagePhone" class="w-full px-3 py-2 border border-gray-300 rounded-md" placeholder="(555) 123-4567">
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">Subheadline</label>
-                                    <textarea id="pageSubheadline" class="w-full px-3 py-2 border border-gray-300 rounded-md" rows="2" placeholder="No repairs, no commissions, no hassles. Sell your house fast for cash."></textarea>
-                                </div>
-
-                                <div class="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-1">Primary Color</label>
-                                        <input type="color" id="primaryColor" class="w-full px-3 py-2 border border-gray-300 rounded-md" value="#3b82f6">
-                                    </div>
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-1">Button Text</label>
-                                        <input type="text" id="buttonText" class="w-full px-3 py-2 border border-gray-300 rounded-md" placeholder="Get My Cash Offer">
-                                    </div>
-                                </div>
-
-                                <div class="flex space-x-3">
-                                    <button onclick="generateLandingPage()" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors">
-                                        Generate Page
-                                    </button>
-                                    <button onclick="saveLandingPage()" class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors">
-                                        Save Page
-                                    </button>
-                                    <button onclick="publishPage()" class="bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 transition-colors">
-                                        Publish
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Page Preview -->
-                    <div>
-                        <div class="bg-white rounded-lg shadow p-6">
-                            <h4 class="font-medium text-gray-900 mb-4">Live Preview</h4>
-                            <div id="pagePreview" class="border rounded-lg p-4 min-h-64 bg-gray-50">
-                                <div class="text-center">
-                                    <h3 class="text-lg font-bold mb-2">Get a Cash Offer in 24 Hours</h3>
-                                    <p class="text-sm text-gray-600 mb-4">No repairs, no commissions, no hassles. Sell your house fast for cash.</p>
-                                    <form class="space-y-2">
-                                        <input type="text" placeholder="Property Address" class="w-full px-2 py-1 border rounded text-xs">
-                                        <input type="text" placeholder="Your Name" class="w-full px-2 py-1 border rounded text-xs">
-                                        <input type="text" placeholder="Phone Number" class="w-full px-2 py-1 border rounded text-xs">
-                                        <button class="w-full bg-blue-600 text-white py-2 rounded text-xs">Get My Cash Offer</button>
-                                    </form>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Landing Pages Table -->
-                <div class="bg-white rounded-lg shadow p-6">
-                    <h4 class="font-medium text-gray-900 mb-4">Created Landing Pages</h4>
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full divide-y divide-gray-200">
-                            <thead class="bg-gray-50">
-                                <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Page Name</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Template</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Views</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Conversions</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Conversion Rate</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="landingPagesTable" class="bg-white divide-y divide-gray-200">
-                                <tr>
-                                    <td colspan="6" class="px-6 py-4 text-center text-gray-500">No landing pages created yet</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-
+    
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
