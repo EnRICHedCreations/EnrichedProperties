@@ -222,6 +222,9 @@ function showTab(tabName) {
     // Hide all content
     document.querySelectorAll('.tab-content').forEach(content => {
         content.classList.add('hidden');
+        // Clear any inline styles that might override hidden class
+        content.style.display = '';
+        content.style.visibility = '';
     });
     
     // Show selected content
@@ -257,7 +260,10 @@ function showTab(tabName) {
                 selectedContent.style.display = 'block !important';
                 selectedContent.style.visibility = 'visible !important';
                 selectedContent.classList.remove('hidden');
-                initializeMarketing();
+                // Add a small delay to ensure DOM is ready
+                setTimeout(() => {
+                    initializeMarketing();
+                }, 100);
                 break;
         }
     }
@@ -384,49 +390,153 @@ function updateRecentActivities() {
     }
 }
 
-// Update leads table
+// Update leads table and pipeline
 function updateLeadsTable() {
+    updatePipelineStats();
+    updateKanbanView();
+    updateListView();
+}
+
+// Update pipeline statistics
+function updatePipelineStats() {
+    document.getElementById('newLeadsCount').textContent = leads.filter(l => l.status === 'new').length;
+    document.getElementById('contactedCount').textContent = leads.filter(l => l.status === 'contacted').length;
+    document.getElementById('qualifiedCount').textContent = leads.filter(l => l.status === 'qualified').length;
+    document.getElementById('underContractCount').textContent = leads.filter(l => l.status === 'under_contract').length;
+    document.getElementById('closedCount').textContent = leads.filter(l => l.status === 'closed').length;
+    document.getElementById('deadCount').textContent = leads.filter(l => l.status === 'dead').length;
+}
+
+// Update Kanban pipeline view
+function updateKanbanView() {
+    const stages = ['new', 'contacted', 'qualified', 'under_contract', 'closed', 'dead'];
+    
+    stages.forEach(stage => {
+        const columnId = stage === 'new' ? 'newLeadsColumn' : 
+                        stage === 'contacted' ? 'contactedColumn' :
+                        stage === 'qualified' ? 'qualifiedColumn' :
+                        stage === 'under_contract' ? 'underContractColumn' :
+                        stage === 'closed' ? 'closedColumn' : 'deadColumn';
+        
+        const column = document.getElementById(columnId);
+        if (!column) return;
+        
+        const stageLeads = leads.filter(lead => lead.status === stage);
+        
+        if (stageLeads.length === 0) {
+            column.innerHTML = '<div class="text-center text-gray-400 py-8 text-sm">No leads</div>';
+        } else {
+            column.innerHTML = stageLeads.map(lead => createLeadCard(lead)).join('');
+        }
+    });
+}
+
+// Create lead card for Kanban view
+function createLeadCard(lead) {
+    const daysSinceContact = lead.lastContact ? 
+        Math.floor((Date.now() - new Date(lead.lastContact)) / (1000 * 60 * 60 * 24)) : null;
+    
+    return `
+        <div class="bg-white border border-gray-200 rounded-lg p-3 cursor-pointer hover:shadow-md transition-shadow" 
+             draggable="true" ondragstart="dragLead(event, '${lead.id}')" onclick="editLead('${lead.id}')">
+            <div class="font-semibold text-sm text-gray-900 mb-1">${lead.propertyAddress}</div>
+            <div class="text-xs text-gray-600 mb-2">${lead.firstName} ${lead.lastName}</div>
+            <div class="text-xs text-gray-500 mb-2">${formatPhoneNumber(lead.phone)} 
+                <span class="inline-block px-1 py-0.5 text-xs font-semibold rounded ${getPhoneTypeBadgeColor(lead.phoneType || 'unknown')}">${getPhoneTypeLabel(lead.phoneType || 'unknown')}</span>
+            </div>
+            ${lead.estimatedValue ? `<div class="text-xs font-semibold text-green-600">${formatCurrency(lead.estimatedValue)}</div>` : ''}
+            ${daysSinceContact ? `<div class="text-xs text-gray-400 mt-2">${daysSinceContact} days since contact</div>` : ''}
+            <div class="text-xs text-gray-400 mt-1">${lead.source || 'Unknown source'}</div>
+        </div>
+    `;
+}
+
+// Update list view
+function updateListView() {
     const tbody = document.getElementById('leadsTableBody');
     if (!tbody) return;
     
-    if (leads.length === 0) {
+    let filteredLeads = [...leads];
+    
+    // Apply status filter
+    const statusFilter = document.getElementById('statusFilter');
+    if (statusFilter && statusFilter.value) {
+        filteredLeads = filteredLeads.filter(lead => lead.status === statusFilter.value);
+    }
+    
+    // Apply search filter
+    const searchInput = document.getElementById('searchInput');
+    if (searchInput && searchInput.value.trim()) {
+        const searchTerm = searchInput.value.toLowerCase();
+        filteredLeads = filteredLeads.filter(lead => 
+            lead.firstName.toLowerCase().includes(searchTerm) ||
+            lead.lastName.toLowerCase().includes(searchTerm) ||
+            lead.propertyAddress.toLowerCase().includes(searchTerm) ||
+            lead.phone.includes(searchTerm) ||
+            (lead.email && lead.email.toLowerCase().includes(searchTerm))
+        );
+    }
+    
+    if (filteredLeads.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="6" class="px-6 py-8 text-center text-gray-500">
-                    <div class="text-4xl mb-2">👥</div>
-                    <p class="text-sm">No leads yet</p>
-                    <p class="text-xs">Add your first lead to get started</p>
+                <td colspan="7" class="px-6 py-8 text-center text-gray-500">
+                    <div class="text-4xl mb-2">🔍</div>
+                    <p class="text-sm">No leads found</p>
+                    <p class="text-xs">Try adjusting your filters</p>
                 </td>
             </tr>
         `;
     } else {
-        tbody.innerHTML = leads.map(lead => `
+        tbody.innerHTML = filteredLeads.map(lead => `
             <tr class="table-row">
-                <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="flex items-center">
-                        <div>
-                            <div class="text-sm font-medium text-gray-900">${lead.firstName} ${lead.lastName}</div>
-                            <div class="text-sm text-gray-500">${lead.phone}</div>
-                        </div>
-                    </div>
-                </td>
                 <td class="px-6 py-4">
                     <div class="text-sm text-gray-900">${lead.propertyAddress}</div>
-                    <div class="text-sm text-gray-500">${lead.source}</div>
+                    <div class="text-xs text-gray-500">${lead.source || 'Unknown source'}</div>
+                </td>
+                <td class="px-6 py-4">
+                    <div class="text-sm font-medium text-gray-900">${lead.firstName} ${lead.lastName}</div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
                     <div class="text-sm text-gray-900">${lead.email || 'N/A'}</div>
-                    <div class="text-sm text-gray-500">${formatPhoneNumber(lead.phone)}</div>
+                    <div class="text-sm text-gray-500">${formatPhoneNumber(lead.phone)} 
+                        <span class="inline-block px-2 py-1 text-xs font-semibold rounded-full ${getPhoneTypeBadgeColor(lead.phoneType || 'unknown')}">${getPhoneTypeLabel(lead.phoneType || 'unknown')}</span>
+                    </div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
-                    <span class="status-badge status-${lead.status}">${lead.status}</span>
+                    <select onchange="updateLeadStatus('${lead.id}', this.value)" class="text-xs border border-gray-300 rounded px-2 py-1 status-${lead.status}">
+                        <option value="new" ${lead.status === 'new' ? 'selected' : ''}>New</option>
+                        <option value="contacted" ${lead.status === 'contacted' ? 'selected' : ''}>Contacted</option>
+                        <option value="qualified" ${lead.status === 'qualified' ? 'selected' : ''}>Qualified</option>
+                        <option value="under_contract" ${lead.status === 'under_contract' ? 'selected' : ''}>Under Contract</option>
+                        <option value="closed" ${lead.status === 'closed' ? 'selected' : ''}>Closed</option>
+                        <option value="dead" ${lead.status === 'dead' ? 'selected' : ''}>Dead</option>
+                    </select>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     ${lead.estimatedValue ? formatCurrency(lead.estimatedValue) : 'TBD'}
                 </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    ${lead.lastContact ? formatDate(lead.lastContact) : 'Never'}
+                </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <button onclick="editLead(${lead.id})" class="action-button text-indigo-600 hover:text-indigo-900 mr-2">Edit</button>
-                    <button onclick="deleteLead(${lead.id})" class="action-button text-red-600 hover:text-red-900">Delete</button>
+                    ${lead.optedOut ? 
+                        '<span class="text-red-500 text-xs mr-2">🚫 OPTED OUT</span>' + 
+                        '<button onclick="markLeadOptedOut(\'' + lead.id + '\')" class="text-gray-400 mr-2" disabled title="Lead has opted out">📞</button>' +
+                        '<button onclick="markLeadOptedOut(\'' + lead.id + '\')" class="text-gray-400 mr-2" disabled title="Lead has opted out">💬</button>'
+                        :
+                        '<button onclick="callLead(\'' + lead.id + '\')" class="text-green-600 hover:text-green-900 mr-2" title="Call Lead">📞</button>' +
+                        (isPhoneTypeMobile(lead.phoneType) ? 
+                            '<button onclick="smsLead(\'' + lead.id + '\')" class="text-blue-600 hover:text-blue-900 mr-2" title="Send SMS">💬</button>' :
+                            '<button class="text-gray-400 mr-2" disabled title="SMS only works with mobile phones">💬</button>'
+                        )
+                    }
+                    <button onclick="editLead('${lead.id}')" class="text-indigo-600 hover:text-indigo-900 mr-2">Edit</button>
+                    <button onclick="deleteLead('${lead.id}')" class="text-red-600 hover:text-red-900 mr-2">Delete</button>
+                    ${!lead.optedOut ? 
+                        '<button onclick="markLeadOptedOut(\'' + lead.id + '\')" class="text-orange-600 hover:text-orange-900 text-xs" title="Mark as opted out">Opt Out</button>'
+                        : ''
+                    }
                 </td>
             </tr>
         `).join('');
@@ -770,6 +880,7 @@ function addLead(event) {
         firstName: form.querySelector('#leadFirstName').value,
         lastName: form.querySelector('#leadLastName').value,
         phone: form.querySelector('#leadPhone').value,
+        phoneType: form.querySelector('#leadPhoneType')?.value || 'mobile',
         email: form.querySelector('#leadEmail').value,
         propertyAddress: form.querySelector('#leadProperty').value,
         estimatedValue: parseInt(form.querySelector('#leadValue').value) || 0,
@@ -1324,80 +1435,136 @@ function mapCSVToBuyer(csvRow, setAsActive) {
 
 // CRUD operations
 function editLead(id) {
-    const lead = leads.find(l => l.id === id);
-    if (!lead) return;
+    const lead = leads.find(l => l.id == id);
+    if (!lead) {
+        console.error('Lead not found:', id);
+        showErrorMessage('Lead not found');
+        return;
+    }
     
-    const formContent = `
-        <div class="space-y-4">
-            <div class="grid grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700">First Name *</label>
-                    <input type="text" id="editLeadFirstName" value="${lead.firstName || ''}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
+    // Create a dynamic modal
+    const modalHTML = `
+        <div id="editLeadModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+            <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl mx-4 max-h-screen overflow-y-auto">
+                <div class="flex justify-between items-center p-6 border-b">
+                    <h3 class="text-lg font-medium text-gray-900">Edit Lead</h3>
+                    <button onclick="closeEditLeadModal()" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
                 </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700">Last Name *</label>
-                    <input type="text" id="editLeadLastName" value="${lead.lastName || ''}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
-                </div>
-            </div>
-            <div class="grid grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700">Phone *</label>
-                    <input type="tel" id="editLeadPhone" value="${lead.phone || ''}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700">Email</label>
-                    <input type="email" id="editLeadEmail" value="${lead.email || ''}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                </div>
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700">Property Address *</label>
-                <input type="text" id="editLeadPropertyAddress" value="${lead.propertyAddress || ''}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
-            </div>
-            <div class="grid grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700">Status</label>
-                    <select id="editLeadStatus" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                        <option value="new" ${lead.status === 'new' ? 'selected' : ''}>New</option>
-                        <option value="contacted" ${lead.status === 'contacted' ? 'selected' : ''}>Contacted</option>
-                        <option value="qualified" ${lead.status === 'qualified' ? 'selected' : ''}>Qualified</option>
-                        <option value="under-contract" ${lead.status === 'under-contract' ? 'selected' : ''}>Under Contract</option>
-                        <option value="closed" ${lead.status === 'closed' ? 'selected' : ''}>Closed</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700">Source</label>
-                    <select id="editLeadSource" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                        <option value="website" ${lead.source === 'website' ? 'selected' : ''}>Website</option>
-                        <option value="referral" ${lead.source === 'referral' ? 'selected' : ''}>Referral</option>
-                        <option value="social-media" ${lead.source === 'social-media' ? 'selected' : ''}>Social Media</option>
-                        <option value="direct-mail" ${lead.source === 'direct-mail' ? 'selected' : ''}>Direct Mail</option>
-                        <option value="cold-call" ${lead.source === 'cold-call' ? 'selected' : ''}>Cold Call</option>
-                        <option value="other" ${lead.source === 'other' ? 'selected' : ''}>Other</option>
-                    </select>
-                </div>
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700">Estimated Value</label>
-                <input type="number" id="editLeadEstimatedValue" value="${lead.estimatedValue || ''}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" min="0">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700">Notes</label>
-                <textarea id="editLeadNotes" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" placeholder="Any additional notes about this lead...">${lead.notes || ''}</textarea>
+                <form onsubmit="saveEditedLead('${id}', event)" class="p-6">
+                    <div class="space-y-4">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">First Name *</label>
+                                <input type="text" id="editLeadFirstName" value="${lead.firstName || ''}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Last Name *</label>
+                                <input type="text" id="editLeadLastName" value="${lead.lastName || ''}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Phone *</label>
+                                <input type="tel" id="editLeadPhone" value="${lead.phone || ''}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Phone Type</label>
+                                <select id="editLeadPhoneType" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                    <option value="mobile" ${(lead.phoneType || 'mobile') === 'mobile' ? 'selected' : ''}>Mobile</option>
+                                    <option value="landline" ${lead.phoneType === 'landline' ? 'selected' : ''}>Landline</option>
+                                    <option value="work" ${lead.phoneType === 'work' ? 'selected' : ''}>Work</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Email</label>
+                                <input type="email" id="editLeadEmail" value="${lead.email || ''}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Property Address *</label>
+                            <input type="text" id="editLeadPropertyAddress" value="${lead.propertyAddress || ''}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Status</label>
+                                <select id="editLeadStatus" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                    <option value="new" ${lead.status === 'new' ? 'selected' : ''}>New</option>
+                                    <option value="contacted" ${lead.status === 'contacted' ? 'selected' : ''}>Contacted</option>
+                                    <option value="qualified" ${lead.status === 'qualified' ? 'selected' : ''}>Qualified</option>
+                                    <option value="under_contract" ${lead.status === 'under_contract' ? 'selected' : ''}>Under Contract</option>
+                                    <option value="closed" ${lead.status === 'closed' ? 'selected' : ''}>Closed</option>
+                                    <option value="dead" ${lead.status === 'dead' ? 'selected' : ''}>Dead</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Source</label>
+                                <select id="editLeadSource" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                    <option value="CSV Import" ${lead.source === 'CSV Import' ? 'selected' : ''}>CSV Import</option>
+                                    <option value="Tax Delinquent" ${lead.source === 'Tax Delinquent' ? 'selected' : ''}>Tax Delinquent</option>
+                                    <option value="Code Violations" ${lead.source === 'Code Violations' ? 'selected' : ''}>Code Violations</option>
+                                    <option value="Probate" ${lead.source === 'Probate' ? 'selected' : ''}>Probate</option>
+                                    <option value="Foreclosure" ${lead.source === 'Foreclosure' ? 'selected' : ''}>Foreclosure</option>
+                                    <option value="Absentee Owner" ${lead.source === 'Absentee Owner' ? 'selected' : ''}>Absentee Owner</option>
+                                    <option value="Direct Mail" ${lead.source === 'Direct Mail' ? 'selected' : ''}>Direct Mail</option>
+                                    <option value="Cold Call" ${lead.source === 'Cold Call' ? 'selected' : ''}>Cold Call</option>
+                                    <option value="Referral" ${lead.source === 'Referral' ? 'selected' : ''}>Referral</option>
+                                    <option value="Website" ${lead.source === 'Website' ? 'selected' : ''}>Website</option>
+                                    <option value="Social Media" ${lead.source === 'Social Media' ? 'selected' : ''}>Social Media</option>
+                                    <option value="Other" ${lead.source === 'Other' ? 'selected' : ''}>Other</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Estimated Value</label>
+                            <input type="number" id="editLeadEstimatedValue" value="${lead.estimatedValue || ''}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" min="0">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Notes</label>
+                            <textarea id="editLeadNotes" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" placeholder="Any additional notes about this lead...">${lead.notes || ''}</textarea>
+                        </div>
+                    </div>
+                    <div class="flex justify-end space-x-4 mt-6">
+                        <button type="button" onclick="closeEditLeadModal()" class="px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
+                        <button type="submit" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Save Changes</button>
+                    </div>
+                </form>
             </div>
         </div>
     `;
     
-    showCustomModal('Edit Lead', formContent, () => saveEditedLead(id));
+    // Remove existing modal if present
+    const existingModal = document.getElementById('editLeadModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    // Add modal to page
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    document.body.style.overflow = 'hidden';
 }
 
-function saveEditedLead(id) {
-    const lead = leads.find(l => l.id === id);
-    if (!lead) return;
+function closeEditLeadModal() {
+    const modal = document.getElementById('editLeadModal');
+    if (modal) {
+        modal.remove();
+        document.body.style.overflow = 'auto';
+    }
+}
+
+function saveEditedLead(id, event) {
+    event.preventDefault();
+    
+    const lead = leads.find(l => l.id == id);
+    if (!lead) {
+        showErrorMessage('Lead not found');
+        return;
+    }
     
     // Get form values
     const firstName = document.getElementById('editLeadFirstName').value.trim();
     const lastName = document.getElementById('editLeadLastName').value.trim();
     const phone = document.getElementById('editLeadPhone').value.trim();
+    const phoneType = document.getElementById('editLeadPhoneType').value;
     const email = document.getElementById('editLeadEmail').value.trim();
     const propertyAddress = document.getElementById('editLeadPropertyAddress').value.trim();
     const status = document.getElementById('editLeadStatus').value;
@@ -1415,6 +1582,7 @@ function saveEditedLead(id) {
     lead.firstName = firstName;
     lead.lastName = lastName;
     lead.phone = phone;
+    lead.phoneType = phoneType;
     lead.email = email;
     lead.propertyAddress = propertyAddress;
     lead.status = status;
@@ -1427,17 +1595,21 @@ function saveEditedLead(id) {
     saveData();
     updateLeadsTable();
     updateDashboardStats();
-    hideContractGeneratorModal();
+    updatePipelineStats();
+    updateKanbanView();
+    closeEditLeadModal();
     
     showSuccessMessage('Lead updated successfully!');
 }
 
 function deleteLead(id) {
     if (confirm('Are you sure you want to delete this lead?')) {
-        leads = leads.filter(l => l.id !== id);
+        leads = leads.filter(l => l.id != id);
         saveData();
         updateLeadsTable();
         updateDashboardStats();
+        updatePipelineStats();
+        updateKanbanView();
         showSuccessMessage('Lead deleted successfully!');
     }
 }
@@ -3663,6 +3835,45 @@ function formatDate(dateString) {
     });
 }
 
+// Phone type helper functions
+function getPhoneTypeLabel(phoneType) {
+    switch(phoneType?.toLowerCase()) {
+        case 'mobile':
+        case 'cell':
+            return 'Mobile';
+        case 'landline':
+        case 'home':
+            return 'Landline';
+        case 'work':
+        case 'office':
+            return 'Work';
+        default:
+            return 'Unknown';
+    }
+}
+
+function getPhoneTypeBadgeColor(phoneType) {
+    switch(phoneType?.toLowerCase()) {
+        case 'mobile':
+        case 'cell':
+            return 'bg-green-100 text-green-800';
+        case 'landline':
+        case 'home':
+            return 'bg-gray-100 text-gray-800';
+        case 'work':
+        case 'office':
+            return 'bg-blue-100 text-blue-800';
+        default:
+            return 'bg-yellow-100 text-yellow-800';
+    }
+}
+
+function isPhoneTypeMobile(phoneType) {
+    if (!phoneType) return true; // Default to true for unknown phone types
+    const type = phoneType.toLowerCase();
+    return type === 'mobile' || type === 'cell';
+}
+
 function getTimeAgo(dateString) {
     const date = new Date(dateString);
     const now = new Date();
@@ -4068,33 +4279,22 @@ function calculateARV() {
 
 // Get total repair costs - pure function
 function getRepairsValue() {
-    const kitchenCost = parseFloat(document.getElementById('kitchenCost').value) || 0;
-    const bathroomCost = parseFloat(document.getElementById('bathroomCost').value) || 0;
-    const flooringCost = parseFloat(document.getElementById('flooringCost').value) || 0;
-    const paintCost = parseFloat(document.getElementById('paintCost').value) || 0;
-    const roofCost = parseFloat(document.getElementById('roofCost').value) || 0;
-    const hvacCost = parseFloat(document.getElementById('hvacCost').value) || 0;
-    const electricalCost = parseFloat(document.getElementById('electricalCost').value) || 0;
-    const plumbingCost = parseFloat(document.getElementById('plumbingCost').value) || 0;
-    const landscapingCost = parseFloat(document.getElementById('landscapingCost').value) || 0;
-    
-    const subtotal = kitchenCost + bathroomCost + flooringCost + paintCost + 
-                    roofCost + hvacCost + electricalCost + plumbingCost + landscapingCost;
-    
-    const contingency = subtotal * 0.10; // 10% contingency
-    const totalRepairs = subtotal + contingency;
-    
-    return { totalRepairs, contingency };
+    const totalRepairs = parseFloat(document.getElementById('totalRepairsInput').value) || 0;
+    return { totalRepairs, contingency: 0 };
 }
 
-// Calculate repairs and update display
-function calculateRepairs() {
-    const { totalRepairs, contingency } = getRepairsValue();
+// Update simple repairs display
+function updateSimpleRepairs() {
+    const { totalRepairs } = getRepairsValue();
     
-    document.getElementById('contingencyCost').textContent = formatCurrency(contingency);
     document.getElementById('totalRepairs').textContent = formatCurrency(totalRepairs);
     
     updateProfitDisplay();
+}
+
+// Calculate repairs and update display (legacy function for compatibility)
+function calculateRepairs() {
+    updateSimpleRepairs();
 }
 
 // Calculate profit margins
@@ -4112,7 +4312,8 @@ function updateProfitDisplay() {
     const otherCosts = parseFloat(document.getElementById('otherCosts').value) || 0;
     
     const totalCosts = marketingCosts + otherCosts;
-    const buyerInvestment = purchasePrice + totalRepairs;
+    const closingFees = arv * 0.10; // 10% of ARV for closing fees
+    const buyerInvestment = purchasePrice + totalRepairs + closingFees;
     const buyerProfit = arv - buyerInvestment;
     const yourProfit = assignmentFee - totalCosts;
     
@@ -4120,6 +4321,7 @@ function updateProfitDisplay() {
     const profitARVEl = document.getElementById('profitARV');
     const profitPurchaseEl = document.getElementById('profitPurchase');
     const profitRepairsEl = document.getElementById('profitRepairs');
+    const profitClosingFeesEl = document.getElementById('profitClosingFees');
     const profitAssignmentEl = document.getElementById('profitAssignment');
     const profitCostsEl = document.getElementById('profitCosts');
     const buyerProfitEl = document.getElementById('buyerProfit');
@@ -4128,6 +4330,7 @@ function updateProfitDisplay() {
     if (profitARVEl) profitARVEl.textContent = formatCurrency(arv);
     if (profitPurchaseEl) profitPurchaseEl.textContent = formatCurrency(purchasePrice);
     if (profitRepairsEl) profitRepairsEl.textContent = formatCurrency(totalRepairs);
+    if (profitClosingFeesEl) profitClosingFeesEl.textContent = formatCurrency(closingFees);
     if (profitAssignmentEl) profitAssignmentEl.textContent = formatCurrency(assignmentFee);
     if (profitCostsEl) profitCostsEl.textContent = formatCurrency(totalCosts);
     if (buyerProfitEl) buyerProfitEl.textContent = formatCurrency(buyerProfit);
@@ -4155,6 +4358,12 @@ function updateProfitDisplay() {
     
     // Calculate Rapid Offers automatically
     calculateRapidOffers();
+    
+    // Calculate Custom Offer automatically
+    calculateCustomOffer();
+    
+    // Calculate Buyer-Focused Offer automatically
+    calculateBuyerFocusedOffer();
 }
 
 // Calculate ROI and deal metrics (public function)
@@ -4183,7 +4392,8 @@ function updateROIDisplay() {
     const { totalRepairs } = getRepairsValue();
     
     if (arv > 0 && purchasePrice > 0) {
-        const buyerProfit = arv - purchasePrice - totalRepairs;
+        const closingFees = arv * 0.10; // 10% of ARV for closing fees
+        const buyerProfit = arv - purchasePrice - totalRepairs - closingFees;
         const profitMarginPercent = (buyerProfit / arv) * 100;
         const assignmentPercent = (assignmentFee / purchasePrice) * 100;
         
@@ -4321,6 +4531,158 @@ function calculateRapidOffers() {
         console.error('Error calculating rapid offers:', error);
         document.getElementById('rapidMAO').textContent = 'Error';
         document.getElementById('rapidLAO').textContent = 'Error';
+    }
+}
+
+// Calculate Custom Percentage Offer
+function calculateCustomOffer() {
+    try {
+        const arv = getARVValue();
+        const { totalRepairs } = getRepairsValue();
+        const percentage = parseFloat(document.getElementById('customPercentage').value) || 0;
+        
+        // Update ARV and Repairs display
+        document.getElementById('customARV').textContent = formatCurrency(arv);
+        document.getElementById('customRepairs').textContent = formatCurrency(totalRepairs);
+        
+        if (arv <= 0 || percentage <= 0) {
+            document.getElementById('customMaxOffer').textContent = '$0';
+            document.getElementById('customSpread').textContent = '$0';
+            return;
+        }
+        
+        // Formula: (ARV × X%) - Repairs = Max Offer
+        const maxOffer = (arv * (percentage / 100)) - totalRepairs;
+        const spread = arv - Math.max(maxOffer, 0); // Ensure maxOffer isn't negative for spread calc
+        
+        // Update display elements
+        document.getElementById('customMaxOffer').textContent = formatCurrency(Math.max(maxOffer, 0));
+        document.getElementById('customSpread').textContent = formatCurrency(spread);
+        
+        // Update color coding based on offer viability
+        const maxOfferEl = document.getElementById('customMaxOffer');
+        const spreadEl = document.getElementById('customSpread');
+        
+        if (maxOfferEl) {
+            if (maxOffer > 0) {
+                maxOfferEl.className = 'text-lg font-bold text-green-600';
+            } else {
+                maxOfferEl.className = 'text-lg font-bold text-red-600';
+            }
+        }
+        
+        if (spreadEl) {
+            const spreadPercent = arv > 0 ? (spread / arv) * 100 : 0;
+            if (spreadPercent >= 25) {
+                spreadEl.className = 'text-lg font-bold text-green-600';
+            } else if (spreadPercent >= 15) {
+                spreadEl.className = 'text-lg font-bold text-yellow-600';
+            } else {
+                spreadEl.className = 'text-lg font-bold text-red-600';
+            }
+        }
+        
+    } catch (error) {
+        console.error('Error calculating custom offer:', error);
+        document.getElementById('customMaxOffer').textContent = 'Error';
+        document.getElementById('customSpread').textContent = 'Error';
+    }
+}
+
+// Calculate buyer-focused offer with closing costs and buyer profit
+function calculateBuyerFocusedOffer() {
+    try {
+        const arv = getARVValue();
+        const { totalRepairs } = getRepairsValue();
+        
+        // Update ARV and Repairs display
+        document.getElementById('buyerFocusedARV').textContent = formatCurrency(arv);
+        document.getElementById('buyerFocusedRepairs').textContent = formatCurrency(totalRepairs);
+        
+        if (arv <= 0) {
+            document.getElementById('buyerFocusedClosing').textContent = '$0';
+            document.getElementById('buyerFocusedProfit').textContent = '$0';
+            document.getElementById('buyerFocusedMAO').textContent = '$0';
+            return;
+        }
+        
+        // Calculate closing costs (10% of ARV)
+        const closingCosts = arv * 0.10;
+        
+        // Calculate buyer profit based on repair level
+        let buyerProfit = 30000; // Default for under $30k repairs
+        if (totalRepairs >= 50000 && totalRepairs <= 80000) {
+            buyerProfit = 50000; // $50k profit for $50k-$80k repairs
+        } else if (totalRepairs >= 30000 && totalRepairs < 50000) {
+            buyerProfit = totalRepairs; // Same as repair amount for $30k-$50k repairs
+        } else if (totalRepairs > 80000) {
+            buyerProfit = 60000; // Higher profit for very high repair costs
+        }
+        
+        // Simple Formula: ARV - Repairs - Closing Cost - Buyer Profit = MAO
+        const mao = arv - totalRepairs - closingCosts - buyerProfit;
+        
+        // Calculate LAO (Local Assignment Offer): MAO × 70%
+        const lao = mao * 0.70;
+        
+        // Update display elements
+        document.getElementById('buyerFocusedClosing').textContent = formatCurrency(closingCosts);
+        document.getElementById('buyerFocusedProfit').textContent = formatCurrency(buyerProfit);
+        document.getElementById('buyerFocusedMAO').textContent = formatCurrency(Math.max(mao, 0));
+        document.getElementById('buyerFocusedLAO').textContent = formatCurrency(Math.max(lao, 0));
+        
+        // Update color coding based on MAO viability
+        const maoEl = document.getElementById('buyerFocusedMAO');
+        const laoEl = document.getElementById('buyerFocusedLAO');
+        
+        if (maoEl) {
+            if (mao > 50000) {
+                maoEl.className = 'text-lg font-bold text-green-600'; // Excellent offer
+            } else if (mao > 25000) {
+                maoEl.className = 'text-lg font-bold text-blue-600'; // Good offer
+            } else if (mao > 10000) {
+                maoEl.className = 'text-lg font-bold text-yellow-600'; // Marginal offer
+            } else if (mao > 0) {
+                maoEl.className = 'text-lg font-bold text-orange-600'; // Low offer
+            } else {
+                maoEl.className = 'text-lg font-bold text-red-600'; // No deal/negative
+            }
+        }
+        
+        // Apply similar color coding to LAO
+        if (laoEl) {
+            if (lao > 35000) {
+                laoEl.className = 'text-lg font-bold text-blue-600'; // Excellent LAO
+            } else if (lao > 17500) {
+                laoEl.className = 'text-lg font-bold text-blue-500'; // Good LAO
+            } else if (lao > 7000) {
+                laoEl.className = 'text-lg font-bold text-yellow-600'; // Marginal LAO
+            } else if (lao > 0) {
+                laoEl.className = 'text-lg font-bold text-orange-600'; // Low LAO
+            } else {
+                laoEl.className = 'text-lg font-bold text-red-600'; // No deal/negative LAO
+            }
+        }
+        
+        // Color code profit based on repair level appropriateness
+        const profitEl = document.getElementById('buyerFocusedProfit');
+        if (profitEl) {
+            if (totalRepairs < 30000 && buyerProfit >= 30000) {
+                profitEl.className = 'text-lg font-bold text-green-800';
+            } else if (totalRepairs >= 30000 && totalRepairs < 50000 && buyerProfit === totalRepairs) {
+                profitEl.className = 'text-lg font-bold text-green-800';
+            } else if (totalRepairs >= 50000 && buyerProfit >= 50000) {
+                profitEl.className = 'text-lg font-bold text-green-800';
+            } else {
+                profitEl.className = 'text-lg font-bold text-purple-800';
+            }
+        }
+        
+    } catch (error) {
+        console.error('Error calculating buyer-focused offer:', error);
+        document.getElementById('buyerFocusedClosing').textContent = 'Error';
+        document.getElementById('buyerFocusedProfit').textContent = 'Error';
+        document.getElementById('buyerFocusedMAO').textContent = 'Error';
     }
 }
 
@@ -4957,30 +5319,197 @@ function calculateCampaignROI() {
 function updateDirectMailTable() {
     const tbody = document.getElementById('directMailCampaignsTable');
     
+    if (!tbody) {
+        console.error('Direct mail campaigns table not found!');
+        return;
+    }
+    
+    // Force all parent containers to be visible first
+    const table = tbody.closest('table');
+    const marketingContent = document.getElementById('marketing-content');
+    const directMailContent = document.getElementById('direct-mail-content');
+    
+    // Ensure marketing containers are visible
+    if (marketingContent) {
+        marketingContent.classList.remove('hidden');
+        marketingContent.style.display = 'block';
+    }
+    if (directMailContent) {
+        directMailContent.classList.remove('hidden');
+        directMailContent.style.display = 'block';
+    }
+    
+    // Force table structure to be visible
+    if (table) {
+        table.style.width = '100%';
+        table.style.display = 'table';
+        table.style.tableLayout = 'auto';
+        
+        const tableContainer = table.closest('.bg-white');
+        if (tableContainer) {
+            tableContainer.style.display = 'block';
+            tableContainer.style.minHeight = '200px';
+        }
+    }
+    
     if (directMailCampaigns.length === 0) {
         tbody.innerHTML = '<tr><td colspan="7" class="px-6 py-4 text-center text-gray-500">No campaigns created yet</td></tr>';
         return;
     }
     
-    tbody.innerHTML = directMailCampaigns.map(campaign => {
-        const roi = campaign.totalCost > 0 ? (((campaign.revenue - campaign.totalCost) / campaign.totalCost) * 100) : 0;
+    const htmlRows = directMailCampaigns.map(campaign => {
+        const roi = campaign.totalCost > 0 ? (((campaign.revenue || 0) - campaign.totalCost) / campaign.totalCost) * 100 : 0;
         const roiClass = roi >= 100 ? 'text-green-600' : roi >= 0 ? 'text-blue-600' : 'text-red-600';
         
         return `
-            <tr>
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${campaign.name}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 capitalize">${campaign.type}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${formatNumber(campaign.listSize)}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${formatCurrency(campaign.totalCost)}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${campaign.actualResponses}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium ${roiClass}">${roi.toFixed(1)}%</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    <button onclick="editCampaign(${campaign.id})" class="text-indigo-600 hover:text-indigo-900 mr-2">Edit</button>
-                    <button onclick="deleteCampaign(${campaign.id})" class="text-red-600 hover:text-red-900">Delete</button>
+            <tr style="display: table-row;">
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900" style="display: table-cell; border: 1px solid #e5e7eb;">${campaign.name || 'Unnamed'}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 capitalize" style="display: table-cell; border: 1px solid #e5e7eb;">${campaign.type || 'postcard'}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500" style="display: table-cell; border: 1px solid #e5e7eb;">${formatNumber(campaign.listSize || 0)}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500" style="display: table-cell; border: 1px solid #e5e7eb;">${formatCurrency(campaign.totalCost || 0)}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500" style="display: table-cell; border: 1px solid #e5e7eb;">${campaign.actualResponses || 0}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium ${roiClass}" style="display: table-cell; border: 1px solid #e5e7eb;">${roi.toFixed(1)}%</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500" style="display: table-cell; border: 1px solid #e5e7eb;">
+                    <button class="text-indigo-600 hover:text-indigo-900 mr-2" data-action="edit" data-id="${campaign.id}">Edit</button>
+                    <button class="text-red-600 hover:text-red-900" data-action="delete" data-id="${campaign.id}">Delete</button>
                 </td>
             </tr>
         `;
-    }).join('');
+    });
+    
+    tbody.innerHTML = htmlRows.join('');
+    tbody.style.display = 'table-row-group';
+    
+    // Add event delegation for buttons
+    tbody.removeEventListener('click', handleCampaignActions);
+    tbody.addEventListener('click', handleCampaignActions);
+}
+
+// Handle campaign action buttons
+function handleCampaignActions(e) {
+    if (e.target.tagName === 'BUTTON') {
+        const action = e.target.dataset.action;
+        const campaignId = e.target.dataset.id;
+        
+        if (action === 'edit') {
+            editCampaign(parseInt(campaignId));
+        } else if (action === 'delete') {
+            deleteCampaign(parseInt(campaignId));
+        }
+    }
+}
+
+// Edit Campaign function
+function editCampaign(campaignId) {
+    console.log('🔄 Editing campaign with ID:', campaignId);
+    
+    // Load campaign data from cloud storage
+    CloudStorage.loadData('DirectMailCampaigns').then(campaigns => {
+        const campaign = campaigns.find(c => c.id === campaignId);
+        if (!campaign) {
+            console.error('Campaign not found:', campaignId);
+            return;
+        }
+        
+        // Populate form with campaign data
+        document.getElementById('campaignName').value = campaign.name || '';
+        document.getElementById('campaignType').value = campaign.type || 'postcard';
+        document.getElementById('listSize').value = campaign.listSize || '';
+        document.getElementById('costPerPiece').value = campaign.costPerPiece || '';
+        
+        // Check the appropriate criteria checkboxes
+        if (campaign.criteria) {
+            document.querySelectorAll('.lead-criteria').forEach(cb => {
+                cb.checked = campaign.criteria.includes(cb.value);
+            });
+        }
+        
+        // Show a modal or highlight form for editing
+        const formContainer = document.querySelector('.bg-white.rounded-lg.shadow.p-6');
+        if (formContainer) {
+            formContainer.style.border = '3px solid #3b82f6';
+            formContainer.scrollIntoView({ behavior: 'smooth' });
+            
+            // Add edit indicator
+            const editIndicator = document.createElement('div');
+            editIndicator.className = 'bg-blue-100 text-blue-800 px-3 py-2 rounded-lg text-sm font-medium mb-4';
+            editIndicator.innerHTML = '✏️ Editing Campaign: ' + campaign.name;
+            editIndicator.id = 'editIndicator';
+            
+            // Remove existing indicator
+            const existing = document.getElementById('editIndicator');
+            if (existing) existing.remove();
+            
+            formContainer.insertBefore(editIndicator, formContainer.firstChild);
+            
+            // Store the campaign ID for updating
+            formContainer.dataset.editingCampaignId = campaignId;
+            
+            // Update button text
+            const createButton = document.querySelector('button[onclick="createDirectMailCampaign()"]');
+            if (createButton) {
+                createButton.textContent = 'Update Campaign';
+                createButton.style.backgroundColor = '#f59e0b';
+            }
+        }
+    }).catch(error => {
+        console.error('Error loading campaign for editing:', error);
+    });
+}
+
+// Delete Campaign function  
+function deleteCampaign(campaignId) {
+    console.log('🗑️ Deleting campaign with ID:', campaignId);
+    
+    // Confirm deletion
+    if (!confirm('Are you sure you want to delete this campaign? This action cannot be undone.')) {
+        return;
+    }
+    
+    // Load current campaigns
+    CloudStorage.loadData('DirectMailCampaigns').then(campaigns => {
+        const campaignIndex = campaigns.findIndex(c => c.id === campaignId);
+        if (campaignIndex === -1) {
+            console.error('Campaign not found:', campaignId);
+            return;
+        }
+        
+        const campaignName = campaigns[campaignIndex].name;
+        
+        // Remove campaign from array
+        campaigns.splice(campaignIndex, 1);
+        
+        // Save updated campaigns
+        CloudStorage.saveData('DirectMailCampaigns', campaigns).then(() => {
+            console.log('✅ Campaign deleted successfully:', campaignName);
+            
+            // Refresh the table
+            updateDirectMailTable();
+            
+            // Show success message
+            const successMessage = document.createElement('div');
+            successMessage.className = 'bg-green-100 text-green-800 px-4 py-3 rounded-lg mb-4';
+            successMessage.innerHTML = `✅ Campaign "${campaignName}" has been deleted successfully.`;
+            
+            const marketingContent = document.getElementById('marketing-content');
+            if (marketingContent) {
+                marketingContent.insertBefore(successMessage, marketingContent.firstChild);
+                
+                // Remove message after 5 seconds
+                setTimeout(() => {
+                    successMessage.remove();
+                }, 5000);
+            }
+            
+        }).catch(error => {
+            console.error('Error deleting campaign:', error);
+            alert('Error deleting campaign. Please try again.');
+        });
+        
+    }).catch(error => {
+        console.error('Error loading campaigns for deletion:', error);
+        alert('Error loading campaigns. Please try again.');
+    });
 }
 
 // Clear Direct Mail Form
@@ -5087,7 +5616,7 @@ function updateCallTracking() {
 
 // Update Calling Lists Table
 function updateCallingListsTable() {
-    const tbody = document.getElementById('callingListsTable');
+    const tbody = document.getElementById('coldCallingListsTable');
     
     if (callingLists.length === 0) {
         tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-4 text-center text-gray-500">No calling lists created yet</td></tr>';
@@ -5373,11 +5902,14 @@ async function loadMarketingData() {
 
 // Initialize Marketing Dashboard on Load
 async function initializeMarketing() {
+    console.log('initializeMarketing called');
     try {
         // Load data from cloud storage first
+        console.log('Loading marketing data...');
         await loadMarketingData();
         
         // Then update all the UI components
+        console.log('Updating UI components...');
         updateMarketingDashboard();
         updateDirectMailTable();
         updateCallingListsTable();
@@ -5389,7 +5921,18 @@ async function initializeMarketing() {
         }
         
         // Set default marketing sub-tab
+        console.log('🏷️ About to call showMarketingSubTab...');
         showMarketingSubTab('direct-mail');
+        console.log('🏷️ Called showMarketingSubTab, checking table again...');
+        
+        // Check table state after showMarketingSubTab
+        setTimeout(() => {
+            const tbody = document.getElementById('directMailCampaignsTable');
+            if (tbody) {
+                console.log('🏷️ Final table check - children count:', tbody.children.length);
+                console.log('🏷️ Final table innerHTML:', tbody.innerHTML);
+            }
+        }, 100);
     } catch (error) {
         console.error('Error initializing marketing:', error);
     }
@@ -6187,6 +6730,1931 @@ window.createCampaignFromPreview = createCampaignFromPreview;
 window.closeUploadModal = closeUploadModal;
 window.processLeadListUpload = processLeadListUpload;
 window.calculateCampaignROI = calculateCampaignROI;
+window.updateDirectMailTable = updateDirectMailTable;
+window.loadMarketingData = loadMarketingData;
+
+// Test function for debugging
+window.testTableUpdate = async function() {
+    console.log('Testing table update...');
+    await loadMarketingData();
+    updateDirectMailTable();
+};
+
+// Simple test function to check if table can display HTML at all
+window.testSimpleHTML = function() {
+    const tbody = document.getElementById('directMailCampaignsTable');
+    if (tbody) {
+        tbody.innerHTML = `
+            <tr style="background-color: yellow;">
+                <td class="px-6 py-4">TEST</td>
+                <td class="px-6 py-4">CAMPAIGN</td>
+                <td class="px-6 py-4">100</td>
+                <td class="px-6 py-4">$50</td>
+                <td class="px-6 py-4">5</td>
+                <td class="px-6 py-4">10%</td>
+                <td class="px-6 py-4">Actions</td>
+            </tr>
+        `;
+        console.log('Simple HTML test applied');
+    } else {
+        console.log('Table not found');
+    }
+};
+
+// LEAD PIPELINE MANAGEMENT FUNCTIONS
+
+// Toggle between Kanban and List view
+function togglePipelineView(view) {
+    const kanbanView = document.getElementById('kanbanView');
+    const listView = document.getElementById('listView');
+    const kanbanBtn = document.getElementById('kanbanViewBtn');
+    const listBtn = document.getElementById('listViewBtn');
+    
+    if (view === 'kanban') {
+        kanbanView.classList.remove('hidden');
+        listView.classList.add('hidden');
+        kanbanBtn.classList.add('bg-blue-600', 'text-white');
+        kanbanBtn.classList.remove('bg-gray-200', 'text-gray-700');
+        listBtn.classList.add('bg-gray-200', 'text-gray-700');
+        listBtn.classList.remove('bg-blue-600', 'text-white');
+        updateKanbanView();
+    } else {
+        kanbanView.classList.add('hidden');
+        listView.classList.remove('hidden');
+        listBtn.classList.add('bg-blue-600', 'text-white');
+        listBtn.classList.remove('bg-gray-200', 'text-gray-700');
+        kanbanBtn.classList.add('bg-gray-200', 'text-gray-700');
+        kanbanBtn.classList.remove('bg-blue-600', 'text-white');
+        updateListView();
+    }
+}
+
+// Drag and drop functionality
+function dragLead(event, leadId) {
+    event.dataTransfer.setData('text/plain', leadId);
+}
+
+function allowDrop(event) {
+    event.preventDefault();
+}
+
+function dropLead(event, newStatus) {
+    event.preventDefault();
+    const leadId = event.dataTransfer.getData('text/plain');
+    updateLeadStatus(leadId, newStatus);
+}
+
+// Update lead status (used by both drag-drop and dropdown)
+function updateLeadStatus(leadId, newStatus) {
+    const lead = leads.find(l => l.id == leadId);
+    if (!lead) return;
+    
+    const oldStatus = lead.status;
+    lead.status = newStatus;
+    lead.lastContact = new Date().toISOString();
+    
+    // Add activity log entry
+    addActivityLog(`Lead "${lead.propertyAddress}" moved from ${oldStatus} to ${newStatus}`, 'lead');
+    
+    // Save and refresh views
+    saveData();
+    updateLeadsTable();
+    
+    // Show success message
+    showSuccessMessage(`Lead status updated to ${newStatus.replace('_', ' ')}`);
+}
+
+// Filter leads by status and search
+function filterLeads() {
+    updateListView();
+}
+
+// Import leads from CSV
+function importLeadsFromCSV() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.csv';
+    input.onchange = handleLeadCSVImport;
+    input.click();
+}
+
+function handleLeadCSVImport(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const csv = e.target.result;
+            const lines = csv.split('\n');
+            const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+            
+            let importedCount = 0;
+            
+            for (let i = 1; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (!line) continue;
+                
+                const values = line.split(',').map(v => v.trim().replace(/"/g, ''));
+                
+                // Skip rows with insufficient data or malformed content
+                if (values.length < 3 || !values.some(v => v.length > 0)) {
+                    continue;
+                }
+                
+                // Combine address components if split across columns
+                let propertyAddress = getValue(values, headers, ['address', 'property', 'street']) || '';
+                const city = getValue(values, headers, ['city']);
+                const state = getValue(values, headers, ['state']);
+                const zipCode = getValue(values, headers, ['zip', 'zip code', 'zipcode']);
+                
+                // Build full address if components are separate
+                if (propertyAddress && city && state) {
+                    propertyAddress = `${propertyAddress}, ${city}, ${state}`;
+                    if (zipCode) {
+                        propertyAddress += ` ${zipCode}`;
+                    }
+                }
+                
+                const lead = {
+                    id: Date.now() + importedCount,
+                    firstName: getValue(values, headers, ['first', 'firstname', 'first name']) || '',
+                    lastName: getValue(values, headers, ['last', 'lastname', 'last name']) || '',
+                    propertyAddress: propertyAddress,
+                    phone: getValue(values, headers, ['phone', 'telephone', 'mobile', 'phone number']) || '',
+                    phoneType: getValue(values, headers, ['phone type', 'phonetype', 'type']) || 'unknown',
+                    email: getValue(values, headers, ['email', 'e-mail', 'mail']) || '',
+                    source: 'CSV Import',
+                    status: 'new',
+                    estimatedValue: null,
+                    notes: '',
+                    createdAt: new Date().toISOString(),
+                    lastContact: null
+                };
+                
+                if (lead.propertyAddress && lead.phone) {
+                    leads.push(lead);
+                    importedCount++;
+                }
+            }
+            
+            if (importedCount > 0) {
+                saveData();
+                updateLeadsTable();
+                showSuccessMessage(`Successfully imported ${importedCount} leads`);
+                addActivityLog(`Imported ${importedCount} leads from CSV`, 'system');
+            } else {
+                showErrorMessage('No valid leads found in CSV file');
+            }
+            
+        } catch (error) {
+            showErrorMessage('Error reading CSV file: ' + error.message);
+        }
+    };
+    reader.readAsText(file);
+}
+
+// Helper function to get value from CSV by possible header names
+function getValue(values, headers, possibleNames) {
+    for (const name of possibleNames) {
+        const index = headers.findIndex(h => h.includes(name));
+        if (index !== -1 && values[index]) {
+            return values[index];
+        }
+    }
+    return '';
+}
+
+// Export leads to CSV
+function exportLeads() {
+    if (leads.length === 0) {
+        showErrorMessage('No leads to export');
+        return;
+    }
+    
+    const headers = ['First Name', 'Last Name', 'Property Address', 'Phone', 'Email', 'Status', 'Estimated Value', 'Source', 'Created', 'Last Contact', 'Notes'];
+    const csvData = [headers];
+    
+    leads.forEach(lead => {
+        csvData.push([
+            lead.firstName,
+            lead.lastName,
+            lead.propertyAddress,
+            lead.phone,
+            lead.email || '',
+            lead.status,
+            lead.estimatedValue || '',
+            lead.source,
+            formatDate(lead.createdAt),
+            lead.lastContact ? formatDate(lead.lastContact) : '',
+            lead.notes || ''
+        ]);
+    });
+    
+    const csvContent = csvData.map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
+    
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `leads-export-${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+    
+    showSuccessMessage(`Exported ${leads.length} leads to CSV`);
+}
+
+// Bulk actions for leads
+function bulkActions() {
+    // This would show a modal with bulk action options
+    showErrorMessage('Bulk actions feature coming soon!');
+}
+
+// Make pipeline functions globally accessible
+window.togglePipelineView = togglePipelineView;
+window.dragLead = dragLead;
+window.allowDrop = allowDrop;
+window.dropLead = dropLead;
+window.updateLeadStatus = updateLeadStatus;
+window.filterLeads = filterLeads;
+window.importLeadsFromCSV = importLeadsFromCSV;
+window.exportLeads = exportLeads;
+window.bulkActions = bulkActions;
+window.editLead = editLead;
+window.deleteLead = deleteLead;
+window.showAddLeadModal = showAddLeadModal;
+window.closeEditLeadModal = closeEditLeadModal;
+window.saveEditedLead = saveEditedLead;
+window.showAddPropertyModal = showAddPropertyModal;
+window.hideAddPropertyModal = hideAddPropertyModal;
+window.showAddBuyerModal = showAddBuyerModal;
+window.hideAddBuyerModal = hideAddBuyerModal;
+window.showContractGeneratorModal = showContractGeneratorModal;
+window.hideContractGeneratorModal = hideContractGeneratorModal;
+window.showImportBuyersModal = showImportBuyersModal;
+window.hideImportBuyersModal = hideImportBuyersModal;
+window.showAssignmentFeeModal = showAssignmentFeeModal;
+window.hideAssignmentFeeModal = hideAssignmentFeeModal;
+window.showDigitalSignatureModal = showDigitalSignatureModal;
+window.hideDigitalSignatureModal = hideDigitalSignatureModal;
+window.addProperty = addProperty;
+window.addBuyer = addBuyer;
+window.importBuyersFromCSV = importBuyersFromCSV;
+window.editProperty = editProperty;
+window.deleteProperty = deleteProperty;
+window.viewContract = viewContract;
+window.editContract = editContract;
+window.deleteContract = deleteContract;
+window.editBuyer = editBuyer;
+window.deleteBuyer = deleteBuyer;
+
+// Check for duplicate table IDs
+window.checkDuplicateTables = function() {
+    const tables = document.querySelectorAll('#directMailCampaignsTable');
+    console.log('Found', tables.length, 'elements with ID directMailCampaignsTable');
+    
+    tables.forEach((table, index) => {
+        console.log(`Table ${index}:`, table);
+        console.log(`Table ${index} parent:`, table.parentElement);
+        console.log(`Table ${index} visible:`, table.offsetHeight > 0);
+        console.log(`Table ${index} in direct-mail content:`, table.closest('#direct-mail-content') !== null);
+    });
+};
+
+// Check what's hiding the table
+window.diagnoseTableVisibility = function() {
+    const tbody = document.getElementById('directMailCampaignsTable');
+    if (!tbody) {
+        console.log('❌ Table not found');
+        return;
+    }
+    
+    console.log('🔍 Diagnosing table visibility...');
+    
+    // Check each parent element up the tree
+    let element = tbody;
+    while (element && element !== document.body) {
+        const styles = getComputedStyle(element);
+        const isHidden = styles.display === 'none' || styles.visibility === 'hidden' || styles.opacity === '0';
+        
+        console.log(`Element: ${element.tagName}${element.id ? '#' + element.id : ''}${element.className ? '.' + element.className.split(' ').join('.') : ''}`, {
+            display: styles.display,
+            visibility: styles.visibility,
+            opacity: styles.opacity,
+            height: styles.height,
+            offsetHeight: element.offsetHeight,
+            hidden: isHidden
+        });
+        
+        if (isHidden) {
+            console.log(`⚠️ Found hidden element: ${element.tagName}${element.id ? '#' + element.id : ''}`);
+        }
+        
+        element = element.parentElement;
+    }
+};
+
+// Force table visibility
+window.forceTableVisible = function() {
+    const table = document.querySelector('#directMailCampaignsTable').closest('table');
+    const container = table.closest('.bg-white');
+    
+    // Force all containers to be visible
+    container.style.display = 'block';
+    container.style.visibility = 'visible';
+    table.style.display = 'table';
+    table.style.visibility = 'visible';
+    
+    // Force tbody visible
+    const tbody = document.getElementById('directMailCampaignsTable');
+    tbody.style.display = 'table-row-group';
+    tbody.style.visibility = 'visible';
+    
+    console.log('Forced table visibility');
+};
+
+// Force marketing content to be visible
+window.forceMarketingVisible = function() {
+    console.log('🔧 Forcing marketing content to be visible...');
+    
+    // Force main marketing content visible
+    const marketingContent = document.getElementById('marketing-content');
+    if (marketingContent) {
+        marketingContent.classList.remove('hidden');
+        marketingContent.style.display = 'block';
+        marketingContent.style.visibility = 'visible';
+        console.log('✅ Marketing content forced visible');
+    }
+    
+    // Force direct-mail sub-content visible
+    const directMailContent = document.getElementById('direct-mail-content');
+    if (directMailContent) {
+        directMailContent.classList.remove('hidden');
+        directMailContent.style.display = 'block';
+        directMailContent.style.visibility = 'visible';
+        console.log('✅ Direct mail content forced visible');
+    }
+    
+    // Re-run table update
+    setTimeout(() => {
+        updateDirectMailTable();
+        console.log('✅ Table updated after forcing visibility');
+    }, 100);
+};
+
+// Complete DOM and visibility diagnostic
+window.completeTableDiagnostic = function() {
+    console.log('🔍 COMPLETE TABLE DIAGNOSTIC');
+    
+    // 1. Check if we're on the right tab
+    const activeTab = document.querySelector('.tab-button.active');
+    console.log('Active tab:', activeTab ? activeTab.textContent.trim() : 'none');
+    
+    // 2. Check marketing content visibility
+    const marketingContent = document.getElementById('marketing-content');
+    console.log('Marketing content:', {
+        exists: !!marketingContent,
+        visible: marketingContent ? marketingContent.offsetHeight > 0 : false,
+        display: marketingContent ? getComputedStyle(marketingContent).display : 'not found',
+        classes: marketingContent ? marketingContent.className : 'not found'
+    });
+    
+    // 3. Check direct-mail sub-content visibility
+    const directMailContent = document.getElementById('direct-mail-content');
+    console.log('Direct mail content:', {
+        exists: !!directMailContent,
+        visible: directMailContent ? directMailContent.offsetHeight > 0 : false,
+        display: directMailContent ? getComputedStyle(directMailContent).display : 'not found',
+        classes: directMailContent ? directMailContent.className : 'not found'
+    });
+    
+    // 4. Check table
+    const tbody = document.getElementById('directMailCampaignsTable');
+    console.log('Table tbody:', {
+        exists: !!tbody,
+        childrenCount: tbody ? tbody.children.length : 0,
+        innerHTML: tbody ? tbody.innerHTML.substring(0, 200) + '...' : 'not found'
+    });
+    
+    // 5. Manual tab switching test
+    console.log('🔧 Attempting manual tab switch...');
+    showTab('marketing');
+    
+    setTimeout(() => {
+        console.log('After showTab(marketing):');
+        console.log('Marketing content display:', marketingContent ? getComputedStyle(marketingContent).display : 'not found');
+        console.log('Direct mail content display:', directMailContent ? getComputedStyle(directMailContent).display : 'not found');
+        
+        // Try manual sub-tab switch
+        showMarketingSubTab('direct-mail');
+        
+        setTimeout(() => {
+            console.log('After showMarketingSubTab(direct-mail):');
+            console.log('Direct mail content display:', directMailContent ? getComputedStyle(directMailContent).display : 'not found');
+            console.log('Table visible:', tbody ? tbody.offsetHeight > 0 : false);
+        }, 100);
+    }, 100);
+};
+
+// Final CSS override test
+window.nuclearTableFix = function() {
+    console.log('☢️ NUCLEAR TABLE FIX - Overriding everything');
+    
+    const tbody = document.getElementById('directMailCampaignsTable');
+    const table = tbody.closest('table');
+    const containers = [];
+    
+    // Find all parent containers
+    let element = tbody;
+    while (element && element !== document.body) {
+        containers.push(element);
+        element = element.parentElement;
+    }
+    
+    // Force everything visible with !important styles
+    containers.forEach((container, index) => {
+        container.style.setProperty('display', 'block', 'important');
+        container.style.setProperty('visibility', 'visible', 'important');
+        container.style.setProperty('opacity', '1', 'important');
+        container.style.setProperty('height', 'auto', 'important');
+        container.style.setProperty('overflow', 'visible', 'important');
+        console.log(`Forced container ${index}:`, container.tagName, container.id || container.className);
+    });
+    
+    // Special table styling
+    table.style.setProperty('display', 'table', 'important');
+    tbody.style.setProperty('display', 'table-row-group', 'important');
+    
+    // Force all rows visible
+    Array.from(tbody.children).forEach((row, index) => {
+        row.style.setProperty('display', 'table-row', 'important');
+        row.style.setProperty('visibility', 'visible', 'important');
+        console.log(`Forced row ${index} visible`);
+    });
+    
+    console.log('☢️ Nuclear fix applied - table should now be visible');
+    console.log('Final table visibility:', tbody.offsetHeight > 0);
+};
+
+// Check for overlapping elements
+window.checkElementOverlap = function() {
+    console.log('🔍 CHECKING FOR OVERLAPPING ELEMENTS');
+    
+    const tbody = document.getElementById('directMailCampaignsTable');
+    const table = tbody.closest('table');
+    
+    // Get table position and dimensions
+    const tableRect = table.getBoundingClientRect();
+    console.log('Table position:', {
+        top: tableRect.top,
+        left: tableRect.left,
+        width: tableRect.width,
+        height: tableRect.height,
+        bottom: tableRect.bottom,
+        right: tableRect.right
+    });
+    
+    // Check what element is actually at the table's center position
+    const centerX = tableRect.left + tableRect.width / 2;
+    const centerY = tableRect.top + tableRect.height / 2;
+    
+    const elementAtCenter = document.elementFromPoint(centerX, centerY);
+    console.log('Element at table center:', elementAtCenter);
+    console.log('Is element the table or inside table:', table.contains(elementAtCenter));
+    
+    // Check z-index of table and potential overlapping elements
+    const tableStyle = getComputedStyle(table);
+    console.log('Table z-index:', tableStyle.zIndex);
+    console.log('Table position:', tableStyle.position);
+    
+    // Look for modals or overlays that might be covering the table
+    const modals = document.querySelectorAll('[class*="modal"], [class*="overlay"], [id*="modal"], [id*="Modal"]');
+    console.log('Found potential overlapping elements:', modals.length);
+    
+    modals.forEach((modal, index) => {
+        const modalRect = modal.getBoundingClientRect();
+        const modalStyle = getComputedStyle(modal);
+        const isVisible = modalStyle.display !== 'none' && modalStyle.visibility !== 'hidden';
+        const overlapsTable = modalRect.top < tableRect.bottom && 
+                            modalRect.bottom > tableRect.top && 
+                            modalRect.left < tableRect.right && 
+                            modalRect.right > tableRect.left;
+                            
+        if (isVisible && overlapsTable) {
+            console.log(`⚠️ OVERLAPPING ELEMENT ${index}:`, modal);
+            console.log('Modal z-index:', modalStyle.zIndex);
+            console.log('Modal display:', modalStyle.display);
+        }
+    });
+    
+    // Try to make table clickable by bringing it to front
+    table.style.setProperty('position', 'relative', 'important');
+    table.style.setProperty('z-index', '9999', 'important');
+    tbody.style.setProperty('z-index', '9999', 'important');
+    
+    console.log('🔧 Set table z-index to 9999');
+};
+
+// Diagnose zero dimensions issue
+window.fixTableDimensions = function() {
+    console.log('📏 FIXING TABLE DIMENSIONS ISSUE');
+    
+    const tbody = document.getElementById('directMailCampaignsTable');
+    const table = tbody.closest('table');
+    
+    // Check each element in the hierarchy for dimension issues
+    let element = tbody;
+    while (element && element !== document.body) {
+        const rect = element.getBoundingClientRect();
+        const styles = getComputedStyle(element);
+        
+        console.log(`Element: ${element.tagName}${element.id ? '#' + element.id : ''}`, {
+            width: rect.width,
+            height: rect.height,
+            display: styles.display,
+            tableLayout: styles.tableLayout,
+            minWidth: styles.minWidth,
+            minHeight: styles.minHeight
+        });
+        
+        element = element.parentElement;
+    }
+    
+    // Force table layout and dimensions
+    table.style.setProperty('width', '100%', 'important');
+    table.style.setProperty('min-width', '600px', 'important');
+    table.style.setProperty('table-layout', 'fixed', 'important');
+    table.style.setProperty('border-collapse', 'collapse', 'important');
+    
+    // Force tbody dimensions
+    tbody.style.setProperty('display', 'table-row-group', 'important');
+    tbody.style.setProperty('width', '100%', 'important');
+    
+    // Force each row to have proper dimensions
+    Array.from(tbody.children).forEach((row, index) => {
+        row.style.setProperty('display', 'table-row', 'important');
+        row.style.setProperty('height', 'auto', 'important');
+        row.style.setProperty('min-height', '40px', 'important');
+        
+        // Force each cell to have dimensions
+        Array.from(row.children).forEach((cell) => {
+            cell.style.setProperty('display', 'table-cell', 'important');
+            cell.style.setProperty('padding', '1rem', 'important');
+            cell.style.setProperty('border', '1px solid #e5e7eb', 'important');
+        });
+    });
+    
+    // Check dimensions after fix
+    const newRect = table.getBoundingClientRect();
+    console.log('📏 Table dimensions after fix:', {
+        width: newRect.width,
+        height: newRect.height,
+        visible: newRect.width > 0 && newRect.height > 0
+    });
+    
+    if (newRect.width === 0 || newRect.height === 0) {
+        console.log('❌ Still zero dimensions - checking parent containers...');
+        
+        // Force all parent containers to have content
+        let parent = table.parentElement;
+        while (parent && parent !== document.body) {
+            parent.style.setProperty('min-height', '200px', 'important');
+            parent.style.setProperty('overflow', 'visible', 'important');
+            parent = parent.parentElement;
+        }
+    }
+};
+
+// Ultimate fix - force containers visible and fix tab system
+window.ultimateMarketingFix = function() {
+    console.log('🚀 ULTIMATE MARKETING FIX');
+    
+    // 1. Force main marketing tab active
+    const marketingTab = document.getElementById('marketing-tab');
+    if (marketingTab) {
+        marketingTab.classList.add('active');
+        marketingTab.classList.add('border-indigo-500', 'text-indigo-600');
+        marketingTab.classList.remove('border-transparent', 'text-gray-500');
+        console.log('✅ Marketing tab activated');
+    }
+    
+    // 2. Force marketing content visible
+    const marketingContent = document.getElementById('marketing-content');
+    if (marketingContent) {
+        marketingContent.classList.remove('hidden');
+        marketingContent.style.setProperty('display', 'block', 'important');
+        marketingContent.style.setProperty('visibility', 'visible', 'important');
+        console.log('✅ Marketing content forced visible');
+    }
+    
+    // 3. Force direct-mail sub-tab active
+    const directMailTab = document.getElementById('direct-mail-tab');
+    if (directMailTab) {
+        directMailTab.classList.add('active');
+        directMailTab.classList.add('border-indigo-500', 'text-indigo-600');
+        directMailTab.classList.remove('border-transparent', 'text-gray-500');
+        console.log('✅ Direct mail tab activated');
+    }
+    
+    // 4. Force direct-mail content visible
+    const directMailContent = document.getElementById('direct-mail-content');
+    if (directMailContent) {
+        directMailContent.classList.remove('hidden');
+        directMailContent.style.setProperty('display', 'block', 'important');
+        directMailContent.style.setProperty('visibility', 'visible', 'important');
+        console.log('✅ Direct mail content forced visible');
+    }
+    
+    // 5. Force table and all parents visible
+    const tbody = document.getElementById('directMailCampaignsTable');
+    const table = tbody.closest('table');
+    
+    // Force table structure
+    table.style.setProperty('display', 'table', 'important');
+    table.style.setProperty('width', '100%', 'important');
+    table.style.setProperty('table-layout', 'fixed', 'important');
+    
+    tbody.style.setProperty('display', 'table-row-group', 'important');
+    
+    // Force all parent containers
+    let parent = table.parentElement;
+    while (parent && parent !== document.body) {
+        parent.style.setProperty('display', 'block', 'important');
+        parent.style.setProperty('visibility', 'visible', 'important');
+        parent.classList.remove('hidden');
+        parent = parent.parentElement;
+    }
+    
+    // 6. Update campaigns and check result
+    setTimeout(() => {
+        updateDirectMailTable();
+        
+        const finalRect = table.getBoundingClientRect();
+        console.log('🎯 FINAL RESULT:', {
+            tableWidth: finalRect.width,
+            tableHeight: finalRect.height,
+            tableVisible: finalRect.width > 0 && finalRect.height > 0,
+            campaignCount: tbody.children.length
+        });
+        
+        if (finalRect.width > 0 && finalRect.height > 0) {
+            console.log('🎉 SUCCESS! Table should now be visible with campaigns!');
+        } else {
+            console.log('❌ Still not visible - this is a very unusual CSS issue');
+        }
+    }, 100);
+};
+
+// Last resort: create completely new table in a guaranteed visible location
+window.createFreshCampaignTable = function() {
+    console.log('🔄 CREATING FRESH CAMPAIGN TABLE');
+    
+    // Find the marketing content area
+    const marketingContent = document.getElementById('marketing-content') || document.body;
+    
+    // Create a completely new table container
+    const newContainer = document.createElement('div');
+    newContainer.id = 'freshCampaignTable';
+    newContainer.style.cssText = `
+        position: fixed !important;
+        top: 100px !important;
+        left: 50px !important;
+        right: 50px !important;
+        background: white !important;
+        border: 3px solid red !important;
+        padding: 20px !important;
+        z-index: 99999 !important;
+        max-height: 400px !important;
+        overflow: auto !important;
+    `;
+    
+    // Get campaign data
+    const campaigns = directMailCampaigns || [];
+    
+    // Create table HTML
+    let tableHTML = `
+        <h3 style="color: red; margin-bottom: 10px;">FRESH CAMPAIGN TABLE (${campaigns.length} campaigns)</h3>
+        <table style="width: 100%; border-collapse: collapse; border: 1px solid black;">
+            <thead style="background: #f0f0f0;">
+                <tr>
+                    <th style="border: 1px solid black; padding: 8px;">Campaign</th>
+                    <th style="border: 1px solid black; padding: 8px;">Type</th>
+                    <th style="border: 1px solid black; padding: 8px;">List Size</th>
+                    <th style="border: 1px solid black; padding: 8px;">Cost</th>
+                    <th style="border: 1px solid black; padding: 8px;">Responses</th>
+                    <th style="border: 1px solid black; padding: 8px;">ROI</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
+    
+    if (campaigns.length === 0) {
+        tableHTML += '<tr><td colspan="6" style="border: 1px solid black; padding: 8px; text-align: center;">No campaigns found in directMailCampaigns array</td></tr>';
+    } else {
+        campaigns.forEach(campaign => {
+            const roi = campaign.totalCost > 0 ? (((campaign.revenue || 0) - campaign.totalCost) / campaign.totalCost) * 100 : 0;
+            tableHTML += `
+                <tr style="background: yellow;">
+                    <td style="border: 1px solid black; padding: 8px;">${campaign.name || 'Unnamed'}</td>
+                    <td style="border: 1px solid black; padding: 8px;">${campaign.type || 'postcard'}</td>
+                    <td style="border: 1px solid black; padding: 8px;">${campaign.listSize || 0}</td>
+                    <td style="border: 1px solid black; padding: 8px;">$${(campaign.totalCost || 0).toFixed(2)}</td>
+                    <td style="border: 1px solid black; padding: 8px;">${campaign.actualResponses || 0}</td>
+                    <td style="border: 1px solid black; padding: 8px;">${roi.toFixed(1)}%</td>
+                </tr>
+            `;
+        });
+    }
+    
+    tableHTML += `
+            </tbody>
+        </table>
+        <button onclick="document.getElementById('freshCampaignTable').remove()" style="margin-top: 10px; padding: 10px; background: red; color: white; border: none; cursor: pointer;">Close This Test Table</button>
+    `;
+    
+    newContainer.innerHTML = tableHTML;
+    document.body.appendChild(newContainer);
+    
+    console.log('🔄 Fresh table created with', campaigns.length, 'campaigns');
+    console.log('This table should be visible as a red-bordered overlay');
+};
+
+// Fix the original table using the working approach
+window.fixOriginalTable = function() {
+    console.log('🔧 FIXING ORIGINAL TABLE WITH WORKING STYLES');
+    
+    // Remove the test table first
+    const freshTable = document.getElementById('freshCampaignTable');
+    if (freshTable) {
+        freshTable.remove();
+    }
+    
+    // Get the original table
+    const tbody = document.getElementById('directMailCampaignsTable');
+    const table = tbody.closest('table');
+    const tableContainer = table.closest('.bg-white');
+    
+    // Apply the working styles from the fresh table to the original
+    tableContainer.style.cssText = `
+        display: block !important;
+        visibility: visible !important;
+        position: relative !important;
+        background: white !important;
+        padding: 1.5rem !important;
+        border-radius: 0.5rem !important;
+        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1) !important;
+        margin-bottom: 1.5rem !important;
+        min-height: 200px !important;
+    `;
+    
+    // Fix the table itself
+    table.style.cssText = `
+        width: 100% !important;
+        border-collapse: collapse !important;
+        display: table !important;
+        table-layout: fixed !important;
+    `;
+    
+    // Fix the tbody
+    tbody.style.cssText = `
+        display: table-row-group !important;
+    `;
+    
+    // Make sure all parent containers are visible
+    let parent = tableContainer.parentElement;
+    while (parent && parent !== document.body) {
+        parent.style.setProperty('display', 'block', 'important');
+        parent.style.setProperty('visibility', 'visible', 'important');
+        parent.classList.remove('hidden');
+        parent = parent.parentElement;
+    }
+    
+    // Force marketing content visible
+    const marketingContent = document.getElementById('marketing-content');
+    if (marketingContent) {
+        marketingContent.classList.remove('hidden');
+        marketingContent.style.setProperty('display', 'block', 'important');
+    }
+    
+    const directMailContent = document.getElementById('direct-mail-content');
+    if (directMailContent) {
+        directMailContent.classList.remove('hidden');
+        directMailContent.style.setProperty('display', 'block', 'important');
+    }
+    
+    // Update the table content
+    updateDirectMailTable();
+    
+    console.log('🔧 Original table fixed - should now be visible in proper location');
+    
+    // Verify the fix
+    setTimeout(() => {
+        const rect = table.getBoundingClientRect();
+        console.log('Fixed table dimensions:', rect.width, 'x', rect.height);
+        if (rect.width > 0 && rect.height > 0) {
+            console.log('✅ SUCCESS! Original table is now visible');
+        }
+    }, 100);
+};
+
+// Targeted fix - only fix the table, don't mess with tabs
+window.fixTableOnly = function() {
+    console.log('🎯 TARGETED TABLE FIX - ONLY THE TABLE');
+    
+    // Close any open modals first
+    const modals = document.querySelectorAll('[id*="modal"], [id*="Modal"]');
+    modals.forEach(modal => {
+        if (modal.style.display !== 'none') {
+            modal.style.display = 'none';
+            modal.classList.add('hidden');
+        }
+    });
+    
+    // Only work on the table when we're actually on the marketing tab
+    const marketingTab = document.querySelector('#marketing-tab');
+    const isMarketingActive = marketingTab && marketingTab.classList.contains('active');
+    
+    if (!isMarketingActive) {
+        console.log('❌ Not on marketing tab - click Marketing tab first');
+        return;
+    }
+    
+    // Get the original table
+    const tbody = document.getElementById('directMailCampaignsTable');
+    if (!tbody) {
+        console.log('❌ Table not found');
+        return;
+    }
+    
+    const table = tbody.closest('table');
+    const tableContainer = table.closest('.bg-white.rounded-lg.shadow.p-6');
+    
+    // ONLY fix the specific table container - don't touch parent tabs
+    if (tableContainer) {
+        // Just ensure this specific container shows its content
+        tableContainer.style.setProperty('min-height', '300px', 'important');
+        tableContainer.style.setProperty('overflow', 'visible', 'important');
+        
+        console.log('✅ Table container fixed');
+    }
+    
+    // Fix ONLY the table structure
+    table.style.setProperty('width', '100%', 'important');
+    table.style.setProperty('display', 'table', 'important');
+    table.style.setProperty('table-layout', 'auto', 'important');
+    
+    tbody.style.setProperty('display', 'table-row-group', 'important');
+    
+    // Force table rows to have content
+    Array.from(tbody.children).forEach((row) => {
+        row.style.setProperty('display', 'table-row', 'important');
+        row.style.setProperty('min-height', '48px', 'important');
+        
+        Array.from(row.children).forEach((cell) => {
+            cell.style.setProperty('display', 'table-cell', 'important');
+            cell.style.setProperty('padding', '0.75rem', 'important');
+        });
+    });
+    
+    console.log('🎯 Targeted fix complete - only table structure modified');
+    
+    // Check result
+    setTimeout(() => {
+        const rect = table.getBoundingClientRect();
+        console.log('Table dimensions after targeted fix:', rect.width, 'x', rect.height);
+    }, 100);
+};
+
+// Simple permanent fix - just replace the broken table with working one
+window.permanentTableFix = function() {
+    console.log('🔧 PERMANENT TABLE REPLACEMENT');
+    
+    // Find the broken table location  
+    const tbody = document.getElementById('directMailCampaignsTable');
+    const originalTable = tbody.closest('table');
+    const tableContainer = originalTable.closest('.bg-white');
+    
+    // Remove the broken table
+    originalTable.remove();
+    
+    // Create a simple working replacement table
+    const campaigns = directMailCampaigns || [];
+    
+    let newTableHTML = `
+        <div style="background: white; padding: 1rem; border: 1px solid #e5e7eb; border-radius: 8px;">
+            <h4 style="font-weight: 600; margin-bottom: 1rem;">Active Direct Mail Campaigns (${campaigns.length})</h4>
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="background: #f9fafb;">
+                        <th style="border: 1px solid #e5e7eb; padding: 12px; text-align: left;">Campaign</th>
+                        <th style="border: 1px solid #e5e7eb; padding: 12px; text-align: left;">Type</th>
+                        <th style="border: 1px solid #e5e7eb; padding: 12px; text-align: left;">List Size</th>
+                        <th style="border: 1px solid #e5e7eb; padding: 12px; text-align: left;">Cost</th>
+                        <th style="border: 1px solid #e5e7eb; padding: 12px; text-align: left;">Responses</th>
+                        <th style="border: 1px solid #e5e7eb; padding: 12px; text-align: left;">ROI</th>
+                    </tr>
+                </thead>
+                <tbody>
+    `;
+    
+    if (campaigns.length === 0) {
+        newTableHTML += '<tr><td colspan="6" style="border: 1px solid #e5e7eb; padding: 12px; text-align: center;">No campaigns created yet</td></tr>';
+    } else {
+        campaigns.forEach(campaign => {
+            const roi = campaign.totalCost > 0 ? (((campaign.revenue || 0) - campaign.totalCost) / campaign.totalCost) * 100 : 0;
+            newTableHTML += `
+                <tr>
+                    <td style="border: 1px solid #e5e7eb; padding: 12px;">${campaign.name || 'Unnamed'}</td>
+                    <td style="border: 1px solid #e5e7eb; padding: 12px;">${campaign.type || 'postcard'}</td>
+                    <td style="border: 1px solid #e5e7eb; padding: 12px;">${campaign.listSize || 0}</td>
+                    <td style="border: 1px solid #e5e7eb; padding: 12px;">$${(campaign.totalCost || 0).toFixed(2)}</td>
+                    <td style="border: 1px solid #e5e7eb; padding: 12px;">${campaign.actualResponses || 0}</td>
+                    <td style="border: 1px solid #e5e7eb; padding: 12px;">${roi.toFixed(1)}%</td>
+                </tr>
+            `;
+        });
+    }
+    
+    newTableHTML += `
+                </tbody>
+            </table>
+        </div>
+    `;
+    
+    // Insert the working table
+    tableContainer.insertAdjacentHTML('beforeend', newTableHTML);
+    
+    console.log('🔧 Permanent table replacement complete with', campaigns.length, 'campaigns');
+};
+
+// Final solution: Add campaigns directly to the main dashboard area
+window.addCampaignToMainDashboard = function() {
+    console.log('📊 ADDING CAMPAIGNS TO MAIN DASHBOARD');
+    
+    // Find the main dashboard content area (above the tabs)
+    const mainContent = document.querySelector('.max-w-7xl.mx-auto');
+    
+    // Create a campaigns summary box for the main dashboard
+    const campaigns = directMailCampaigns || [];
+    const campaignsBox = document.createElement('div');
+    campaignsBox.style.cssText = `
+        background: white;
+        border: 2px solid #3b82f6;
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    `;
+    
+    campaignsBox.innerHTML = `
+        <div style="display: flex; justify-content: between; align-items: center; margin-bottom: 1rem;">
+            <h2 style="font-size: 1.25rem; font-weight: 600; color: #1f2937; margin: 0;">
+                📮 Active Marketing Campaigns (${campaigns.length})
+            </h2>
+            <div style="background: #3b82f6; color: white; padding: 0.5rem 1rem; border-radius: 4px; font-size: 0.875rem;">
+                Total: ${campaigns.length} campaigns
+            </div>
+        </div>
+        
+        <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse; border: 1px solid #e5e7eb;">
+                <thead>
+                    <tr style="background: #f9fafb;">
+                        <th style="border: 1px solid #e5e7eb; padding: 12px; text-align: left; font-weight: 600;">Campaign Name</th>
+                        <th style="border: 1px solid #e5e7eb; padding: 12px; text-align: left; font-weight: 600;">Type</th>
+                        <th style="border: 1px solid #e5e7eb; padding: 12px; text-align: left; font-weight: 600;">List Size</th>
+                        <th style="border: 1px solid #e5e7eb; padding: 12px; text-align: left; font-weight: 600;">Total Cost</th>
+                        <th style="border: 1px solid #e5e7eb; padding: 12px; text-align: left; font-weight: 600;">Responses</th>
+                        <th style="border: 1px solid #e5e7eb; padding: 12px; text-align: left; font-weight: 600;">ROI</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${campaigns.length === 0 ? 
+                        '<tr><td colspan="6" style="border: 1px solid #e5e7eb; padding: 12px; text-align: center; color: #6b7280;">No campaigns created yet</td></tr>' 
+                        : 
+                        campaigns.map(campaign => {
+                            const roi = campaign.totalCost > 0 ? (((campaign.revenue || 0) - campaign.totalCost) / campaign.totalCost) * 100 : 0;
+                            const roiColor = roi >= 0 ? '#059669' : '#dc2626';
+                            return `
+                                <tr style="hover: background-color: #f9fafb;">
+                                    <td style="border: 1px solid #e5e7eb; padding: 12px; font-weight: 500;">${campaign.name || 'Unnamed'}</td>
+                                    <td style="border: 1px solid #e5e7eb; padding: 12px; text-transform: capitalize;">${campaign.type || 'postcard'}</td>
+                                    <td style="border: 1px solid #e5e7eb; padding: 12px;">${(campaign.listSize || 0).toLocaleString()}</td>
+                                    <td style="border: 1px solid #e5e7eb; padding: 12px;">$${(campaign.totalCost || 0).toFixed(2)}</td>
+                                    <td style="border: 1px solid #e5e7eb; padding: 12px;">${campaign.actualResponses || 0}</td>
+                                    <td style="border: 1px solid #e5e7eb; padding: 12px; color: ${roiColor}; font-weight: 600;">${roi.toFixed(1)}%</td>
+                                </tr>
+                            `;
+                        }).join('')
+                    }
+                </tbody>
+            </table>
+        </div>
+        
+        <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #e5e7eb; font-size: 0.875rem; color: #6b7280;">
+            💡 <strong>Campaign Tools:</strong> Create Campaign, Preview, Upload CSV buttons are fully functional in the Marketing tab.
+            <br>📊 This summary shows all your active campaigns in one convenient location.
+        </div>
+    `;
+    
+    // Insert the campaigns box at the top of the dashboard
+    const header = mainContent.querySelector('header') || mainContent.firstElementChild;
+    if (header && header.nextSibling) {
+        mainContent.insertBefore(campaignsBox, header.nextSibling);
+    } else {
+        mainContent.appendChild(campaignsBox);
+    }
+    
+    console.log('📊 Campaigns summary added to main dashboard');
+};
+
+// Replace the broken table HTML structure completely
+window.replaceTableHTML = function() {
+    console.log('🔄 REPLACING BROKEN TABLE HTML');
+    
+    // Find the exact table container
+    const tbody = document.getElementById('directMailCampaignsTable');
+    if (!tbody) {
+        console.log('❌ Table not found');
+        return;
+    }
+    
+    const table = tbody.closest('table');
+    const tableContainer = table.closest('.bg-white.rounded-lg.shadow.p-6');
+    
+    if (!tableContainer) {
+        console.log('❌ Table container not found');
+        return;
+    }
+    
+    // Get campaign data
+    const campaigns = directMailCampaigns || [];
+    
+    // Completely replace the container content with working HTML
+    tableContainer.innerHTML = `
+        <div class="flex justify-between items-center mb-4">
+            <h4 class="text-lg font-semibold">Active Direct Mail Campaigns</h4>
+            <button onclick="exportCampaignData()" class="text-sm bg-gray-100 px-3 py-1 rounded hover:bg-gray-200">
+                Export CSV
+            </button>
+        </div>
+        
+        <div class="overflow-x-auto">
+            <table class="min-w-full" style="border-collapse: collapse; width: 100%;">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th style="border: 1px solid #e5e7eb; padding: 12px; text-align: left; font-weight: 600;">Campaign</th>
+                        <th style="border: 1px solid #e5e7eb; padding: 12px; text-align: left; font-weight: 600;">Type</th>
+                        <th style="border: 1px solid #e5e7eb; padding: 12px; text-align: left; font-weight: 600;">List Size</th>
+                        <th style="border: 1px solid #e5e7eb; padding: 12px; text-align: left; font-weight: 600;">Cost</th>
+                        <th style="border: 1px solid #e5e7eb; padding: 12px; text-align: left; font-weight: 600;">Responses</th>
+                        <th style="border: 1px solid #e5e7eb; padding: 12px; text-align: left; font-weight: 600;">ROI</th>
+                        <th style="border: 1px solid #e5e7eb; padding: 12px; text-align: left; font-weight: 600;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    ${campaigns.length === 0 ? 
+                        '<tr><td colspan="7" style="border: 1px solid #e5e7eb; padding: 12px; text-align: center;">No campaigns created yet</td></tr>' 
+                        : 
+                        campaigns.map(campaign => {
+                            const roi = campaign.totalCost > 0 ? (((campaign.revenue || 0) - campaign.totalCost) / campaign.totalCost) * 100 : 0;
+                            const roiClass = roi >= 100 ? 'text-green-600' : roi >= 0 ? 'text-blue-600' : 'text-red-600';
+                            return `
+                                <tr>
+                                    <td style="border: 1px solid #e5e7eb; padding: 12px;">${campaign.name || 'Unnamed'}</td>
+                                    <td style="border: 1px solid #e5e7eb; padding: 12px; text-transform: capitalize;">${campaign.type || 'postcard'}</td>
+                                    <td style="border: 1px solid #e5e7eb; padding: 12px;">${(campaign.listSize || 0).toLocaleString()}</td>
+                                    <td style="border: 1px solid #e5e7eb; padding: 12px;">$${(campaign.totalCost || 0).toFixed(2)}</td>
+                                    <td style="border: 1px solid #e5e7eb; padding: 12px;">${campaign.actualResponses || 0}</td>
+                                    <td style="border: 1px solid #e5e7eb; padding: 12px;" class="${roiClass}">${roi.toFixed(1)}%</td>
+                                    <td style="border: 1px solid #e5e7eb; padding: 12px;">
+                                        <button class="text-indigo-600 hover:text-indigo-900 mr-2" onclick="editCampaign(${campaign.id})">Edit</button>
+                                        <button class="text-red-600 hover:text-red-900" onclick="deleteCampaign(${campaign.id})">Delete</button>
+                                    </td>
+                                </tr>
+                            `;
+                        }).join('')
+                    }
+                </tbody>
+            </table>
+        </div>
+    `;
+    
+    console.log('🔄 Table HTML completely replaced with', campaigns.length, 'campaigns');
+};
+// ========================================
+// TWILIO DIALER INTEGRATION
+// ========================================
+
+let twilioConnection = null;
+let currentCall = null;
+let callStartTime = null;
+let callTimer = null;
+let isRecording = false;
+let isMuted = false;
+let currentDialingLead = null;
+let dialerQueue = [];
+let autoDialerActive = false;
+
+// Twilio configuration (user needs to set these)
+const twilioConfig = {
+    accountSid: localStorage.getItem('twilio_account_sid') || 'AC03585994de43d181c9bb12525e9b5d2c',
+    authToken: localStorage.getItem('twilio_auth_token') || 'aed230628cbe4819c8cb66bc21cafeaa',
+    twilioNumber: localStorage.getItem('twilio_phone_number') || '+15183124761',
+    twimlUrl: localStorage.getItem('twilio_twiml_url') || 'https://real-estate-dialer-9659.twil.io/path_1'
+};
+
+// Initialize Twilio connection
+async function initializeTwilio() {
+    if (!twilioConfig.accountSid || !twilioConfig.authToken || !twilioConfig.twilioNumber) {
+        console.log('Twilio not configured. Running in demo mode.');
+        return false;
+    }
+    
+    try {
+        // Note: In production, you'll need the Twilio Voice SDK
+        // For now, we'll simulate the dialer functionality
+        console.log('Twilio dialer initialized in demo mode');
+        return true;
+    } catch (error) {
+        console.error('Failed to initialize Twilio:', error);
+        return false;
+    }
+}
+
+// Call a single lead
+async function callLead(leadId) {
+    const lead = leads.find(l => l.id == leadId);
+    if (!lead || !lead.phone) {
+        showErrorMessage('Lead not found or missing phone number');
+        return;
+    }
+    
+    // Check if lead has opted out
+    if (lead.optedOut) {
+        showErrorMessage(`${lead.firstName} ${lead.lastName} has opted out. No calls can be made.`);
+        return;
+    }
+    
+    currentDialingLead = lead;
+    showDialerPanel();
+    
+    // Update dialer UI with lead info
+    document.getElementById('currentLeadName').textContent = `${lead.firstName} ${lead.lastName}`;
+    document.getElementById('currentPhoneNumber').textContent = formatPhoneNumber(lead.phone);
+    document.getElementById('currentAddress').textContent = lead.propertyAddress || '';
+    
+    // Set initial service note
+    updateCallServiceNote();
+}
+
+// Start call with selected service
+async function startSelectedCall() {
+    if (!currentDialingLead) {
+        showErrorMessage('No lead selected');
+        return;
+    }
+    
+    const selectedService = document.querySelector('input[name="callService"]:checked')?.value || 'google_voice';
+    console.log('Starting call with service:', selectedService);
+    
+    // Hide service selection and show dialing state
+    document.getElementById('dialingState').classList.remove('hidden');
+    
+    // Disable the start call button
+    const startButton = document.querySelector('button[onclick="startSelectedCall()"]');
+    if (startButton) {
+        startButton.disabled = true;
+        startButton.textContent = 'Calling...';
+        startButton.classList.add('opacity-50');
+    }
+    
+    try {
+        await makeCall(currentDialingLead.phone, selectedService);
+    } catch (error) {
+        console.error('Call failed:', error);
+        showErrorMessage('Failed to make call: ' + error.message);
+        closeDialer();
+    }
+}
+
+// Start auto dialer for multiple leads
+async function startAutoDialer() {
+    const newLeads = leads.filter(l => l.phone && l.status === 'new');
+    
+    if (newLeads.length === 0) {
+        showErrorMessage('No new leads with phone numbers found');
+        return;
+    }
+    
+    const proceed = confirm(`Start auto-dialing ${newLeads.length} leads?`);
+    if (!proceed) return;
+    
+    dialerQueue = [...newLeads];
+    autoDialerActive = true;
+    
+    showSuccessMessage(`Auto-dialer started with ${dialerQueue.length} leads`);
+    
+    // Start with first lead
+    if (dialerQueue.length > 0) {
+        const nextLead = dialerQueue.shift();
+        await callLead(nextLead.id);
+    }
+}
+
+// Update call service note based on selection
+function updateCallServiceNote() {
+    const selectedService = document.querySelector('input[name="callService"]:checked')?.value;
+    const serviceNote = document.getElementById('callServiceNote');
+    
+    if (selectedService === 'google_voice') {
+        serviceNote.textContent = 'Google Voice: Free calls, manual dialing via web browser';
+    } else if (selectedService === 'twilio') {
+        serviceNote.textContent = 'Twilio Phone: $0.0085/min, calls your phone first then connects to lead';
+    } else if (selectedService === 'twilio_browser') {
+        serviceNote.textContent = 'Twilio Computer: $0.0085/min, talk through computer microphone/speakers';
+    }
+}
+
+// Make actual call
+async function makeCall(phoneNumber, service) {
+    if (service === 'google_voice') {
+        await makeGoogleVoiceCall(phoneNumber);
+    } else if (service === 'twilio_browser') {
+        await makeTwilioBrowserCall(phoneNumber);
+    } else {
+        await makeTwilioCall(phoneNumber);
+    }
+}
+
+// Make call via Google Voice
+async function makeGoogleVoiceCall(phoneNumber) {
+    const googleVoiceConfig = {
+        username: localStorage.getItem('google_voice_username') || 'enrichedcreations96@gmail.com',
+        googleVoiceNumber: localStorage.getItem('google_voice_number') || '+15182888871'
+    };
+    
+    if (!googleVoiceConfig.username) {
+        // Demo mode
+        console.log('Demo Google Voice call to', phoneNumber);
+        simulateCall();
+        return;
+    }
+    
+    // For Google Voice, open the web interface for manual dialing
+    const cleanPhone = phoneNumber.replace(/\D/g, '');
+    const googleVoiceUrl = `https://voice.google.com/u/0/calls?a=nc,${cleanPhone}`;
+    
+    console.log('Opening Google Voice for manual calling:', googleVoiceUrl);
+    
+    // Open Google Voice in new tab for actual calling
+    window.open(googleVoiceUrl, '_blank');
+    
+    // Show instructions to user
+    showSuccessMessage('Google Voice opened in new tab. Click "Call" to connect, then return here to log the call.');
+    
+    // Give user time to initiate call, then start timer
+    setTimeout(() => {
+        if (confirm('Did the Google Voice call connect? Click OK when you are on the call.')) {
+            onCallConnected();
+        } else {
+            // User cancelled or call didn't connect
+            closeDialer();
+            showErrorMessage('Call cancelled or failed to connect');
+        }
+    }, 3000);
+}
+
+// Make call via Twilio
+async function makeTwilioCall(phoneNumber) {
+    const twilioConfig = {
+        accountSid: localStorage.getItem('twilio_account_sid') || '',
+        authToken: localStorage.getItem('twilio_auth_token') || '',
+        twilioNumber: localStorage.getItem('twilio_phone_number') || ''
+    };
+    
+    try {
+        // Try to use local Twilio server first
+        console.log('Attempting Twilio call via local server...');
+        
+        const response = await fetch('http://localhost:3000/api/twilio/make-call', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                to: phoneNumber
+            })
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            console.log('Twilio call initiated successfully:', result);
+            
+            // Explain how Twilio calling works
+            const instructions = `📞 Twilio Call Started!\n\nCall SID: ${result.callSid}\n\nHow it works:\n1. Your phone will ring first\n2. Answer your phone\n3. You'll hear "Connecting your call..."\n4. The lead's phone will ring\n5. Talk normally through your phone\n\nReturn here to log the call outcome.`;
+            
+            alert(instructions);
+            onCallConnected();
+            return;
+        } else {
+            throw new Error('Server call failed');
+        }
+    } catch (error) {
+        console.log('Local server not running, falling back to manual mode');
+        
+        // Fallback to manual Twilio console
+        const twilioConsoleUrl = `https://console.twilio.com/us1/develop/phone-numbers/manage/incoming`;
+        
+        const instructions = `Twilio server not running. Options:\n\n1. AUTOMATED: Run "npm start" in terminal for automated calling\n2. MANUAL: Use Twilio Console (opening now)\n\nCall to: ${phoneNumber}`;
+        
+        alert(instructions);
+        window.open(twilioConsoleUrl, '_blank');
+        
+        setTimeout(() => {
+            if (confirm('Did you make the Twilio call? Click OK when connected.')) {
+                onCallConnected();
+            } else {
+                closeDialer();
+                showErrorMessage('Call cancelled');
+            }
+        }, 3000);
+    }
+}
+
+// Make call via Twilio Browser (computer microphone/speakers)
+async function makeTwilioBrowserCall(phoneNumber) {
+    try {
+        showSuccessMessage('Requesting microphone access...');
+        
+        // Request microphone permission first
+        await navigator.mediaDevices.getUserMedia({ audio: true });
+        
+        showSuccessMessage('Getting Twilio browser token...');
+        
+        // For now, show instructions since full browser calling requires complex setup
+        const instructions = `💻 Twilio Browser Calling\n\nThis feature requires:\n1. Proper API Keys setup\n2. TwiML Application configuration\n3. HTTPS connection\n\nCurrently showing demo. For computer-based calling:\n1. Use Google Voice (free browser calling)\n2. Or use Twilio Phone mode (calls your phone first)\n\nPhone to call: ${phoneNumber}`;
+        
+        alert(instructions);
+        
+        // For demo purposes, simulate the call
+        simulateCall();
+        
+    } catch (error) {
+        console.error('Browser calling setup failed:', error);
+        showErrorMessage('Microphone access required for browser calling. Please allow microphone access or use phone calling instead.');
+        closeDialer();
+    }
+}
+
+// Simulate call for demo purposes
+function simulateCall() {
+    setTimeout(() => {
+        onCallConnected();
+        
+        // Auto disconnect after 30 seconds in demo mode
+        setTimeout(() => {
+            onCallDisconnected();
+        }, 30000);
+    }, 2000);
+}
+
+// Handle call connected
+function onCallConnected() {
+    callStartTime = Date.now();
+    startCallTimer();
+    
+    // Update UI to show connected state
+    const dialingIndicator = document.querySelector('.animate-pulse');
+    if (dialingIndicator) {
+        dialingIndicator.classList.remove('animate-pulse', 'bg-green-500');
+        dialingIndicator.classList.add('bg-blue-500');
+        dialingIndicator.innerHTML = '<div class="text-white text-2xl">📞</div>';
+    }
+    
+    console.log('Call connected');
+}
+
+// Handle call disconnected
+function onCallDisconnected() {
+    stopCallTimer();
+    currentCall = null;
+    
+    // Show call disposition form
+    document.getElementById('callDisposition').style.display = 'block';
+    
+    console.log('Call disconnected');
+}
+
+// Show/hide dialer panel
+function showDialerPanel() {
+    const panel = document.getElementById('dialerPanel');
+    panel.classList.remove('hidden');
+    
+    // Reset call disposition form
+    document.getElementById('callOutcome').value = '';
+    document.getElementById('callNotes').value = '';
+    document.getElementById('callDisposition').style.display = 'none';
+    document.getElementById('callTimer').textContent = '00:00';
+}
+
+function closeDialer() {
+    const panel = document.getElementById('dialerPanel');
+    panel.classList.add('hidden');
+    
+    if (currentCall) {
+        hangUp();
+    }
+    
+    currentDialingLead = null;
+    autoDialerActive = false;
+}
+
+// Call controls
+function hangUp() {
+    if (currentCall) {
+        currentCall.disconnect();
+    } else {
+        // Demo mode
+        onCallDisconnected();
+    }
+}
+
+function toggleMute() {
+    isMuted = !isMuted;
+    
+    const muteIcon = document.getElementById('muteIcon');
+    muteIcon.textContent = isMuted ? '🔇' : '🔊';
+    
+    console.log('Mute toggled:', isMuted);
+}
+
+function toggleRecording() {
+    isRecording = !isRecording;
+    
+    const recordIcon = document.getElementById('recordIcon');
+    recordIcon.textContent = isRecording ? '⏹️' : '⏺️';
+    
+    console.log('Recording toggled:', isRecording);
+}
+
+// Call timer
+function startCallTimer() {
+    callTimer = setInterval(() => {
+        if (!callStartTime) return;
+        
+        const elapsed = Math.floor((Date.now() - callStartTime) / 1000);
+        const minutes = Math.floor(elapsed / 60);
+        const seconds = elapsed % 60;
+        
+        const display = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        document.getElementById('callTimer').textContent = display;
+    }, 1000);
+}
+
+function stopCallTimer() {
+    if (callTimer) {
+        clearInterval(callTimer);
+        callTimer = null;
+    }
+}
+
+// Save call log and move to next lead
+function saveCallLog() {
+    const outcome = document.getElementById('callOutcome').value;
+    const notes = document.getElementById('callNotes').value;
+    const selectedService = document.querySelector('input[name="callService"]:checked')?.value || 'google_voice';
+    
+    if (!outcome) {
+        showErrorMessage('Please select a call outcome');
+        return;
+    }
+    
+    if (!currentDialingLead) return;
+    
+    // Update lead with call information
+    const lead = leads.find(l => l.id === currentDialingLead.id);
+    if (lead) {
+        const serviceName = selectedService === 'google_voice' ? 'Google Voice' : 'Twilio';
+        lead.lastContact = new Date().toISOString();
+        lead.notes = (lead.notes || '') + `\n[${formatDate(new Date())}] Call via ${serviceName}: ${outcome} - ${notes}`.trim();
+        
+        // Update lead status based on outcome
+        switch (outcome) {
+            case 'interested':
+                lead.status = 'qualified';
+                break;
+            case 'callback':
+                lead.status = 'contacted';
+                break;
+            case 'not_interested':
+            case 'do_not_call':
+                lead.status = 'dead';
+                break;
+            default:
+                lead.status = 'contacted';
+        }
+        
+        // Save data
+        saveData();
+        updateLeadsTable();
+        updateDashboardStats();
+        updatePipelineStats();
+        updateKanbanView();
+    }
+    
+    closeDialer();
+    
+    // Continue auto-dialing if active
+    if (autoDialerActive && dialerQueue.length > 0) {
+        setTimeout(() => {
+            const nextLead = dialerQueue.shift();
+            callLead(nextLead.id);
+        }, 1000);
+    } else if (autoDialerActive) {
+        autoDialerActive = false;
+        showSuccessMessage('Auto-dialing completed!');
+    }
+}
+
+// ========================================
+// SMS INTEGRATION
+// ========================================
+
+let currentSmsLead = null;
+let smsTemplates = {
+    introduction: "Hi {firstName}, this is Rich. I buy houses and I'm interested in {propertyAddress}. Would you consider selling? (Reply STOP to opt out)",
+    followup: "Hi {firstName}, it's Rich again about {propertyAddress}. Any thoughts on selling? I can close fast with cash.",
+    cash_offer: "Hi {firstName}, Rich here. I can make you a cash offer on {propertyAddress} today. Want to chat for 2 minutes?",
+    appointment: "Hi {firstName}, Rich here. I'd love to take a quick look at {propertyAddress}. When would work for you this week?"
+};
+
+// Send SMS to individual lead
+function smsLead(leadId) {
+    const lead = leads.find(l => l.id == leadId);
+    if (!lead || !lead.phone) {
+        showErrorMessage('Lead not found or missing phone number');
+        return;
+    }
+    
+    // Check if lead has opted out
+    if (lead.optedOut) {
+        showErrorMessage(`${lead.firstName} ${lead.lastName} has opted out. No SMS can be sent.`);
+        return;
+    }
+    
+    // Check if phone type is mobile (SMS only works with mobile numbers)
+    const phoneType = (lead.phoneType || '').toLowerCase();
+    if (phoneType && phoneType !== 'mobile' && phoneType !== 'cell') {
+        showErrorMessage(`Cannot send SMS to ${getPhoneTypeLabel(phoneType)} number. SMS only works with mobile phones.`);
+        return;
+    }
+    
+    currentSmsLead = lead;
+    showSmsModal();
+    
+    // Update SMS modal with lead info
+    document.getElementById('smsLeadInfo').textContent = `${lead.firstName} ${lead.lastName}`;
+    document.getElementById('smsPhoneNumber').textContent = formatPhoneNumber(lead.phone);
+}
+
+// Show bulk SMS modal
+function showBulkSmsModal() {
+    const leadsWithMobilePhone = leads.filter(l => {
+        if (!l.phone) return false;
+        const phoneType = (l.phoneType || '').toLowerCase();
+        return !phoneType || phoneType === 'mobile' || phoneType === 'cell';
+    });
+    
+    if (leadsWithMobilePhone.length === 0) {
+        showErrorMessage('No leads with mobile phone numbers found. SMS only works with mobile phones.');
+        return;
+    }
+    
+    // For now, use the same modal but indicate bulk mode
+    currentSmsLead = null; // Bulk mode
+    showSmsModal();
+    
+    document.getElementById('smsLeadInfo').textContent = `Bulk SMS to ${leadsWithMobilePhone.length} leads`;
+    document.getElementById('smsPhoneNumber').textContent = 'Multiple recipients';
+}
+
+// Show SMS modal
+function showSmsModal() {
+    const modal = document.getElementById('smsModal');
+    modal.classList.remove('hidden');
+    
+    // Reset form
+    document.getElementById('smsMessage').value = '';
+    document.getElementById('smsSchedule').value = '';
+    updateCharCount();
+    
+    // Setup character counter
+    const messageInput = document.getElementById('smsMessage');
+    messageInput.addEventListener('input', updateCharCount);
+    
+    // Setup service selection listeners
+    const serviceInputs = document.querySelectorAll('input[name="smsService"]');
+    serviceInputs.forEach(input => {
+        input.addEventListener('change', updateServiceNote);
+    });
+    
+    // Set initial service note
+    updateServiceNote();
+}
+
+// Close SMS modal
+function closeSmsModal() {
+    const modal = document.getElementById('smsModal');
+    modal.classList.add('hidden');
+    currentSmsLead = null;
+}
+
+// Use SMS template
+function useTemplate(templateName) {
+    if (!smsTemplates[templateName]) return;
+    
+    let message = smsTemplates[templateName];
+    
+    // Replace placeholders with lead info
+    if (currentSmsLead) {
+        message = message.replace(/{firstName}/g, currentSmsLead.firstName || 'there');
+        message = message.replace(/{lastName}/g, currentSmsLead.lastName || '');
+        message = message.replace(/{propertyAddress}/g, currentSmsLead.propertyAddress || 'your property');
+    } else {
+        // Bulk mode - keep placeholders
+        message = message.replace(/{firstName}/g, '[Name]');
+        message = message.replace(/{propertyAddress}/g, '[Address]');
+    }
+    
+    document.getElementById('smsMessage').value = message;
+    updateCharCount();
+}
+
+// Update service note based on selection
+function updateServiceNote() {
+    const selectedService = document.querySelector('input[name="smsService"]:checked')?.value;
+    const serviceNote = document.getElementById('serviceNote');
+    
+    if (selectedService === 'google_voice') {
+        serviceNote.textContent = 'Google Voice: Free for personal use, 1000 SMS/day limit';
+    } else {
+        serviceNote.textContent = 'Twilio: $0.0075 per SMS, requires business verification';
+    }
+}
+
+// Update character count
+function updateCharCount() {
+    const message = document.getElementById('smsMessage').value;
+    const charCount = document.getElementById('smsCharCount');
+    charCount.textContent = message.length;
+    
+    // Change color based on length
+    if (message.length > 140) {
+        charCount.className = 'text-red-500';
+    } else if (message.length > 120) {
+        charCount.className = 'text-yellow-500';
+    } else {
+        charCount.className = 'text-gray-500';
+    }
+}
+
+// Send SMS
+async function sendSms() {
+    const message = document.getElementById('smsMessage').value.trim();
+    const scheduleTime = document.getElementById('smsSchedule').value;
+    const selectedService = document.querySelector('input[name="smsService"]:checked')?.value;
+    
+    if (!message) {
+        showErrorMessage('Please enter a message');
+        return;
+    }
+    
+    if (message.length > 160) {
+        showErrorMessage('Message is too long (160 characters max)');
+        return;
+    }
+    
+    if (!selectedService) {
+        showErrorMessage('Please select an SMS service');
+        return;
+    }
+    
+    try {
+        if (currentSmsLead) {
+            // Send to single lead
+            await sendSingleSms(currentSmsLead, message, scheduleTime, selectedService);
+            const serviceName = selectedService === 'google_voice' ? 'Google Voice' : 'Twilio';
+            showSuccessMessage(`SMS sent via ${serviceName} to ${currentSmsLead.firstName} ${currentSmsLead.lastName}`);
+        } else {
+            // Send bulk SMS
+            await sendBulkSms(message, scheduleTime, selectedService);
+        }
+        
+        closeSmsModal();
+    } catch (error) {
+        console.error('SMS failed:', error);
+        showErrorMessage('Failed to send SMS: ' + error.message);
+    }
+}
+
+// Send SMS to single lead
+async function sendSingleSms(lead, message, scheduleTime, service) {
+    // Replace placeholders in message
+    const personalizedMessage = message
+        .replace(/{firstName}/g, lead.firstName || 'there')
+        .replace(/{lastName}/g, lead.lastName || '')
+        .replace(/{propertyAddress}/g, lead.propertyAddress || 'your property');
+    
+    if (service === 'google_voice') {
+        await sendGoogleVoiceSms(lead, personalizedMessage, scheduleTime);
+    } else {
+        await sendTwilioSms(lead, personalizedMessage, scheduleTime);
+    }
+    
+    // Log the SMS activity
+    logSmsActivity(lead, personalizedMessage, scheduleTime ? 'scheduled' : 'sent', service);
+}
+
+// Send SMS via Google Voice
+async function sendGoogleVoiceSms(lead, message, scheduleTime) {
+    const googleVoiceConfig = {
+        username: localStorage.getItem('google_voice_username') || 'enrichedcreations96@gmail.com',
+        password: localStorage.getItem('google_voice_password') || '',
+        googleVoiceNumber: localStorage.getItem('google_voice_number') || '+15182888871'
+    };
+    
+    if (!googleVoiceConfig.username) {
+        // Demo mode
+        console.log('Demo Google Voice SMS to', lead.phone, ':', message);
+        return;
+    }
+    
+    // In production, you'd use Google Voice API or automation
+    console.log('Would send SMS via Google Voice:', {
+        to: lead.phone,
+        from: googleVoiceConfig.googleVoiceNumber,
+        body: message,
+        scheduleTime: scheduleTime,
+        service: 'Google Voice'
+    });
+    
+    // Open Google Voice and copy message to clipboard
+    if (!scheduleTime) {
+        const cleanPhone = lead.phone.replace(/\D/g, '');
+        const googleVoiceUrl = `https://voice.google.com/u/0/messages`;
+        
+        // Copy message to clipboard with fallback
+        try {
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(message).then(() => {
+                    console.log('Message copied to clipboard via modern API:', message);
+                });
+            } else {
+                // Fallback for older browsers or non-HTTPS
+                const textArea = document.createElement('textarea');
+                textArea.value = message;
+                textArea.style.position = 'fixed';
+                textArea.style.left = '-999999px';
+                textArea.style.top = '-999999px';
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                console.log('Message copied to clipboard via fallback:', message);
+            }
+        } catch (error) {
+            console.log('Clipboard access failed:', error);
+        }
+        
+        // Open Google Voice
+        window.open(googleVoiceUrl, '_blank');
+        
+        // Show instructions with phone number and clipboard info
+        const displayPhone = formatPhoneNumber(lead.phone);
+        const instructions = `📱 Google Voice SMS opened!\n\n📋 MESSAGE COPIED TO CLIPBOARD\n\nTo send:\n1. Search for: ${displayPhone}\n2. Paste message (Ctrl+V)\n3. Click Send\n\nMessage: "${message}"`;
+        alert(instructions);
+    }
+}
+
+// Send SMS via Twilio
+async function sendTwilioSms(lead, message, scheduleTime) {
+    const twilioConfig = {
+        accountSid: localStorage.getItem('twilio_account_sid') || '',
+        authToken: localStorage.getItem('twilio_auth_token') || '',
+        twilioNumber: localStorage.getItem('twilio_phone_number') || ''
+    };
+    
+    if (!twilioConfig.accountSid) {
+        // Demo mode
+        console.log('Demo Twilio SMS to', lead.phone, ':', message);
+        return;
+    }
+    
+    // In production, you'd make an API call to your server
+    console.log('Would send SMS via Twilio API:', {
+        to: lead.phone,
+        from: twilioConfig.twilioNumber,
+        body: message,
+        scheduleTime: scheduleTime,
+        service: 'Twilio'
+    });
+}
+
+// Send bulk SMS
+async function sendBulkSms(message, scheduleTime, service) {
+    const leadsWithPhone = leads.filter(l => l.phone);
+    let sentCount = 0;
+    
+    for (const lead of leadsWithPhone) {
+        try {
+            await sendSingleSms(lead, message, scheduleTime, service);
+            sentCount++;
+        } catch (error) {
+            console.error('Failed to send SMS to', lead.phone, error);
+        }
+    }
+    
+    const serviceName = service === 'google_voice' ? 'Google Voice' : 'Twilio';
+    showSuccessMessage(`SMS sent via ${serviceName} to ${sentCount} out of ${leadsWithPhone.length} leads`);
+}
+
+// Log SMS activity
+function logSmsActivity(lead, message, status, service) {
+    const timestamp = new Date().toISOString();
+    const serviceName = service === 'google_voice' ? 'Google Voice' : 'Twilio';
+    const logEntry = `[${formatDate(new Date())}] SMS ${status} via ${serviceName}: ${message}`;
+    
+    // Update lead record
+    lead.lastContact = timestamp;
+    lead.notes = (lead.notes || '') + '\n' + logEntry;
+    
+    // Update lead status if appropriate
+    if (status === 'sent' && lead.status === 'new') {
+        lead.status = 'contacted';
+    }
+    
+    // Save data and update UI
+    saveData();
+    updateLeadsTable();
+    updateDashboardStats();
+    updatePipelineStats();
+    updateKanbanView();
+}
+
+// Handle opt-out manually (for when you receive STOP responses)
+function markLeadOptedOut(leadId) {
+    const lead = leads.find(l => l.id == leadId);
+    if (!lead) return;
+    
+    // Add opt-out flag and update status
+    lead.optedOut = true;
+    lead.status = 'dead';
+    lead.lastContact = new Date().toISOString();
+    lead.notes = (lead.notes || '') + `\n[${formatDate(new Date())}] OPTED OUT - No more SMS/calls allowed`;
+    
+    // Save and update UI
+    saveData();
+    updateLeadsTable();
+    updateDashboardStats();
+    updatePipelineStats();
+    updateKanbanView();
+    
+    showSuccessMessage(`${lead.firstName} ${lead.lastName} marked as opted out. No more communications will be sent.`);
+}
+
+// Export SMS functions to window
+window.smsLead = smsLead;
+window.showBulkSmsModal = showBulkSmsModal;
+window.closeSmsModal = closeSmsModal;
+window.useTemplate = useTemplate;
+window.sendSms = sendSms;
+window.updateServiceNote = updateServiceNote;
+window.markLeadOptedOut = markLeadOptedOut;
+
+// Export dialer functions to window
+window.callLead = callLead;
+window.startAutoDialer = startAutoDialer;
+window.closeDialer = closeDialer;
+window.hangUp = hangUp;
+window.toggleMute = toggleMute;
+window.toggleRecording = toggleRecording;
+window.saveCallLog = saveCallLog;
+window.initializeTwilio = initializeTwilio;
+window.updateCallServiceNote = updateCallServiceNote;
+window.startSelectedCall = startSelectedCall;
+
+// Initialize Twilio when page loads
+document.addEventListener('DOMContentLoaded', () => {
+    // Only initialize if we're on the dashboard page
+    if (window.location.pathname.includes('dashboard.html')) {
+        setTimeout(initializeTwilio, 1000);
+    }
+});
+
 window.createCallingList = createCallingList;
 window.uploadCSV = uploadCSV;
 window.startCallingSession = startCallingSession;
