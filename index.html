@@ -296,338 +296,122 @@
         </div>
     </div>
 
-    <!-- Firebase Integration -->
-    <script type="module">
-        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-        import { getFirestore, collection, addDoc, getDocs, updateDoc, deleteDoc, doc, onSnapshot, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
-        import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js';
-
-        const firebaseConfig = {
-            apiKey: "AIzaSyCR05CPjBhD3OEwg8fKlqW8BlCJM8DWBu4",
-            authDomain: "leadlisttracker.firebaseapp.com",
-            projectId: "leadlisttracker",
-            storageBucket: "leadlisttracker.firebasestorage.app",
-            messagingSenderId: "537989181623",
-            appId: "1:537989181623:web:abc5c5222c2a19e9179d32",
-            measurementId: "G-JVK97ND3M3"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const storage = getStorage(app);
-
-        // Make Firebase available globally
-        window.db = db;
-        window.storage = storage;
-        window.collection = collection;
-        window.addDoc = addDoc;
-        window.getDocs = getDocs;
-        window.updateDoc = updateDoc;
-        window.deleteDoc = deleteDoc;
-        window.doc = doc;
-        window.onSnapshot = onSnapshot;
-        window.serverTimestamp = serverTimestamp;
-        window.storageRef = ref;
-        window.uploadBytes = uploadBytes;
-        window.getDownloadURL = getDownloadURL;
-        window.deleteObject = deleteObject;
-        
-        console.log('🔥 Firebase initialized for Enriched Property Solutions');
-    </script>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <script src="js/firebase-config.js"></script>
+    <script src="js/main.js"></script>
     <script>
-        // Global variables
-        let isOnline = true;
-        let leads = [];
-
-        // Initialize app
+        // Override the form handling from main.js specifically for this hero form
         document.addEventListener('DOMContentLoaded', function() {
-            initializeFirebase();
-        });
-
-        // Firebase integration
-        async function initializeFirebase() {
-            try {
-                // Test Firebase connection using the same collections as the original
-                // Try to read from counties collection (this should work if permissions are set up)
-                await window.getDocs(window.collection(window.db, 'counties'));
-                console.log('✅ Firebase connection successful');
-                isOnline = true;
-                
-            } catch (error) {
-                console.error('Firebase connection failed:', error);
-                isOnline = false;
-                
-                // Show user-friendly message but don't give up on Firebase yet
-                console.log('⚠️ Will still attempt to save leads to Firebase...');
-                isOnline = true; // Still try Firebase for leads
-            }
-        }
-
-        // Property form submission
-        async function submitPropertyForm(event) {
-            event.preventDefault();
+            // Get the hero form specifically
+            const heroForm = document.getElementById('propertyForm');
             
-            const formData = {
-                propertyAddress: document.getElementById('propertyAddress').value.trim(),
-                fullName: document.getElementById('fullName').value.trim(),
-                phoneNumber: document.getElementById('phoneNumber').value.trim(),
-                emailAddress: document.getElementById('emailAddress').value.trim(),
-                createdAt: window.serverTimestamp ? window.serverTimestamp() : new Date().toISOString(),
-                source: 'Website Form',
-                status: 'new'
-            };
-
-            // Validate form data
-            if (!formData.propertyAddress || !formData.fullName || !formData.phoneNumber || !formData.emailAddress) {
-                showAlert('Please fill in all required fields', 'error');
-                return;
-            }
-
-            // Validate email format
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            if (!emailRegex.test(formData.emailAddress)) {
-                showAlert('Please enter a valid email address', 'error');
-                return;
-            }
-
-            // Validate phone format
-            const phoneRegex = /^[\+]?[1-9][\d]{0,15}$/;
-            const cleanPhone = formData.phoneNumber.replace(/\D/g, '');
-            if (cleanPhone.length < 10) {
-                showAlert('Please enter a valid phone number', 'error');
-                return;
-            }
-
-            try {
-                // Show loading state
-                const submitButton = event.target.querySelector('button[type="submit"]');
-                const originalText = submitButton.textContent;
-                submitButton.textContent = 'Submitting...';
-                submitButton.disabled = true;
-
-                // Try Firebase first, fall back to local storage
-                let savedSuccessfully = false;
-                
-                if (window.addDoc && window.db) {
-                    try {
-                        // Attempt to save to Firebase using a collection with proper permissions
-                        // Let's try 'propertyLeads' first, then fall back to other collections
-                        let saveSuccessful = false;
-                        
-                        try {
-                            await window.addDoc(window.collection(window.db, 'propertyLeads'), formData);
-                            saveSuccessful = true;
-                        } catch (e1) {
-                            console.log('propertyLeads failed, trying counties...');
-                            try {
-                                // Try using the counties collection structure (we know this works)
-                                const leadAsCounty = {
-                                    ...formData,
-                                    name: `Lead: ${formData.fullName}`,
-                                    state: 'Property Lead',
-                                    notes: `Address: ${formData.propertyAddress}, Phone: ${formData.phoneNumber}, Email: ${formData.emailAddress}`,
-                                    leadType: 'website_form'
-                                };
-                                await window.addDoc(window.collection(window.db, 'counties'), leadAsCounty);
-                                saveSuccessful = true;
-                            } catch (e2) {
-                                console.log('counties failed, trying dataSources...');
-                                // Try dataSources as last resort
-                                const leadAsSource = {
-                                    ...formData,
-                                    type: 'lead',
-                                    url: formData.emailAddress,
-                                    name: formData.fullName,
-                                    frequency: 1,
-                                    notes: `Property: ${formData.propertyAddress}, Phone: ${formData.phoneNumber}`,
-                                    leadType: 'website_form',
-                                    countyId: 'website_leads'
-                                };
-                                await window.addDoc(window.collection(window.db, 'dataSources'), leadAsSource);
-                                saveSuccessful = true;
-                            }
-                        }
-                        
-                        if (saveSuccessful) {
-                            console.log('✅ Successfully saved to Firebase!');
-                            showAlert('🎉 Thank you! Your information has been submitted successfully. We\'ll contact you within 24 hours with your cash offer!', 'success');
-                            savedSuccessfully = true;
-                        }
-                    } catch (firebaseError) {
-                        console.error('All Firebase save attempts failed:', firebaseError);
-                        // Fall through to local storage
-                    }
-                }
-                
-                if (!savedSuccessfully) {
-                    // Firebase is required - show error if it fails
-                    showAlert('❌ Unable to submit your information at this time. Please try again in a moment or contact us directly.', 'error');
-                    console.error('❌ Firebase is required but all save attempts failed');
-                }
-
-                // Reset form
-                document.getElementById('propertyForm').reset();
-
-                // Restore button state
-                submitButton.textContent = originalText;
-                submitButton.disabled = false;
-
-            } catch (error) {
-                console.error('Error submitting form:', error);
-                showAlert('❌ There was an error submitting your information. Please try again or call us directly.', 'error');
-                
-                // Restore button state
-                const submitButton = event.target.querySelector('button[type="submit"]');
-                submitButton.textContent = 'Get My Offer Now';
-                submitButton.disabled = false;
-            }
-        }
-
-        // Login functionality
-        async function login(event) {
-            event.preventDefault();
-            
-            const username = document.getElementById('username').value.trim();
-            const password = document.getElementById('password').value.trim();
-
-            // Simple authentication (you may want to enhance this)
-            const validCredentials = [
-                { username: 'admin', password: 'enriched2024' },
-                { username: 'user', password: 'property123' }
-            ];
-
-            const isValid = validCredentials.some(cred => 
-                cred.username === username && cred.password === password
-            );
-
-            if (isValid) {
-                // Store authentication
-                localStorage.setItem('enrichedPropsAuth', 'true');
-                localStorage.setItem('enrichedPropsUser', username);
-                
-                showAlert('Login successful! Redirecting to dashboard...', 'success');
-                
-                // Redirect to dashboard
-                setTimeout(() => {
-                    window.location.href = 'dashboard.html';
-                }, 1500);
-            } else {
-                showAlert('Invalid username or password', 'error');
-            }
-        }
-
-        // Alert system
-        function showAlert(message, type) {
-            const alertDiv = document.createElement('div');
-            alertDiv.className = `fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg max-w-md transition-all duration-300`;
-            
-            switch(type) {
-                case 'success':
-                    alertDiv.classList.add('bg-green-500', 'text-white');
-                    break;
-                case 'error':
-                    alertDiv.classList.add('bg-red-500', 'text-white');
-                    break;
-                case 'warning':
-                    alertDiv.classList.add('bg-yellow-500', 'text-white');
-                    break;
-                default:
-                    alertDiv.classList.add('bg-blue-500', 'text-white');
-            }
-            
-            alertDiv.innerHTML = `
-                <div class="flex items-center justify-between">
-                    <span>${message}</span>
-                    <button onclick="this.parentElement.parentElement.remove()" class="ml-4 text-white hover:text-gray-200">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                        </svg>
-                    </button>
-                </div>
-            `;
-            
-            document.body.appendChild(alertDiv);
-            
-            // Auto remove after 5 seconds
-            setTimeout(() => {
-                if (alertDiv.parentNode) {
-                    alertDiv.remove();
-                }
-            }, 5000);
-        }
-
-        // Send lead notification as backup method
-        async function sendLeadNotification(lead) {
-            try {
-                // You can implement a webhook or email service here
-                // For now, just log the lead data
-                console.log('📧 Lead notification (backup):', lead);
-                
-                // Example: Send to a webhook service (uncomment and configure as needed)
-                /*
-                await fetch('https://your-webhook-url.com/leads', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(lead)
+            if (heroForm) {
+                heroForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    handleHeroForm(this);
                 });
-                */
-                
-                return true;
-            } catch (error) {
-                console.error('Backup notification failed:', error);
-                return false;
             }
-        }
-
-        // Load saved leads on page load (for offline mode)
-        function loadSavedLeads() {
-            const savedLeads = localStorage.getItem('enrichedProps_leads');
-            if (savedLeads) {
-                leads = JSON.parse(savedLeads);
-                console.log(`📱 Loaded ${leads.length} saved leads from local storage`);
-            }
-        }
-
-        // Phone number formatting
-        document.getElementById('phoneNumber')?.addEventListener('input', function(e) {
-            let value = e.target.value.replace(/\D/g, '');
-            if (value.length >= 10) {
-                value = value.substring(0, 10);
-                value = value.replace(/(\d{3})(\d{3})(\d{4})/, '($1) $2-$3');
-            }
-            e.target.value = value;
         });
 
-        // Modal functions
-        const loginModal = document.getElementById('loginModal');
-        const showLoginModal = () => loginModal.classList.remove('hidden');
-        const hideLoginModal = () => loginModal.classList.add('hidden');
+        // Handle hero form submission using the same pattern as main.js
+        function handleHeroForm(form) {
+            const submitButton = form.querySelector('button[type="submit"]');
+            
+            // Show loading state
+            const originalText = submitButton.textContent;
+            submitButton.innerHTML = '<span class="animate-spin">⏳</span> Submitting...';
+            submitButton.disabled = true;
+            
+            // Create lead data in the same format as main.js
+            const leadData = {
+                id: Date.now(),
+                firstName: document.getElementById('fullName').value.split(' ')[0] || '',
+                lastName: document.getElementById('fullName').value.split(' ').slice(1).join(' ') || '',
+                phone: document.getElementById('phoneNumber').value,
+                email: document.getElementById('emailAddress').value,
+                propertyAddress: document.getElementById('propertyAddress').value,
+                notes: `Hero form submission`,
+                source: 'Website Hero Form',
+                status: 'new',
+                dateAdded: new Date().toISOString(),
+                estimatedValue: 0
+            };
+            
+            // Validate required fields
+            if (!leadData.firstName || !leadData.phone || !leadData.email || !leadData.propertyAddress) {
+                EnrichedProps.showErrorMessage('Please fill in all required fields');
+                resetSubmitButton();
+                return;
+            }
+            
+            // Validate email
+            if (!EnrichedProps.validateEmail(leadData.email)) {
+                EnrichedProps.showErrorMessage('Please enter a valid email address');
+                resetSubmitButton();
+                return;
+            }
+            
+            // Validate phone
+            if (!EnrichedProps.validatePhone(leadData.phone)) {
+                EnrichedProps.showErrorMessage('Please enter a valid 10-digit phone number');
+                resetSubmitButton();
+                return;
+            }
+            
+            // Store lead using the same method as main.js
+            EnrichedProps.storeLead(leadData).then(() => {
+                EnrichedProps.showSuccessMessage('🎉 Thank you! We\'ve received your information and will contact you within 24 hours with a competitive cash offer.');
+                form.reset();
+                resetSubmitButton();
+            }).catch((error) => {
+                console.error('Error storing lead:', error);
+                EnrichedProps.showErrorMessage('There was an error submitting your information. Please try again or contact us directly.');
+                resetSubmitButton();
+            });
+            
+            function resetSubmitButton() {
+                submitButton.innerHTML = originalText;
+                submitButton.disabled = false;
+            }
+        }
+
+        // Use the existing modal functions from main.js
+        function showLoginModal() {
+            EnrichedProps.showLoginModal();
+        }
+
+        function hideLoginModal() {
+            EnrichedProps.hideLoginModal();
+        }
+
+        function login(event) {
+            EnrichedProps.login(event);
+        }
+
+        // Phone number formatting using main.js function
+        document.addEventListener('DOMContentLoaded', function() {
+            const phoneInput = document.getElementById('phoneNumber');
+            if (phoneInput) {
+                phoneInput.addEventListener('input', function(e) {
+                    const formatted = EnrichedProps.formatPhoneNumber(e.target.value);
+                    e.target.value = formatted;
+                });
+            }
+        });
 
         // Mobile menu toggle
-        const mobileMenuButton = document.getElementById('mobile-menu-button');
-        const mobileMenu = document.getElementById('mobile-menu');
-        mobileMenuButton.addEventListener('click', () => {
-            mobileMenu.classList.toggle('hidden');
+        document.addEventListener('DOMContentLoaded', function() {
+            const mobileMenuButton = document.getElementById('mobile-menu-button');
+            const mobileMenu = document.getElementById('mobile-menu');
+            
+            if (mobileMenuButton && mobileMenu) {
+                mobileMenuButton.addEventListener('click', () => {
+                    mobileMenu.classList.toggle('hidden');
+                });
+            }
         });
-
-        // Smooth scrolling for anchor links
-        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-            anchor.addEventListener('click', function (e) {
-                e.preventDefault();
-                const target = document.querySelector(this.getAttribute('href'));
-                if (target) {
-                    target.scrollIntoView({
-                        behavior: 'smooth',
-                        block: 'start'
-                    });
-                }
-            });
-        });
-
-        // Initialize on load
-        loadSavedLeads();
     </script>
 </body>
 </html>
