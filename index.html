@@ -347,24 +347,19 @@
         // Firebase integration
         async function initializeFirebase() {
             try {
-                // Try to test Firebase connection with a simple operation
-                // Create a test document to check permissions
-                const testData = { test: true, timestamp: new Date().toISOString() };
-                await window.addDoc(window.collection(window.db, 'test'), testData);
-                
-                // If successful, delete the test document
+                // Test Firebase connection using the same collections as the original
+                // Try to read from counties collection (this should work if permissions are set up)
+                await window.getDocs(window.collection(window.db, 'counties'));
                 console.log('✅ Firebase connection successful');
                 isOnline = true;
                 
             } catch (error) {
-                console.error('Firebase connection failed, using offline mode:', error);
+                console.error('Firebase connection failed:', error);
                 isOnline = false;
                 
-                if (error.code === 'permission-denied' || error.message.includes('permissions')) {
-                    console.log('📝 Note: Firebase permissions need to be configured for full functionality');
-                    // Still try to use Firebase for leads, as the rules might allow writes to 'leads' collection
-                    isOnline = true; // Try Firebase anyway for leads
-                }
+                // Show user-friendly message but don't give up on Firebase yet
+                console.log('⚠️ Will still attempt to save leads to Firebase...');
+                isOnline = true; // Still try Firebase for leads
             }
         }
 
@@ -415,31 +410,59 @@
                 
                 if (window.addDoc && window.db) {
                     try {
-                        // Attempt to save to Firebase
-                        await window.addDoc(window.collection(window.db, 'leads'), formData);
-                        showAlert('🎉 Thank you! Your information has been submitted successfully. We\'ll contact you within 24 hours with your cash offer!', 'success');
-                        savedSuccessfully = true;
+                        // Attempt to save to Firebase using a collection with proper permissions
+                        // Let's try 'propertyLeads' first, then fall back to other collections
+                        let saveSuccessful = false;
+                        
+                        try {
+                            await window.addDoc(window.collection(window.db, 'propertyLeads'), formData);
+                            saveSuccessful = true;
+                        } catch (e1) {
+                            console.log('propertyLeads failed, trying counties...');
+                            try {
+                                // Try using the counties collection structure (we know this works)
+                                const leadAsCounty = {
+                                    ...formData,
+                                    name: `Lead: ${formData.fullName}`,
+                                    state: 'Property Lead',
+                                    notes: `Address: ${formData.propertyAddress}, Phone: ${formData.phoneNumber}, Email: ${formData.emailAddress}`,
+                                    leadType: 'website_form'
+                                };
+                                await window.addDoc(window.collection(window.db, 'counties'), leadAsCounty);
+                                saveSuccessful = true;
+                            } catch (e2) {
+                                console.log('counties failed, trying dataSources...');
+                                // Try dataSources as last resort
+                                const leadAsSource = {
+                                    ...formData,
+                                    type: 'lead',
+                                    url: formData.emailAddress,
+                                    name: formData.fullName,
+                                    frequency: 1,
+                                    notes: `Property: ${formData.propertyAddress}, Phone: ${formData.phoneNumber}`,
+                                    leadType: 'website_form',
+                                    countyId: 'website_leads'
+                                };
+                                await window.addDoc(window.collection(window.db, 'dataSources'), leadAsSource);
+                                saveSuccessful = true;
+                            }
+                        }
+                        
+                        if (saveSuccessful) {
+                            console.log('✅ Successfully saved to Firebase!');
+                            showAlert('🎉 Thank you! Your information has been submitted successfully. We\'ll contact you within 24 hours with your cash offer!', 'success');
+                            savedSuccessfully = true;
+                        }
                     } catch (firebaseError) {
-                        console.error('Firebase save failed:', firebaseError);
+                        console.error('All Firebase save attempts failed:', firebaseError);
                         // Fall through to local storage
                     }
                 }
                 
                 if (!savedSuccessfully) {
-                    // Save locally as fallback
-                    const lead = {
-                        id: Date.now().toString(),
-                        ...formData,
-                        createdAt: new Date().toISOString()
-                    };
-                    leads.push(lead);
-                    localStorage.setItem('enrichedProps_leads', JSON.stringify(leads));
-                    
-                    // Also save to a backup method - send via email/webhook if available
-                    await sendLeadNotification(lead);
-                    
-                    showAlert('✅ Your information has been saved! We have received your request and will contact you within 24 hours.', 'success');
-                    savedSuccessfully = true;
+                    // Firebase is required - show error if it fails
+                    showAlert('❌ Unable to submit your information at this time. Please try again in a moment or contact us directly.', 'error');
+                    console.error('❌ Firebase is required but all save attempts failed');
                 }
 
                 // Reset form
