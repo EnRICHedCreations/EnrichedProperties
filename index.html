@@ -89,7 +89,7 @@
                     </div>
                 </div>
                 <div class="lg:w-1/2 w-full lg:mt-0 mt-8">
-                    <form id="propertyForm" class="bg-white rounded-xl shadow-2xl p-8" onsubmit="submitPropertyForm(event)">
+                    <form id="propertyForm" class="bg-white rounded-xl shadow-2xl p-8">
                         <h3 class="text-2xl font-bold text-brand-dark mb-6 text-center">Get Your Free, No-Obligation Offer</h3>
                         <div class="space-y-4">
                             <div>
@@ -261,15 +261,15 @@
                 <div>
                     <h4 class="text-lg font-semibold mb-4">Contact</h4>
                     <ul class="space-y-2 text-gray-300">
-                        <li>Phone: (555) 123-PROP</li>
-                        <li>Email: offers@enrichedproperties.com</li>
+                        <li>Phone: (518) 288-8871</li>
+                        <li>Email: enrichedcreations96@gmail.com</li>
                         <li>Service Area: Nationwide</li>
                     </ul>
                 </div>
             </div>
             <hr class="border-gray-600 my-8">
             <div class="text-center text-gray-300">
-                <p>&copy; 2024 Enriched Property Solutions. All rights reserved.</p>
+                <p>&copy; 2025 Enriched Property Solutions. All rights reserved.</p>
             </div>
         </div>
     </footer>
@@ -296,6 +296,39 @@
         </div>
     </div>
 
+    <!-- Lead Form Modal -->
+    <div id="leadFormModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center">
+        <div class="bg-white rounded-2xl p-8 m-4 w-full max-w-md">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl font-bold text-brand-dark">Get Your Cash Offer</h3>
+                <button onclick="hideLeadFormModal()" class="text-gray-400 hover:text-gray-600 text-2xl font-light">&times;</button>
+            </div>
+            <form id="modalPropertyForm">
+                <div class="space-y-4">
+                    <div>
+                        <label for="modalPropertyAddress" class="block text-gray-700 text-sm font-semibold mb-2">Property Address</label>
+                        <input type="text" id="modalPropertyAddress" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent" placeholder="123 Main St, Anytown, USA" required>
+                    </div>
+                    <div>
+                        <label for="modalFullName" class="block text-gray-700 text-sm font-semibold mb-2">Full Name</label>
+                        <input type="text" id="modalFullName" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent" placeholder="Jane Doe" required>
+                    </div>
+                    <div>
+                        <label for="modalPhoneNumber" class="block text-gray-700 text-sm font-semibold mb-2">Phone Number</label>
+                        <input type="tel" id="modalPhoneNumber" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent" placeholder="(555) 123-4567" required>
+                    </div>
+                    <div>
+                        <label for="modalEmailAddress" class="block text-gray-700 text-sm font-semibold mb-2">Email Address</label>
+                        <input type="email" id="modalEmailAddress" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent" placeholder="jane.doe@example.com" required>
+                    </div>
+                    <button type="submit" class="w-full bg-brand-primary text-white py-4 rounded-lg text-lg font-semibold hover:bg-blue-800 transition-colors mt-2">
+                        Get My Offer Now
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
@@ -306,11 +339,19 @@
         document.addEventListener('DOMContentLoaded', function() {
             // Get the hero form specifically
             const heroForm = document.getElementById('propertyForm');
+            const modalForm = document.getElementById('modalPropertyForm');
             
             if (heroForm) {
                 heroForm.addEventListener('submit', function(e) {
                     e.preventDefault();
                     handleHeroForm(this);
+                });
+            }
+
+            if (modalForm) {
+                modalForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    handleModalForm(this);
                 });
             }
         });
@@ -377,6 +418,100 @@
             }
         }
 
+        // Handle modal form submission using the same pattern
+        function handleModalForm(form) {
+            const submitButton = form.querySelector('button[type="submit"]');
+            
+            // Show loading state
+            const originalText = submitButton.textContent;
+            submitButton.innerHTML = '<span class="animate-spin">⏳</span> Submitting...';
+            submitButton.disabled = true;
+            
+            // Create lead data from modal form
+            const leadData = {
+                id: Date.now(),
+                firstName: document.getElementById('modalFullName').value.split(' ')[0] || '',
+                lastName: document.getElementById('modalFullName').value.split(' ').slice(1).join(' ') || '',
+                phone: document.getElementById('modalPhoneNumber').value,
+                email: document.getElementById('modalEmailAddress').value,
+                propertyAddress: document.getElementById('modalPropertyAddress').value,
+                notes: `Modal form submission`,
+                source: 'Website Modal Form',
+                status: 'new',
+                dateAdded: new Date().toISOString(),
+                estimatedValue: 0
+            };
+            
+            // Validate required fields
+            if (!leadData.firstName || !leadData.phone || !leadData.email || !leadData.propertyAddress) {
+                EnrichedProps.showErrorMessage('Please fill in all required fields');
+                resetModalSubmitButton();
+                return;
+            }
+            
+            // Validate email
+            if (!EnrichedProps.validateEmail(leadData.email)) {
+                EnrichedProps.showErrorMessage('Please enter a valid email address');
+                resetModalSubmitButton();
+                return;
+            }
+            
+            // Validate phone
+            if (!EnrichedProps.validatePhone(leadData.phone)) {
+                EnrichedProps.showErrorMessage('Please enter a valid 10-digit phone number');
+                resetModalSubmitButton();
+                return;
+            }
+            
+            // Store lead using the same method as main.js
+            EnrichedProps.storeLead(leadData).then(() => {
+                EnrichedProps.showSuccessMessage('🎉 Thank you! We\'ve received your information and will contact you within 24 hours with a competitive cash offer.');
+                form.reset();
+                hideLeadFormModal();
+                resetModalSubmitButton();
+            }).catch((error) => {
+                console.error('Error storing lead:', error);
+                EnrichedProps.showErrorMessage('There was an error submitting your information. Please try again or contact us directly.');
+                resetModalSubmitButton();
+            });
+            
+            function resetModalSubmitButton() {
+                submitButton.innerHTML = originalText;
+                submitButton.disabled = false;
+            }
+        }
+
+        // Modal functions for lead form
+        function showLeadFormModal() {
+            const modal = document.getElementById('leadFormModal');
+            if (modal) {
+                modal.classList.remove('hidden');
+                document.body.style.overflow = 'hidden'; // Prevent background scrolling
+                
+                // Focus on property address field
+                setTimeout(() => {
+                    const addressField = document.getElementById('modalPropertyAddress');
+                    if (addressField) {
+                        addressField.focus();
+                    }
+                }, 100);
+            }
+        }
+
+        function hideLeadFormModal() {
+            const modal = document.getElementById('leadFormModal');
+            if (modal) {
+                modal.classList.add('hidden');
+                document.body.style.overflow = 'auto'; // Restore scrolling
+                
+                // Clear form
+                const form = modal.querySelector('form');
+                if (form) {
+                    form.reset();
+                }
+            }
+        }
+
         // Use the existing modal functions from main.js
         function showLoginModal() {
             EnrichedProps.showLoginModal();
@@ -393,8 +528,17 @@
         // Phone number formatting using main.js function
         document.addEventListener('DOMContentLoaded', function() {
             const phoneInput = document.getElementById('phoneNumber');
+            const modalPhoneInput = document.getElementById('modalPhoneNumber');
+            
             if (phoneInput) {
                 phoneInput.addEventListener('input', function(e) {
+                    const formatted = EnrichedProps.formatPhoneNumber(e.target.value);
+                    e.target.value = formatted;
+                });
+            }
+
+            if (modalPhoneInput) {
+                modalPhoneInput.addEventListener('input', function(e) {
                     const formatted = EnrichedProps.formatPhoneNumber(e.target.value);
                     e.target.value = formatted;
                 });
