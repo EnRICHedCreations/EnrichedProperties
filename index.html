@@ -3,424 +3,315 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Enriched Property Solutions LLC - We Buy Houses for Cash</title>
-    <meta name="description" content="We buy houses for cash in any condition. Fast closing, no repairs needed, no realtor fees. Get your cash offer today - close in as little as 30 days or less.">
-    <link rel="stylesheet" href="css/styles.css">
+    <title>Enriched Property Solutions - Sell Your House Fast for Cash</title>
+    <meta name="description" content="Looking to sell your house quickly? Enriched Property Solutions offers fair cash offers for properties in any condition. No repairs, no fees, and a fast, hassle-free closing. Get your free offer today!">
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');
+        body {
+            font-family: 'Poppins', sans-serif;
+        }
+        .text-shadow-hero {
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+    </style>
     <script>
         tailwind.config = {
             theme: {
                 extend: {
                     colors: {
-                        primary: '#1f2937',
-                        secondary: '#3b82f6',
-                        accent: '#10b981'
-                    }
+                        'brand-dark': '#0f172a', /* slate-900 */
+                        'brand-primary': '#1d4ed8', /* blue-700 */
+                        'brand-accent': '#22c55e', /* green-500 */
+                        'brand-light': '#f1f5f9' /* slate-100 */
+                    },
                 }
             }
         }
     </script>
 </head>
-<body class="bg-gray-50 text-gray-900">
-    <!-- Navigation -->
+<body class="bg-brand-light text-brand-dark">
+
     <nav class="bg-white shadow-lg fixed w-full z-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between h-16">
-                <div class="flex items-center">
-                    <div class="flex-shrink-0">
-                        <h1 class="text-2xl font-bold text-primary">Enriched Property Solutions LLC</h1>
-                    </div>
+            <div class="flex justify-between h-16 items-center">
+                <div class="flex-shrink-0">
+                    <h1 class="text-2xl font-bold text-brand-primary">
+                        Enriched Property Solutions
+                    </h1>
                 </div>
-                <div class="flex items-center space-x-8">
-                    <a href="#services" class="text-gray-700 hover:text-secondary transition-colors">Services</a>
-                    <a href="#about" class="text-gray-700 hover:text-secondary transition-colors">About</a>
-                    <a href="#contact" class="text-gray-700 hover:text-secondary transition-colors">Contact</a>
-                    <button onclick="showLoginModal()" class="bg-secondary text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors">Dashboard Login</button>
+                <div class="hidden md:flex space-x-8 items-center">
+                    <a href="#services" class="text-gray-700 hover:text-brand-primary transition-colors">How It Works</a>
+                    <a href="#about" class="text-gray-700 hover:text-brand-primary transition-colors">Why Choose Us?</a>
+                    <a href="#contact" class="text-gray-700 hover:text-brand-primary transition-colors">Get My Offer</a>
+                    <button onclick="showLoginModal()" class="bg-brand-primary text-white px-5 py-2 rounded-lg font-semibold hover:bg-blue-800 transition-colors">
+                        Dashboard Login
+                    </button>
+                </div>
+                <div class="md:hidden flex items-center">
+                    <button id="mobile-menu-button" class="text-gray-700 p-2 rounded-md hover:bg-gray-100 focus:outline-none">
+                        <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path>
+                        </svg>
+                    </button>
                 </div>
             </div>
+        </div>
+        <div id="mobile-menu" class="md:hidden hidden bg-white shadow-lg py-2">
+            <a href="#services" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">How It Works</a>
+            <a href="#about" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Why Choose Us?</a>
+            <a href="#contact" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Get My Offer</a>
+            <button onclick="showLoginModal()" class="block w-full text-left px-4 py-2 text-sm text-brand-primary font-semibold hover:bg-gray-100">Dashboard Login</button>
         </div>
     </nav>
 
-    <!-- Hero Section -->
-    <section class="pt-20 pb-16 bg-gradient-to-br from-primary to-gray-800 text-white">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-                <div>
-                    <h2 class="text-4xl lg:text-5xl font-bold mb-6">
-                        We Buy Houses for Cash
+    <section class="relative pt-24 pb-16 bg-brand-dark text-white">
+        <div class="absolute inset-0">
+            
+            <div class="absolute inset-0 bg-brand-dark opacity-70"></div>
+        </div>
+        <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 z-10">
+            <div class="flex flex-col lg:flex-row items-center gap-12">
+                <div class="lg:w-1/2 text-center lg:text-left">
+                    <h2 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold mb-4 leading-tight text-shadow-hero">
+                        Sell Your House Fast, <br>The Easy Way
                     </h2>
-                    <p class="text-xl mb-8 text-gray-300">
-                        Sell your house fast, as-is, no repairs needed. We buy houses in any condition and close in as little as 30 days or less with cash.
+                    <p class="text-lg sm:text-xl text-gray-200 mb-8">
+                        Get a fair cash offer without the hassle of repairs, showings, or fees. We buy houses in any condition nationwide.
                     </p>
-                    <div class="flex flex-col sm:flex-row gap-4">
-                        <a href="#contact" class="bg-accent text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-green-600 transition-colors text-center">
-                            Get Cash Offer
+                    <div class="flex flex-col sm:flex-row justify-center lg:justify-start gap-4">
+                        <a href="#contact" class="bg-brand-accent text-white px-8 py-4 rounded-full text-lg font-semibold hover:bg-green-600 transition-colors shadow-lg">
+                            Get My Cash Offer
                         </a>
-                        <a href="#services" class="border-2 border-white text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-white hover:text-primary transition-colors text-center">
-                            Our Services
+                        <a href="#services" class="border-2 border-white text-white px-8 py-4 rounded-full text-lg font-semibold hover:bg-white hover:text-brand-dark transition-colors shadow-lg">
+                            Learn More
                         </a>
                     </div>
                 </div>
-                <div class="lg:text-center">
-                    <div class="bg-white/10 backdrop-blur-sm rounded-2xl p-8">
-                        <h3 class="text-2xl font-bold mb-4">Why Choose Us?</h3>
-                        <ul class="space-y-3 text-lg">
-                            <li class="flex items-center">
-                                <span class="text-accent mr-3">✓</span>
-                                Fair cash offers
-                            </li>
-                            <li class="flex items-center">
-                                <span class="text-accent mr-3">✓</span>
-                                Close in 30 days or less
-                            </li>
-                            <li class="flex items-center">
-                                <span class="text-accent mr-3">✓</span>
-                                No repairs needed
-                            </li>
-                            <li class="flex items-center">
-                                <span class="text-accent mr-3">✓</span>
-                                No realtor fees
-                            </li>
-                        </ul>
-                    </div>
+                <div class="lg:w-1/2 w-full lg:mt-0 mt-8">
+                    <form class="bg-white rounded-xl shadow-2xl p-8">
+                        <h3 class="text-2xl font-bold text-brand-dark mb-6 text-center">Get Your Free, No-Obligation Offer</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label for="propertyAddress" class="block text-gray-700 text-sm font-semibold mb-2">Property Address</label>
+                                <input type="text" id="propertyAddress" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent" placeholder="123 Main St, Anytown, USA" required>
+                            </div>
+                            <div>
+                                <label for="fullName" class="block text-gray-700 text-sm font-semibold mb-2">Full Name</label>
+                                <input type="text" id="fullName" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent" placeholder="Jane Doe" required>
+                            </div>
+                            <div>
+                                <label for="phoneNumber" class="block text-gray-700 text-sm font-semibold mb-2">Phone Number</label>
+                                <input type="tel" id="phoneNumber" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent" placeholder="(555) 123-4567" required>
+                            </div>
+                            <div>
+                                <label for="emailAddress" class="block text-gray-700 text-sm font-semibold mb-2">Email Address</label>
+                                <input type="email" id="emailAddress" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent" placeholder="jane.doe@example.com" required>
+                            </div>
+                            <button type="submit" class="w-full bg-brand-primary text-white py-4 rounded-lg text-lg font-semibold hover:bg-blue-800 transition-colors mt-2">
+                                Get My Offer Now
+                            </button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- Services Section -->
     <section id="services" class="py-20 bg-white">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center mb-16">
-                <h2 class="text-3xl lg:text-4xl font-bold text-primary mb-4">
-                    How We Help Homeowners
+                <h2 class="text-3xl sm:text-4xl font-bold text-brand-dark mb-4">
+                    Our Simple 3-Step Process
                 </h2>
-                <p class="text-xl text-gray-600 max-w-3xl mx-auto">
-                    We buy houses directly from homeowners who need to sell quickly. No hassle, no fees, no repairs needed.
+                <p class="text-lg text-gray-600 max-w-3xl mx-auto">
+                    Selling your home shouldn't be complicated. We've streamlined the process to make it fast, transparent, and stress-free.
                 </p>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                <div class="bg-gray-50 rounded-xl p-8 hover:shadow-lg transition-shadow">
-                    <div class="text-secondary text-4xl mb-4">🏠</div>
-                    <h3 class="text-xl font-bold mb-4">Any Condition</h3>
-                    <p class="text-gray-600 mb-4">We buy houses in any condition - no repairs or cleaning needed before we close.</p>
-                    <ul class="text-sm text-gray-600 space-y-2">
-                        <li>• Fixer-upper properties</li>
-                        <li>• Fire or water damaged</li>
-                        <li>• Inherited properties</li>
-                    </ul>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-12 text-center">
+                <div class="bg-brand-light rounded-2xl p-8 shadow-md hover:shadow-xl transition-shadow duration-300">
+                    <div class="text-brand-primary text-5xl mb-4">1️⃣</div>
+                    <h3 class="text-2xl font-bold mb-2">Tell Us About Your Property</h3>
+                    <p class="text-gray-600">
+                        Fill out our short online form with your property details. There's no cost or obligation to you.
+                    </p>
                 </div>
-
-                <div class="bg-gray-50 rounded-xl p-8 hover:shadow-lg transition-shadow">
-                    <div class="text-secondary text-4xl mb-4">💰</div>
-                    <h3 class="text-xl font-bold mb-4">Cash Offers</h3>
-                    <p class="text-gray-600 mb-4">Get a fair cash offer within 24 hours. No waiting for loan approval or financing.</p>
-                    <ul class="text-sm text-gray-600 space-y-2">
-                        <li>• Fair market offers</li>
-                        <li>• No financing contingencies</li>
-                        <li>• Guaranteed closing</li>
-                    </ul>
+                <div class="bg-brand-light rounded-2xl p-8 shadow-md hover:shadow-xl transition-shadow duration-300">
+                    <div class="text-brand-primary text-5xl mb-4">2️⃣</div>
+                    <h3 class="text-2xl font-bold mb-2">Receive Your Cash Offer</h3>
+                    <p class="text-gray-600">
+                        We'll evaluate your property and present you with a fair, no-obligation cash offer within 24 hours.
+                    </p>
                 </div>
-
-                <div class="bg-gray-50 rounded-xl p-8 hover:shadow-lg transition-shadow">
-                    <div class="text-secondary text-4xl mb-4">⚡</div>
-                    <h3 class="text-xl font-bold mb-4">Fast Closing</h3>
-                    <p class="text-gray-600 mb-4">Close in as little as 30 days or less. We work around your timeline and schedule.</p>
-                    <ul class="text-sm text-gray-600 space-y-2">
-                        <li>• 30-day closings available</li>
-                        <li>• Flexible timeline</li>
-                        <li>• No delays or complications</li>
-                    </ul>
-                </div>
-
-                <div class="bg-gray-50 rounded-xl p-8 hover:shadow-lg transition-shadow">
-                    <div class="text-secondary text-4xl mb-4">🚫</div>
-                    <h3 class="text-xl font-bold mb-4">No Fees</h3>
-                    <p class="text-gray-600 mb-4">No realtor commissions, no closing costs, no hidden fees. What we offer is what you get.</p>
-                    <ul class="text-sm text-gray-600 space-y-2">
-                        <li>• No realtor commissions</li>
-                        <li>• No closing costs</li>
-                        <li>• No inspection fees</li>
-                    </ul>
-                </div>
-
-                <div class="bg-gray-50 rounded-xl p-8 hover:shadow-lg transition-shadow">
-                    <div class="text-secondary text-4xl mb-4">📋</div>
-                    <h3 class="text-xl font-bold mb-4">Simple Process</h3>
-                    <p class="text-gray-600 mb-4">We handle all the paperwork and legal details. You just sign and get paid.</p>
-                    <ul class="text-sm text-gray-600 space-y-2">
-                        <li>• We handle all paperwork</li>
-                        <li>• Professional title company</li>
-                        <li>• Hassle-free experience</li>
-                    </ul>
-                </div>
-
-                <div class="bg-gray-50 rounded-xl p-8 hover:shadow-lg transition-shadow">
-                    <div class="text-secondary text-4xl mb-4">🤝</div>
-                    <h3 class="text-xl font-bold mb-4">Local Company</h3>
-                    <p class="text-gray-600 mb-4">We're a local company that knows the area. Fair offers from people you can trust.</p>
-                    <ul class="text-sm text-gray-600 space-y-2">
-                        <li>• Local knowledge</li>
-                        <li>• Trusted reputation</li>
-                        <li>• Personal service</li>
-                    </ul>
+                <div class="bg-brand-light rounded-2xl p-8 shadow-md hover:shadow-xl transition-shadow duration-300">
+                    <div class="text-brand-primary text-5xl mb-4">3️⃣</div>
+                    <h3 class="text-2xl font-bold mb-2">Close on Your Timeline</h3>
+                    <p class="text-gray-600">
+                        If you accept our offer, we handle all the paperwork and can close in as little as 7-14 days.
+                    </p>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- About Section -->
     <section id="about" class="py-20 bg-gray-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-                <div>
-                    <h2 class="text-3xl lg:text-4xl font-bold text-primary mb-6">
-                        Fast, Fair Cash Offers for Your Property
+                <div class="order-2 lg:order-1">
+                    <h2 class="text-3xl sm:text-4xl font-bold text-brand-dark mb-6">
+                        The Smarter Way to Sell Your Home
                     </h2>
                     <p class="text-lg text-gray-600 mb-6">
-                        Enriched Property Solutions LLC purchases houses directly from homeowners, providing quick cash solutions when you need to sell fast. No realtor fees, no repairs required, no waiting for financing.
+                        We've helped hundreds of homeowners just like you sell their property quickly and without the stress of the traditional real estate market.
                     </p>
-                    <p class="text-lg text-gray-600 mb-8">
-                        We handle all the paperwork, closing costs, and can close in as little as 30 days or less. Our goal is to make selling your house as simple and stress-free as possible.
-                    </p>
-                    <div class="grid grid-cols-2 gap-6">
-                        <div class="text-center">
-                            <div class="text-3xl font-bold text-secondary mb-2">500+</div>
-                            <div class="text-gray-600">Properties Acquired</div>
-                        </div>
-                        <div class="text-center">
-                            <div class="text-3xl font-bold text-secondary mb-2">$50M+</div>
-                            <div class="text-gray-600">Transaction Volume</div>
-                        </div>
-                        <div class="text-center">
-                            <div class="text-3xl font-bold text-secondary mb-2">12</div>
-                            <div class="text-gray-600">Avg Days to Close</div>
-                        </div>
-                        <div class="text-center">
-                            <div class="text-3xl font-bold text-secondary mb-2">95%</div>
-                            <div class="text-gray-600">Client Satisfaction</div>
-                        </div>
-                    </div>
+                    <ul class="space-y-4 text-lg">
+                        <li class="flex items-start">
+                            <span class="text-brand-accent mr-3 mt-1">✅</span>
+                            <div>
+                                <span class="font-semibold text-brand-dark">Sell As-Is:</span> No need for repairs, cleaning, or staging. We buy your house in its current condition.
+                            </div>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="text-brand-accent mr-3 mt-1">✅</span>
+                            <div>
+                                <span class="font-semibold text-brand-dark">Zero Fees:</span> Skip the 6% realtor commissions, closing costs, and hidden fees. Our offer is the cash you get.
+                            </div>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="text-brand-accent mr-3 mt-1">✅</span>
+                            <div>
+                                <span class="font-semibold text-brand-dark">Guaranteed Closing:</span> No financing contingencies. Our cash offers mean a sure, fast closing.
+                            </div>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="text-brand-accent mr-3 mt-1">✅</span>
+                            <div>
+                                <span class="font-semibold text-brand-dark">Flexible Timeline:</span> Need to close fast? We can do it in as little as 7 days. Need more time? We'll work on your schedule.
+                            </div>
+                        </li>
+                    </ul>
                 </div>
-                <div>
-                    <div class="bg-white rounded-2xl shadow-xl p-8">
-                        <h3 class="text-2xl font-bold text-primary mb-6">How It Works</h3>
-                        <div class="space-y-4">
-                            <div class="flex items-start">
-                                <div class="bg-secondary text-white rounded-full w-8 h-8 flex items-center justify-center font-bold mr-4 mt-1">1</div>
-                                <div>
-                                    <h4 class="font-semibold mb-1">Property Evaluation</h4>
-                                    <p class="text-gray-600 text-sm">We assess your property's value and condition to provide a fair cash offer</p>
-                                </div>
-                            </div>
-                            <div class="flex items-start">
-                                <div class="bg-secondary text-white rounded-full w-8 h-8 flex items-center justify-center font-bold mr-4 mt-1">2</div>
-                                <div>
-                                    <h4 class="font-semibold mb-1">Cash Offer</h4>
-                                    <p class="text-gray-600 text-sm">Receive a competitive cash offer within 24-48 hours, no obligations</p>
-                                </div>
-                            </div>
-                            <div class="flex items-start">
-                                <div class="bg-secondary text-white rounded-full w-8 h-8 flex items-center justify-center font-bold mr-4 mt-1">3</div>
-                                <div>
-                                    <h4 class="font-semibold mb-1">Contract & Closing</h4>
-                                    <p class="text-gray-600 text-sm">Sign the contract and we handle all paperwork and closing logistics</p>
-                                </div>
-                            </div>
-                            <div class="flex items-start">
-                                <div class="bg-secondary text-white rounded-full w-8 h-8 flex items-center justify-center font-bold mr-4 mt-1">4</div>
-                                <div>
-                                    <h4 class="font-semibold mb-1">Get Paid</h4>
-                                    <p class="text-gray-600 text-sm">Close in as little as 30 days or less and get paid in cash at closing</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                <div class="lg:order-2 order-1 text-center">
+                    
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- Contact Section -->
-    <section id="contact" class="py-20 bg-white">
+    <section class="py-20 bg-white">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center mb-16">
-                <h2 class="text-3xl lg:text-4xl font-bold text-primary mb-4">
-                    Ready to Sell Your Property?
+                <h2 class="text-3xl sm:text-4xl font-bold text-brand-dark mb-4">
+                    What Our Clients Say
                 </h2>
-                <p class="text-xl text-gray-600 max-w-3xl mx-auto">
-                    Get a competitive cash offer today. Fast closing, no repairs required.
+                <p class="text-lg text-gray-600 max-w-3xl mx-auto">
+                    Don't just take our word for it. Read what happy homeowners have to say about their experience.
                 </p>
             </div>
-
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
-                <div>
-                    <form class="bg-gray-50 rounded-2xl p-8">
-                        <h3 class="text-2xl font-bold text-primary mb-6">Get Your Cash Offer</h3>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                            <div>
-                                <label class="block text-gray-700 text-sm font-semibold mb-2">First Name</label>
-                                <input type="text" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-secondary focus:border-transparent" placeholder="John">
-                            </div>
-                            <div>
-                                <label class="block text-gray-700 text-sm font-semibold mb-2">Last Name</label>
-                                <input type="text" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-secondary focus:border-transparent" placeholder="Doe">
-                            </div>
-                        </div>
-                        <div class="mb-4">
-                            <label class="block text-gray-700 text-sm font-semibold mb-2">Phone Number</label>
-                            <input type="tel" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-secondary focus:border-transparent" placeholder="(555) 123-4567">
-                        </div>
-                        <div class="mb-4">
-                            <label class="block text-gray-700 text-sm font-semibold mb-2">Email Address</label>
-                            <input type="email" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-secondary focus:border-transparent" placeholder="john@example.com">
-                        </div>
-                        <div class="mb-4">
-                            <label class="block text-gray-700 text-sm font-semibold mb-2">Property Address</label>
-                            <input type="text" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-secondary focus:border-transparent" placeholder="123 Main St, City, State 12345">
-                        </div>
-                        <div class="mb-6">
-                            <label class="block text-gray-700 text-sm font-semibold mb-2">Additional Details</label>
-                            <textarea rows="4" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-secondary focus:border-transparent" placeholder="Tell us about your property and timeline..."></textarea>
-                        </div>
-                        <button type="submit" class="w-full bg-accent text-white py-4 rounded-lg text-lg font-semibold hover:bg-green-600 transition-colors">
-                            Get My Cash Offer
-                        </button>
-                    </form>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="bg-brand-light p-8 rounded-xl shadow-md">
+                    <p class="text-gray-700 italic mb-4">"The process was so simple! I needed to sell my inherited property quickly, and Enriched Property Solutions made it happen with no stress and a great offer."</p>
+                    <div class="font-semibold text-brand-dark">- Sarah P.</div>
                 </div>
-
-                <div class="space-y-8">
-                    <div>
-                        <h3 class="text-2xl font-bold text-primary mb-6">Contact Information</h3>
-                        <div class="space-y-4">
-                            <div class="flex items-center">
-                                <div class="bg-secondary text-white rounded-full w-12 h-12 flex items-center justify-center mr-4">
-                                    📞
-                                </div>
-                                <div>
-                                    <div class="font-semibold">Phone</div>
-                                    <div class="text-gray-600">(555) 123-PROP</div>
-                                </div>
-                            </div>
-                            <div class="flex items-center">
-                                <div class="bg-secondary text-white rounded-full w-12 h-12 flex items-center justify-center mr-4">
-                                    ✉️
-                                </div>
-                                <div>
-                                    <div class="font-semibold">Email</div>
-                                    <div class="text-gray-600">offers@enrichedproperties.com</div>
-                                </div>
-                            </div>
-                            <div class="flex items-center">
-                                <div class="bg-secondary text-white rounded-full w-12 h-12 flex items-center justify-center mr-4">
-                                    📍
-                                </div>
-                                <div>
-                                    <div class="font-semibold">Office</div>
-                                    <div class="text-gray-600">Nationwide Service Area</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="bg-gray-50 rounded-2xl p-8">
-                        <h4 class="text-xl font-bold text-primary mb-4">Quick Facts</h4>
-                        <ul class="space-y-3 text-gray-600">
-                            <li class="flex items-center">
-                                <span class="text-accent mr-3">•</span>
-                                We buy properties in any condition
-                            </li>
-                            <li class="flex items-center">
-                                <span class="text-accent mr-3">•</span>
-                                No realtor commissions or fees
-                            </li>
-                            <li class="flex items-center">
-                                <span class="text-accent mr-3">•</span>
-                                Cash offers within 24-48 hours
-                            </li>
-                            <li class="flex items-center">
-                                <span class="text-accent mr-3">•</span>
-                                Close in as little as 30 days or less
-                            </li>
-                            <li class="flex items-center">
-                                <span class="text-accent mr-3">•</span>
-                                We handle all paperwork and closing costs
-                            </li>
-                        </ul>
-                    </div>
+                <div class="bg-brand-light p-8 rounded-xl shadow-md">
+                    <p class="text-gray-700 italic mb-4">"After my house sat on the market for months, I contacted Enriched. They gave me a fair cash offer and we closed in just two weeks. I couldn't be happier!"</p>
+                    <div class="font-semibold text-brand-dark">- Michael T.</div>
+                </div>
+                <div class="bg-brand-light p-8 rounded-xl shadow-md">
+                    <p class="text-gray-700 italic mb-4">"I was skeptical at first, but they were professional and transparent throughout the entire process. No hidden fees, no last-minute changes. Highly recommend!"</p>
+                    <div class="font-semibold text-brand-dark">- Emily R.</div>
                 </div>
             </div>
         </div>
     </section>
+    
+    <section id="contact" class="py-20 bg-brand-primary text-white">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h2 class="text-3xl sm:text-4xl font-bold mb-4">
+                Ready for Your Cash Offer?
+            </h2>
+            <p class="text-xl mb-8 text-gray-200">
+                It's fast, easy, and requires no commitment. Find out how much your property is worth today.
+            </p>
+            <a href="#contact-form" class="bg-brand-accent text-white px-12 py-4 rounded-full text-lg font-semibold hover:bg-green-600 transition-colors shadow-lg">
+                Get Started Now
+            </a>
+        </div>
+    </section>
 
-    <!-- Footer -->
-    <footer class="bg-primary text-white py-12">
+    <footer class="bg-brand-dark text-white py-12">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
                 <div class="col-span-1 md:col-span-2">
-                    <h3 class="text-2xl font-bold mb-4">Enriched Property Solutions LLC</h3>
+                    <h3 class="text-2xl font-bold mb-4">Enriched Property Solutions</h3>
                     <p class="text-gray-300 mb-4">
-                        We buy houses for cash, providing fast and hassle-free solutions for homeowners who need to sell quickly.
+                        A local company dedicated to providing fast, fair, and reliable cash offers to homeowners nationwide.
                     </p>
-                    <div class="flex space-x-4">
-                        <a href="#" class="text-gray-300 hover:text-white transition-colors">LinkedIn</a>
-                        <a href="#" class="text-gray-300 hover:text-white transition-colors">Facebook</a>
-                        <a href="#" class="text-gray-300 hover:text-white transition-colors">Twitter</a>
-                    </div>
                 </div>
                 <div>
                     <h4 class="text-lg font-semibold mb-4">Quick Links</h4>
                     <ul class="space-y-2 text-gray-300">
-                        <li><a href="#services" class="hover:text-white transition-colors">Services</a></li>
-                        <li><a href="#about" class="hover:text-white transition-colors">About</a></li>
-                        <li><a href="#contact" class="hover:text-white transition-colors">Contact</a></li>
-                        <li><button onclick="showLoginModal()" class="hover:text-white transition-colors">Dashboard</button></li>
+                        <li><a href="#services" class="hover:text-white transition-colors">How It Works</a></li>
+                        <li><a href="#about" class="hover:text-white transition-colors">Why Choose Us?</a></li>
+                        <li><a href="#contact" class="hover:text-white transition-colors">Get My Offer</a></li>
+                        <li><button onclick="showLoginModal()" class="hover:text-white transition-colors">Dashboard Login</button></li>
                     </ul>
                 </div>
                 <div>
-                    <h4 class="text-lg font-semibold mb-4">Legal</h4>
+                    <h4 class="text-lg font-semibold mb-4">Contact</h4>
                     <ul class="space-y-2 text-gray-300">
-                        <li><a href="#" class="hover:text-white transition-colors">Privacy Policy</a></li>
-                        <li><a href="#" class="hover:text-white transition-colors">Terms of Service</a></li>
-                        <li><a href="#" class="hover:text-white transition-colors">TCPA Compliance</a></li>
+                        <li>Phone: (555) 123-PROP</li>
+                        <li>Email: offers@enrichedproperties.com</li>
+                        <li>Service Area: Nationwide</li>
                     </ul>
                 </div>
             </div>
             <hr class="border-gray-600 my-8">
             <div class="text-center text-gray-300">
-                <p>&copy; 2024 Enriched Property Solutions LLC. All rights reserved.</p>
+                <p>&copy; 2024 Enriched Property Solutions. All rights reserved.</p>
             </div>
         </div>
     </footer>
 
-    <!-- Login Modal -->
     <div id="loginModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center">
         <div class="bg-white rounded-2xl p-8 m-4 w-full max-w-md">
             <div class="flex justify-between items-center mb-6">
-                <h3 class="text-2xl font-bold text-primary">Dashboard Login</h3>
-                <button onclick="hideLoginModal()" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+                <h3 class="text-2xl font-bold text-brand-dark">Dashboard Login</h3>
+                <button onclick="hideLoginModal()" class="text-gray-400 hover:text-gray-600 text-2xl font-light">&times;</button>
             </div>
             <form onsubmit="login(event)">
                 <div class="mb-4">
-                    <label class="block text-gray-700 text-sm font-semibold mb-2">Username</label>
-                    <input type="text" id="username" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-secondary focus:border-transparent" required>
+                    <label for="username" class="block text-gray-700 text-sm font-semibold mb-2">Username</label>
+                    <input type="text" id="username" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent" required>
                 </div>
                 <div class="mb-6">
-                    <label class="block text-gray-700 text-sm font-semibold mb-2">Password</label>
-                    <input type="password" id="password" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-secondary focus:border-transparent" required>
+                    <label for="password" class="block text-gray-700 text-sm font-semibold mb-2">Password</label>
+                    <input type="password" id="password" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent" required>
                 </div>
-                <button type="submit" class="w-full bg-secondary text-white py-3 rounded-lg font-semibold hover:bg-blue-600 transition-colors">
+                <button type="submit" class="w-full bg-brand-primary text-white py-3 rounded-lg font-semibold hover:bg-blue-800 transition-colors">
                     Login
                 </button>
             </form>
         </div>
     </div>
 
-    <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
     <script src="js/firebase-config.js"></script>
     <script src="js/main.js"></script>
+    <script>
+        // Modal functions
+        const loginModal = document.getElementById('loginModal');
+        const showLoginModal = () => loginModal.classList.remove('hidden');
+        const hideLoginModal = () => loginModal.classList.add('hidden');
+
+        // Mobile menu toggle
+        const mobileMenuButton = document.getElementById('mobile-menu-button');
+        const mobileMenu = document.getElementById('mobile-menu');
+        mobileMenuButton.addEventListener('click', () => {
+            mobileMenu.classList.toggle('hidden');
+        });
+    </script>
 </body>
 </html>
