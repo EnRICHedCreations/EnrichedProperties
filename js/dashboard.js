@@ -8285,7 +8285,7 @@ function saveCallLog() {
 
 let currentSmsLead = null;
 let smsTemplates = {
-    introduction: "Hi {firstName}, this is Rich. I buy houses for cash with a quick close and closing fees paid, and I'm interested in {propertyAddress}. Would you consider selling? You can reply directly to this message and I will respond, it is not automated or reply STOP to opt out.",
+    introduction: "Hi {firstName}, this is Rich from Enriched Property Solutions. I buy houses for cash with a quick close and closing fees paid, and I'm interested in {propertyAddress}. Would you consider selling? You can reply directly to this message and I will respond, it is not automated or reply STOP to opt out.",
     followup: "Hi {firstName}, it's Rich again about {propertyAddress}. Any thoughts on selling? I can close fast with cash.",
     cash_offer: "Hi {firstName}, Rich here. I can make you a cash offer on {propertyAddress} today. Want to chat for 2 minutes?",
     appointment: "Hi {firstName}, Rich here. I'd love to take a quick look at {propertyAddress}. When would work for you this week?"
