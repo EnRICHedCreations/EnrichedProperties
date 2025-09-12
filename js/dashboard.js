@@ -4776,70 +4776,7 @@ function updateSearchLinks() {
     }
 }
 
-// Open Redfin search with criteria
-function openRedfinSearch() {
-    const neighborhood = document.getElementById('neighborhood').value;
-    const priceRangeLow = document.getElementById('priceRangeLow').value || '';
-    const priceRangeHigh = document.getElementById('priceRangeHigh').value || '';
-    const minBeds = document.getElementById('minBeds').value || '';
-    const minBaths = document.getElementById('minBaths').value || '';
-    const minSqft = document.getElementById('minSqft').value || '';
-    
-    if (!neighborhood) {
-        alert('Please enter a neighborhood or zip code first, then click "Research Comparables"');
-        return;
-    }
-    
-    // Build Redfin URL
-    let redfinUrl = `https://www.redfin.com/city/${encodeURIComponent(neighborhood)}/filter/`;
-    
-    const redfinParams = [];
-    if (priceRangeLow) redfinParams.push(`min-price=${priceRangeLow}`);
-    if (priceRangeHigh) redfinParams.push(`max-price=${priceRangeHigh}`);
-    if (minBeds) redfinParams.push(`min-beds=${minBeds}`);
-    if (minBaths) redfinParams.push(`min-baths=${minBaths}`);
-    if (minSqft) redfinParams.push(`min-sqft=${minSqft}`);
-    
-    if (redfinParams.length > 0) {
-        redfinUrl += redfinParams.join(',');
-    }
-    
-    window.open(redfinUrl, '_blank');
-}
-
-// Open Homes.com search with criteria
-function openHomesSearch() {
-    const neighborhood = document.getElementById('neighborhood').value;
-    const priceRangeLow = document.getElementById('priceRangeLow').value || '';
-    const priceRangeHigh = document.getElementById('priceRangeHigh').value || '';
-    const minBeds = document.getElementById('minBeds').value || '';
-    const minBaths = document.getElementById('minBaths').value || '';
-    const minSqft = document.getElementById('minSqft').value || '';
-    
-    if (!neighborhood) {
-        alert('Please enter a neighborhood or zip code first, then click "Research Comparables"');
-        return;
-    }
-    
-    // Build Homes.com URL
-    let homesUrl = 'https://www.homes.com/for-sale/';
-    if (neighborhood) {
-        homesUrl += encodeURIComponent(neighborhood) + '/';
-    }
-    
-    const homesParams = new URLSearchParams();
-    if (priceRangeLow) homesParams.append('min_price', priceRangeLow);
-    if (priceRangeHigh) homesParams.append('max_price', priceRangeHigh);
-    if (minBeds) homesParams.append('min_beds', minBeds);
-    if (minBaths) homesParams.append('min_baths', minBaths);
-    if (minSqft) homesParams.append('min_sqft', minSqft);
-    
-    if (homesParams.toString()) {
-        homesUrl += '?' + homesParams.toString();
-    }
-    
-    window.open(homesUrl, '_blank');
-}
+// Removed other search functions - using only Zillow for comparables research
 
 // Clear all analysis data
 function clearAnalysis() {
