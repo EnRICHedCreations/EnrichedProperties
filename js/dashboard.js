@@ -4714,12 +4714,12 @@ function searchComparables() {
             <p class="text-xs"><strong>Beds/Baths:</strong> ${minBeds}+/${minBaths}+</p>
             <p class="text-xs"><strong>Min Sqft:</strong> ${formatNumber(minSqft)}</p>
             <hr class="my-2">
-            <p class="text-sm text-green-600">✅ <strong>Ready!</strong> Zillow and Realtor.com buttons above now have your search criteria pre-loaded.</p>
-            <p class="text-xs text-gray-500">Click the buttons above to open searches with your criteria automatically filled in.</p>
+            <p class="text-sm text-green-600">✅ <strong>Ready!</strong> Zillow button above now has your search criteria pre-loaded for sold properties.</p>
+            <p class="text-xs text-gray-500">Click the Zillow button to open sold property searches with exact bedroom matching.</p>
         </div>
     `;
     
-    showSuccessMessage('Search links updated! Click Zillow/Realtor.com buttons to open pre-populated searches.');
+    showSuccessMessage('Zillow search updated with exact bedroom matching for sold properties!');
 }
 
 // Update external search links with current criteria
@@ -4731,14 +4731,18 @@ function updateSearchLinks() {
     const minBaths = document.getElementById('minBaths').value || '';
     const minSqft = document.getElementById('minSqft').value || '';
     
-    // Build Zillow URL
-    let zillowUrl = 'https://www.zillow.com/homes/';
+    // Build Zillow URL for SOLD properties (comparables research)
+    let zillowUrl = 'https://www.zillow.com/homes/recently_sold/';
     if (neighborhood) {
         zillowUrl += encodeURIComponent(neighborhood) + '_rb/';
     }
     
-    // Add Zillow search parameters
+    // Add Zillow search parameters for sold homes
     const zillowParams = [];
+    
+    // Add sold status filter - this is key for getting sold properties
+    zillowParams.push('rs_z');
+    
     if (priceRangeLow && priceRangeHigh) {
         zillowParams.push(`${priceRangeLow}-${priceRangeHigh}_price`);
     } else if (priceRangeLow) {
@@ -4748,7 +4752,7 @@ function updateSearchLinks() {
     }
     
     if (minBeds) {
-        zillowParams.push(`${minBeds}-_beds`);
+        zillowParams.push(`${minBeds}-${minBeds}_beds`);
     }
     
     if (minBaths) {
@@ -4763,43 +4767,12 @@ function updateSearchLinks() {
         zillowUrl += zillowParams.join('/') + '/';
     }
     
-    // Build Realtor.com URL (simplified approach)
-    // Realtor.com search URLs are complex, so we'll use their generic search page with location
-    let realtorUrl = 'https://www.realtor.com/realestateandhomes-search';
-    
-    const realtorParams = new URLSearchParams();
-    
-    // Add location if provided
-    if (neighborhood) {
-        realtorParams.append('city', neighborhood);
-    }
-    
-    // Add all search parameters
-    if (priceRangeLow) realtorParams.append('price-min', priceRangeLow);
-    if (priceRangeHigh) realtorParams.append('price-max', priceRangeHigh);
-    if (minBeds) realtorParams.append('beds-min', minBeds);
-    if (minBaths) realtorParams.append('baths-min', minBaths);
-    if (minSqft) realtorParams.append('sqft-min', minSqft);
-    
-    // Default to for-sale listings
-    realtorParams.append('status', 'for-sale');
-    
-    if (realtorParams.toString()) {
-        realtorUrl += '?' + realtorParams.toString();
-    }
-    
-    // Update the button onclick handlers
+    // Update the button onclick handler for Zillow only
     const zillowButton = document.querySelector('button[onclick*="zillow.com"]');
-    const realtorButton = document.querySelector('button[onclick*="realtor.com"]');
     
     if (zillowButton) {
         zillowButton.setAttribute('onclick', `window.open('${zillowUrl}', '_blank')`);
         zillowButton.innerHTML = 'Open Zillow Search 🔗';
-    }
-    
-    if (realtorButton) {
-        realtorButton.setAttribute('onclick', `window.open('${realtorUrl}', '_blank')`);
-        realtorButton.innerHTML = 'Open Realtor.com Search 🔗';
     }
 }
 
@@ -8285,7 +8258,7 @@ function saveCallLog() {
 
 let currentSmsLead = null;
 let smsTemplates = {
-    introduction: "Hi {firstName}, this is Rich from Enriched Property Solutions. I buy houses for cash with a quick close and closing fees paid, and I'm interested in {propertyAddress}. Would you consider selling? You can reply directly to this message and I will respond, it is not automated or reply STOP to opt out.",
+    introduction: "Hi {firstName}, this is Rich. I buy houses and I'm interested in {propertyAddress}. Would you consider selling? (Reply STOP to opt out)",
     followup: "Hi {firstName}, it's Rich again about {propertyAddress}. Any thoughts on selling? I can close fast with cash.",
     cash_offer: "Hi {firstName}, Rich here. I can make you a cash offer on {propertyAddress} today. Want to chat for 2 minutes?",
     appointment: "Hi {firstName}, Rich here. I'd love to take a quick look at {propertyAddress}. When would work for you this week?"
