@@ -119,6 +119,9 @@ async function loadData() {
         contracts = await CloudStorage.loadData('Contracts', []);
         buyers = await CloudStorage.loadData('Buyers', []);
         wholesaleDeals = await CloudStorage.loadData('WholesaleDeals', []);
+
+        // Match buyers with wholesale deals after all data is loaded
+        matchBuyersWithDeals();
         
         // Set up real-time listeners for cross-device updates
         CloudStorage.onDataChange('Leads', (newLeads) => {
@@ -1009,6 +1012,8 @@ function addBuyer(event) {
 function loadWholesaleDeals() {
     CloudStorage.loadData('WholesaleDeals', []).then(deals => {
         wholesaleDeals = deals;
+        // Match buyers with deals after loading
+        matchBuyersWithDeals();
         updateDealsTable();
         updateDealsStats();
     }).catch(error => {
@@ -1492,6 +1497,109 @@ Enriched Properties Team`;
 
     hideContractGeneratorModal();
     showSuccessMessage(`Email opened for ${deal.matchedBuyerIds.length} matched buyers`);
+}
+
+// Function to match buyers with wholesale deals
+function matchBuyersWithDeals() {
+    let needsSave = false;
+
+    wholesaleDeals.forEach(deal => {
+        if (!deal.matchedBuyerIds) {
+            deal.matchedBuyerIds = findMatchingBuyersForDeal(deal);
+            needsSave = true;
+        }
+    });
+
+    // Save to cloud storage if any deals were updated
+    if (needsSave) {
+        CloudStorage.saveData('WholesaleDeals', wholesaleDeals)
+            .then(() => console.log('Updated wholesale deals with matched buyers'))
+            .catch(err => console.error('Error saving matched buyers:', err));
+    }
+}
+
+// Find matching buyers for a specific deal
+function findMatchingBuyersForDeal(deal) {
+    return buyers.filter(buyer => {
+        // Skip inactive buyers
+        if (buyer.status !== 'active' && buyer.status !== 'verified') {
+            return false;
+        }
+
+        // Price range check
+        if (deal.price) {
+            const dealPrice = parseInt(deal.price);
+            const buyerMin = parseInt(buyer.minBudget) || 0;
+            const buyerMax = parseInt(buyer.maxBudget) || Infinity;
+
+            if (dealPrice < buyerMin || dealPrice > buyerMax) {
+                return false;
+            }
+        }
+
+        // Property type check
+        if (deal.propertyType && buyer.propertyTypes) {
+            const buyerTypes = buyer.propertyTypes.toLowerCase().split(',').map(t => t.trim());
+            const dealType = deal.propertyType.toLowerCase();
+
+            if (!buyerTypes.includes(dealType) && !buyerTypes.includes('any') && !buyerTypes.includes('all')) {
+                // Check for type variations
+                const typeMatches = {
+                    'single family': ['house', 'sfr', 'single-family', 'residential'],
+                    'multi family': ['duplex', 'triplex', 'fourplex', 'multifamily', 'multi-family', 'apartment'],
+                    'condo': ['condominium', 'townhome', 'townhouse'],
+                    'mobile home': ['manufactured', 'trailer'],
+                    'commercial': ['retail', 'office', 'warehouse', 'industrial'],
+                    'land': ['lot', 'lots', 'vacant']
+                };
+
+                const variations = typeMatches[dealType] || [];
+                const hasMatch = variations.some(variation => buyerTypes.includes(variation));
+
+                if (!hasMatch) {
+                    return false;
+                }
+            }
+        }
+
+        // Location check - basic area matching
+        if (deal.propertyAddress && buyer.areas) {
+            const dealLocation = deal.propertyAddress.toLowerCase();
+            const buyerAreas = buyer.areas.toLowerCase().split(',').map(a => a.trim());
+
+            if (!buyerAreas.includes('nationwide') && !buyerAreas.includes('any')) {
+                const hasLocationMatch = buyerAreas.some(area =>
+                    dealLocation.includes(area) || area.includes('all')
+                );
+
+                if (!hasLocationMatch) {
+                    return false;
+                }
+            }
+        }
+
+        // Bedroom/bathroom requirements
+        if (deal.bedrooms && buyer.minBedrooms) {
+            if (parseInt(deal.bedrooms) < parseInt(buyer.minBedrooms)) {
+                return false;
+            }
+        }
+
+        if (deal.bathrooms && buyer.minBathrooms) {
+            if (parseInt(deal.bathrooms) < parseInt(buyer.minBathrooms)) {
+                return false;
+            }
+        }
+
+        // Square footage requirement
+        if (deal.sqft && buyer.minSquareFeet) {
+            if (parseInt(deal.sqft) < parseInt(buyer.minSquareFeet)) {
+                return false;
+            }
+        }
+
+        return true;
+    }).map(buyer => buyer.id);
 }
 
 // CSV Import Functions
