@@ -132,19 +132,20 @@
     <!-- Navigation -->
     <nav class="bg-white/95 backdrop-blur-sm shadow-lg fixed w-full z-50 transition-all duration-300">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between h-20 items-center">
+            <div class="flex justify-between min-h-16 sm:h-20 items-center py-2">
                 <div class="flex-shrink-0">
-                    <div class="flex items-center space-x-4">
-                        <div class="w-14 h-14 gradient-primary rounded-2xl flex items-center justify-center shadow-xl pulse-glow">
-                            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div class="flex items-center space-x-2 sm:space-x-4">
+                        <div class="w-10 h-10 sm:w-14 sm:h-14 gradient-primary rounded-2xl flex items-center justify-center shadow-xl pulse-glow flex-shrink-0">
+                            <svg class="w-6 h-6 sm:w-8 sm:h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
                             </svg>
                         </div>
-                        <div>
-                            <h1 class="font-playfair text-3xl font-bold gradient-text">
-                                Enriched Property Solutions
+                        <div class="min-w-0">
+                            <h1 class="font-playfair text-lg sm:text-2xl lg:text-3xl font-bold gradient-text leading-tight">
+                                <span class="sm:hidden">Enriched Props</span>
+                                <span class="hidden sm:inline">Enriched Property Solutions</span>
                             </h1>
-                            <p class="text-xs text-brand-primary uppercase tracking-wider font-semibold">Premium Cash Buyers</p>
+                            <p class="text-xs text-brand-primary uppercase tracking-wider font-semibold hidden sm:block">Premium Cash Buyers</p>
                         </div>
                     </div>
                 </div>
@@ -167,7 +168,7 @@
                     </a>
                 </div>
                 <div class="lg:hidden flex items-center">
-                    <button id="mobile-menu-button" class="text-gray-700 p-2 rounded-xl hover:bg-gray-100 focus:outline-none">
+                    <button id="mobile-menu-button" class="text-gray-700 p-3 rounded-xl hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-primary flex-shrink-0">
                         <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path>
                         </svg>
@@ -176,18 +177,18 @@
             </div>
         </div>
         <!-- Mobile Menu -->
-        <div id="mobile-menu" class="lg:hidden hidden bg-white/95 backdrop-blur-sm shadow-lg">
-            <div class="px-4 py-6 space-y-4">
-                <a href="#services" class="block text-gray-700 hover:text-brand-primary transition-colors font-semibold py-2">How It Works</a>
-                <a href="#about" class="block text-gray-700 hover:text-brand-primary transition-colors font-semibold py-2">Why Choose Us?</a>
-                <a href="#contact" class="block text-gray-700 hover:text-brand-primary transition-colors font-semibold py-2">Get My Offer</a>
-                <a href="buyers.html" class="block text-brand-primary hover:text-brand-primary-dark transition-colors font-semibold py-2">Buy Boxes</a>
+        <div id="mobile-menu" class="lg:hidden hidden bg-white/95 backdrop-blur-sm shadow-lg border-t">
+            <div class="px-4 py-4 space-y-1 max-h-screen overflow-y-auto">
+                <a href="#services" class="block text-gray-700 hover:text-brand-primary hover:bg-gray-50 transition-colors font-semibold py-3 px-2 rounded-lg">How It Works</a>
+                <a href="#about" class="block text-gray-700 hover:text-brand-primary hover:bg-gray-50 transition-colors font-semibold py-3 px-2 rounded-lg">Why Choose Us?</a>
+                <a href="#contact" class="block text-gray-700 hover:text-brand-primary hover:bg-gray-50 transition-colors font-semibold py-3 px-2 rounded-lg">Get My Offer</a>
+                <a href="buyers.html" class="block text-brand-primary hover:text-brand-primary-dark hover:bg-blue-50 transition-colors font-semibold py-3 px-2 rounded-lg">Buy Boxes</a>
             </div>
         </div>
     </nav>
 
     <!-- Hero Section -->
-    <section class="relative pt-32 pb-20 gradient-dark text-white overflow-hidden">
+    <section class="relative pt-20 sm:pt-32 pb-20 gradient-dark text-white overflow-hidden">
         <div class="absolute inset-0 pattern-overlay"></div>
         <div class="absolute inset-0 opacity-20">
             <div class="absolute top-20 left-10 w-40 h-40 gradient-primary rounded-full animate-float"></div>
@@ -1101,10 +1102,49 @@
         document.addEventListener('DOMContentLoaded', function() {
             const mobileMenuButton = document.getElementById('mobile-menu-button');
             const mobileMenu = document.getElementById('mobile-menu');
-            
+
             if (mobileMenuButton && mobileMenu) {
+                // Toggle menu on button click
                 mobileMenuButton.addEventListener('click', () => {
+                    const isHidden = mobileMenu.classList.contains('hidden');
                     mobileMenu.classList.toggle('hidden');
+
+                    // Update button icon
+                    const svg = mobileMenuButton.querySelector('svg path');
+                    if (svg) {
+                        if (isHidden) {
+                            // Show X icon when menu is open
+                            svg.setAttribute('d', 'M6 18L18 6M6 6l12 12');
+                        } else {
+                            // Show hamburger icon when menu is closed
+                            svg.setAttribute('d', 'M4 6h16M4 12h16m-7 6h7');
+                        }
+                    }
+                });
+
+                // Close menu when clicking on menu items
+                const menuLinks = mobileMenu.querySelectorAll('a');
+                menuLinks.forEach(link => {
+                    link.addEventListener('click', () => {
+                        mobileMenu.classList.add('hidden');
+                        // Reset button icon
+                        const svg = mobileMenuButton.querySelector('svg path');
+                        if (svg) {
+                            svg.setAttribute('d', 'M4 6h16M4 12h16m-7 6h7');
+                        }
+                    });
+                });
+
+                // Close menu when clicking outside
+                document.addEventListener('click', (e) => {
+                    if (!mobileMenuButton.contains(e.target) && !mobileMenu.contains(e.target)) {
+                        mobileMenu.classList.add('hidden');
+                        // Reset button icon
+                        const svg = mobileMenuButton.querySelector('svg path');
+                        if (svg) {
+                            svg.setAttribute('d', 'M4 6h16M4 12h16m-7 6h7');
+                        }
+                    }
                 });
             }
 
