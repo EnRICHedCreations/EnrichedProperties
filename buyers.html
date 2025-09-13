@@ -313,6 +313,21 @@
                 </div>
             </div>
 
+            <!-- Buy Boxes Results Count -->
+            <div class="mb-8">
+                <div class="flex items-center justify-between bg-gray-50 rounded-xl p-4 border border-gray-200">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-3 h-3 bg-green-500 rounded-full"></div>
+                        <span class="text-gray-700 font-medium">
+                            <span id="buyBoxCount">0</span> Active Buy Boxes Found
+                        </span>
+                    </div>
+                    <div class="text-sm text-gray-500">
+                        Updated in real-time
+                    </div>
+                </div>
+            </div>
+
             <!-- Buy Boxes Grid -->
             <div id="buy-boxes-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 <!-- Buy boxes will be loaded here dynamically -->
@@ -579,6 +594,10 @@
                 `;
 
                 // Load buyers from Firebase using CloudStorage
+                if (typeof CloudStorage === 'undefined') {
+                    throw new Error('CloudStorage not available');
+                }
+
                 const buyers = await CloudStorage.loadData('Buyers', []);
                 allBuyBoxes = buyers;
                 filteredBuyBoxes = [...buyers];
@@ -914,9 +933,16 @@
         }
 
         function updateResultCount(count) {
+            // Update the filter section count
             const resultCountElement = document.getElementById('resultCount');
             if (resultCountElement) {
                 resultCountElement.textContent = count;
+            }
+
+            // Update the main buy box count display
+            const buyBoxCountElement = document.getElementById('buyBoxCount');
+            if (buyBoxCountElement) {
+                buyBoxCountElement.textContent = count;
             }
         }
 
