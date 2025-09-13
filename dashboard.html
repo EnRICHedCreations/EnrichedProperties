@@ -52,6 +52,9 @@
                 <button onclick="showTab('buyers')" id="buyers-tab" class="tab-button whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm">
                     Buyers List
                 </button>
+                <button onclick="showTab('wholesale-deals')" id="wholesale-deals-tab" class="tab-button whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm">
+                    Wholesale Deals
+                </button>
                 <button onclick="showTab('contracts')" id="contracts-tab" class="tab-button whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm">
                     Contracts
                 </button>
@@ -1167,6 +1170,105 @@
             </div>
         </div>
 
+        <!-- Wholesale Deals Tab -->
+        <div id="wholesale-deals-content" class="tab-content hidden">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-900">Wholesale Deal Submissions</h2>
+                <div class="flex space-x-3">
+                    <select id="dealStatusFilter" class="border border-gray-300 rounded-lg px-3 py-2" onchange="filterDeals()">
+                        <option value="">All Statuses</option>
+                        <option value="pending">Pending Review</option>
+                        <option value="reviewed">Reviewed</option>
+                        <option value="matched">Matched with Buyers</option>
+                        <option value="closed">Closed</option>
+                        <option value="rejected">Rejected</option>
+                    </select>
+                    <button onclick="refreshDeals()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                        🔄 Refresh
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Deal Stats -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                        <div class="p-2 bg-blue-100 rounded-lg">
+                            <div class="text-blue-600 text-2xl">📥</div>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-600">Total Submissions</p>
+                            <p class="text-2xl font-semibold text-gray-900" id="totalDealsCount">0</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                        <div class="p-2 bg-yellow-100 rounded-lg">
+                            <div class="text-yellow-600 text-2xl">⏳</div>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-600">Pending Review</p>
+                            <p class="text-2xl font-semibold text-gray-900" id="pendingDealsCount">0</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                        <div class="p-2 bg-green-100 rounded-lg">
+                            <div class="text-green-600 text-2xl">🎯</div>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-600">Matched Deals</p>
+                            <p class="text-2xl font-semibold text-gray-900" id="matchedDealsCount">0</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                        <div class="p-2 bg-purple-100 rounded-lg">
+                            <div class="text-purple-600 text-2xl">✅</div>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-600">Closed Deals</p>
+                            <p class="text-2xl font-semibold text-gray-900" id="closedDealsCount">0</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Deals Table -->
+            <div class="bg-white rounded-lg shadow overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <div class="flex justify-between items-center">
+                        <h3 class="text-lg font-semibold text-gray-900">Deal Submissions</h3>
+                        <div class="flex space-x-4">
+                            <input type="text" id="dealSearch" placeholder="Search deals..." class="border border-gray-300 rounded-lg px-3 py-2" onkeyup="searchDeals(this.value)">
+                        </div>
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Property</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Details</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Wholesaler</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Matches</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Submitted</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dealsTableBody" class="bg-white divide-y divide-gray-200">
+                            <!-- Deals will be populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
         <!-- Contracts Tab -->
         <div id="contracts-content" class="tab-content hidden">
             <div class="flex justify-between items-center mb-6">
@@ -2183,12 +2285,124 @@
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                     <div>
-                        <label class="block text-gray-700 text-sm font-semibold mb-2">Preferred Areas</label>
-                        <input type="text" id="buyerAreas" class="w-full px-4 py-3 border border-gray-300 rounded-lg" placeholder="Dallas, Houston, Austin">
+                        <label class="block text-gray-700 text-sm font-semibold mb-2">Target State</label>
+                        <select id="buyerState" class="w-full px-4 py-3 border border-gray-300 rounded-lg">
+                            <option value="">Select State</option>
+                            <option value="Nationwide">Nationwide</option>
+                            <option value="Alabama">Alabama</option>
+                            <option value="Alaska">Alaska</option>
+                            <option value="Arizona">Arizona</option>
+                            <option value="Arkansas">Arkansas</option>
+                            <option value="California">California</option>
+                            <option value="Colorado">Colorado</option>
+                            <option value="Connecticut">Connecticut</option>
+                            <option value="Delaware">Delaware</option>
+                            <option value="Florida">Florida</option>
+                            <option value="Georgia">Georgia</option>
+                            <option value="Hawaii">Hawaii</option>
+                            <option value="Idaho">Idaho</option>
+                            <option value="Illinois">Illinois</option>
+                            <option value="Indiana">Indiana</option>
+                            <option value="Iowa">Iowa</option>
+                            <option value="Kansas">Kansas</option>
+                            <option value="Kentucky">Kentucky</option>
+                            <option value="Louisiana">Louisiana</option>
+                            <option value="Maine">Maine</option>
+                            <option value="Maryland">Maryland</option>
+                            <option value="Massachusetts">Massachusetts</option>
+                            <option value="Michigan">Michigan</option>
+                            <option value="Minnesota">Minnesota</option>
+                            <option value="Mississippi">Mississippi</option>
+                            <option value="Missouri">Missouri</option>
+                            <option value="Montana">Montana</option>
+                            <option value="Nebraska">Nebraska</option>
+                            <option value="Nevada">Nevada</option>
+                            <option value="New Hampshire">New Hampshire</option>
+                            <option value="New Jersey">New Jersey</option>
+                            <option value="New Mexico">New Mexico</option>
+                            <option value="New York">New York</option>
+                            <option value="North Carolina">North Carolina</option>
+                            <option value="North Dakota">North Dakota</option>
+                            <option value="Ohio">Ohio</option>
+                            <option value="Oklahoma">Oklahoma</option>
+                            <option value="Oregon">Oregon</option>
+                            <option value="Pennsylvania">Pennsylvania</option>
+                            <option value="Rhode Island">Rhode Island</option>
+                            <option value="South Carolina">South Carolina</option>
+                            <option value="South Dakota">South Dakota</option>
+                            <option value="Tennessee">Tennessee</option>
+                            <option value="Texas">Texas</option>
+                            <option value="Utah">Utah</option>
+                            <option value="Vermont">Vermont</option>
+                            <option value="Virginia">Virginia</option>
+                            <option value="Washington">Washington</option>
+                            <option value="West Virginia">West Virginia</option>
+                            <option value="Wisconsin">Wisconsin</option>
+                            <option value="Wyoming">Wyoming</option>
+                        </select>
                     </div>
                     <div>
-                        <label class="block text-gray-700 text-sm font-semibold mb-2">Property Types</label>
-                        <input type="text" id="buyerPropertyTypes" class="w-full px-4 py-3 border border-gray-300 rounded-lg" placeholder="SFH, Condos, Multi-family">
+                        <label class="block text-gray-700 text-sm font-semibold mb-2">Target Cities</label>
+                        <input type="text" id="buyerCities" class="w-full px-4 py-3 border border-gray-300 rounded-lg" placeholder="Dallas, Houston, Austin (optional)">
+                    </div>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-sm font-semibold mb-2">Property Types</label>
+                    <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+                        <label class="flex items-center space-x-2 cursor-pointer">
+                            <input type="checkbox" name="propertyTypes" value="Single Family" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                            <span class="text-sm">Single Family</span>
+                        </label>
+                        <label class="flex items-center space-x-2 cursor-pointer">
+                            <input type="checkbox" name="propertyTypes" value="Condo" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                            <span class="text-sm">Condo</span>
+                        </label>
+                        <label class="flex items-center space-x-2 cursor-pointer">
+                            <input type="checkbox" name="propertyTypes" value="Townhouse" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                            <span class="text-sm">Townhouse</span>
+                        </label>
+                        <label class="flex items-center space-x-2 cursor-pointer">
+                            <input type="checkbox" name="propertyTypes" value="Multi-Family" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                            <span class="text-sm">Multi-Family</span>
+                        </label>
+                        <label class="flex items-center space-x-2 cursor-pointer">
+                            <input type="checkbox" name="propertyTypes" value="Land" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                            <span class="text-sm">Land/Lots</span>
+                        </label>
+                        <label class="flex items-center space-x-2 cursor-pointer">
+                            <input type="checkbox" name="propertyTypes" value="Commercial" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                            <span class="text-sm">Commercial</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    <div>
+                        <label class="block text-gray-700 text-sm font-semibold mb-2">Min Bedrooms</label>
+                        <select id="buyerMinBedrooms" class="w-full px-4 py-3 border border-gray-300 rounded-lg">
+                            <option value="">Any</option>
+                            <option value="1">1+</option>
+                            <option value="2">2+</option>
+                            <option value="3">3+</option>
+                            <option value="4">4+</option>
+                            <option value="5">5+</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 text-sm font-semibold mb-2">Min Bathrooms</label>
+                        <select id="buyerMinBathrooms" class="w-full px-4 py-3 border border-gray-300 rounded-lg">
+                            <option value="">Any</option>
+                            <option value="1">1+</option>
+                            <option value="1.5">1.5+</option>
+                            <option value="2">2+</option>
+                            <option value="2.5">2.5+</option>
+                            <option value="3">3+</option>
+                            <option value="3.5">3.5+</option>
+                            <option value="4">4+</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 text-sm font-semibold mb-2">Min Square Feet</label>
+                        <input type="number" id="buyerMinSquareFeet" class="w-full px-4 py-3 border border-gray-300 rounded-lg" placeholder="1000" min="0">
                     </div>
                 </div>
                 <div class="mb-6">
