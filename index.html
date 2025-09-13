@@ -130,7 +130,7 @@
 <body class="font-inter bg-brand-light text-brand-dark antialiased">
 
     <!-- Navigation -->
-    <nav class="bg-white/95 backdrop-blur-sm shadow-lg fixed w-full z-50 transition-all duration-300">
+    <nav class="bg-white/95 backdrop-blur-sm shadow-lg fixed w-full transition-all duration-300" style="z-index: 50;">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between min-h-16 sm:h-20 items-center py-2">
                 <div class="flex-shrink-0">
@@ -167,7 +167,7 @@
                     </a>
                 </div>
                 <div class="lg:hidden flex items-center">
-                    <button id="mobile-menu-button" class="text-gray-700 p-3 rounded-xl hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-primary flex-shrink-0">
+                    <button id="mobile-menu-button" class="text-gray-700 p-3 rounded-xl hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-primary flex-shrink-0" style="pointer-events: auto !important;">
                         <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
                         </svg>
@@ -176,7 +176,7 @@
             </div>
         </div>
         <!-- Mobile Menu -->
-        <div id="mobile-menu" class="lg:hidden hidden bg-white/95 backdrop-blur-sm shadow-lg border-t">
+        <div id="mobile-menu" class="lg:hidden hidden bg-white/95 backdrop-blur-sm shadow-lg border-t" style="z-index: 40;">
             <div class="px-4 py-4 space-y-1 max-h-screen overflow-y-auto">
                 <a href="#services" class="block text-gray-700 hover:text-brand-primary hover:bg-gray-50 transition-colors font-semibold py-3 px-2 rounded-lg">How It Works</a>
                 <a href="#about" class="block text-gray-700 hover:text-brand-primary hover:bg-gray-50 transition-colors font-semibold py-3 px-2 rounded-lg">Why Choose Us?</a>
@@ -1097,56 +1097,55 @@
             }
         });
 
-        // Mobile menu toggle
+        // Simple mobile menu toggle with more debugging
         document.addEventListener('DOMContentLoaded', function() {
             const mobileMenuButton = document.getElementById('mobile-menu-button');
             const mobileMenu = document.getElementById('mobile-menu');
 
+            console.log('Mobile menu elements:', mobileMenuButton, mobileMenu);
+
             if (mobileMenuButton && mobileMenu) {
-                // Toggle menu on button click
-                mobileMenuButton.addEventListener('click', () => {
-                    const isHidden = mobileMenu.classList.contains('hidden');
+                let clickCount = 0;
+
+                // Simple toggle function with detailed logging
+                mobileMenuButton.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+
+                    clickCount++;
+                    console.log('Menu button clicked #' + clickCount);
+                    console.log('Button element:', e.target);
+                    console.log('Button computed style:', window.getComputedStyle(mobileMenuButton).pointerEvents);
+                    console.log('Menu currently has classes:', mobileMenu.className);
+                    console.log('Menu is hidden?', mobileMenu.classList.contains('hidden'));
+
                     mobileMenu.classList.toggle('hidden');
 
-                    // Update button icon
-                    const svg = mobileMenuButton.querySelector('svg path');
-                    if (svg) {
-                        if (isHidden) {
-                            // Show X icon when menu is open
-                            svg.setAttribute('d', 'M6 18L18 6M6 6l12 12');
-                        } else {
-                            // Show hamburger icon when menu is closed
-                            svg.setAttribute('d', 'M4 6h16M4 12h16M4 18h16');
-                        }
-                    }
+                    // Force pointer events to stay enabled
+                    mobileMenuButton.style.pointerEvents = 'auto';
+
+                    console.log('After toggle - Menu classes:', mobileMenu.className);
+                    console.log('After toggle - Menu is hidden?', mobileMenu.classList.contains('hidden'));
+
+                    // Force a small delay to see if timing is an issue
+                    setTimeout(() => {
+                        console.log('Button still exists?', document.getElementById('mobile-menu-button'));
+                        // Ensure pointer events are still enabled
+                        mobileMenuButton.style.pointerEvents = 'auto';
+                    }, 100);
                 });
 
                 // Close menu when clicking on menu items
                 const menuLinks = mobileMenu.querySelectorAll('a');
+                console.log('Found menu links:', menuLinks.length);
+
                 menuLinks.forEach(link => {
                     link.addEventListener('click', () => {
+                        console.log('Menu link clicked'); // Debug log
                         mobileMenu.classList.add('hidden');
-                        // Reset button icon
-                        const svg = mobileMenuButton.querySelector('svg path');
-                        if (svg) {
-                            svg.setAttribute('d', 'M4 6h16M4 12h16M4 18h16');
-                        }
                     });
                 });
-
-                // Close menu when clicking outside
-                document.addEventListener('click', (e) => {
-                    if (!mobileMenuButton.contains(e.target) && !mobileMenu.contains(e.target)) {
-                        mobileMenu.classList.add('hidden');
-                        // Reset button icon
-                        const svg = mobileMenuButton.querySelector('svg path');
-                        if (svg) {
-                            svg.setAttribute('d', 'M4 6h16M4 12h16M4 18h16');
-                        }
-                    }
-                });
             }
-
         });
     </script>
 </body>
