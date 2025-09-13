@@ -121,47 +121,49 @@
 
 <body class="font-inter bg-brand-light">
     <!-- Navigation -->
-    <nav class="fixed w-full z-50 bg-white/95 backdrop-blur-sm border-b border-gray-100">
+    <nav class="bg-white/95 backdrop-blur-sm shadow-lg fixed w-full transition-all duration-300" style="z-index: 50;">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between items-center h-20">
+            <div class="flex justify-between min-h-16 sm:h-20 items-center py-2">
                 <div class="flex-shrink-0">
-                    <a href="index.html" class="flex items-center space-x-3">
-                        <div class="w-12 h-12 gradient-primary rounded-xl flex items-center justify-center shadow-lg">
-                            <span class="text-white font-bold text-xl">E</span>
+                    <div class="flex items-center space-x-2 sm:space-x-4">
+                        <div class="w-10 h-10 sm:w-14 sm:h-14 gradient-primary rounded-2xl flex items-center justify-center shadow-xl pulse-glow flex-shrink-0">
+                            <svg class="w-6 h-6 sm:w-8 sm:h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+                            </svg>
                         </div>
-                        <div>
-                            <h1 class="text-2xl font-playfair font-bold text-brand-dark leading-none">Enriched Property Solutions</h1>
-                            <p class="text-sm text-gray-600 leading-none font-medium">Premium Cash Home Buyers</p>
+                        <div class="min-w-0">
+                            <a href="index.html">
+                                <h1 class="font-playfair text-base sm:text-2xl lg:text-3xl font-bold gradient-text leading-tight">
+                                    Enriched Property Solutions
+                                </h1>
+                                <p class="text-xs text-brand-primary uppercase tracking-wider font-semibold hidden sm:block">Premium Cash Buyers</p>
+                            </a>
                         </div>
-                    </a>
+                    </div>
                 </div>
                 
-                <!-- Desktop Navigation -->
-                <div class="hidden md:flex space-x-8 items-center">
-                    <a href="index.html#services" class="text-gray-700 hover:text-brand-primary transition-all duration-300 font-semibold text-lg relative group">
+                <div class="hidden lg:flex space-x-6 items-center">
+                    <a href="index.html#services" class="text-gray-700 hover:text-brand-primary transition-all duration-300 font-semibold text-base relative group">
                         How It Works
                         <span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-brand-primary transition-all duration-300 group-hover:w-full"></span>
                     </a>
-                    <a href="buyers.html" class="text-brand-primary font-semibold text-lg relative group">
-                        Buy Boxes
-                        <span class="absolute -bottom-1 left-0 w-full h-0.5 bg-brand-primary"></span>
-                    </a>
-                    <a href="index.html#about" class="text-gray-700 hover:text-brand-primary transition-all duration-300 font-semibold text-lg relative group">
+                    <a href="index.html#about" class="text-gray-700 hover:text-brand-primary transition-all duration-300 font-semibold text-base relative group">
                         Why Choose Us?
                         <span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-brand-primary transition-all duration-300 group-hover:w-full"></span>
                     </a>
-                    <a href="index.html#contact" class="gradient-primary text-white px-8 py-3 rounded-xl font-semibold text-lg hover:shadow-lg transform hover:-translate-y-1 transition-all duration-300 pulse-glow">
+                    <a href="index.html#contact" class="text-gray-700 hover:text-brand-primary transition-all duration-300 font-semibold text-base relative group">
                         Get My Offer
+                        <span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-brand-primary transition-all duration-300 group-hover:w-full"></span>
                     </a>
-                    <button onclick="showLoginModal()" class="text-brand-primary hover:text-brand-primary-dark transition-colors font-semibold text-lg">
-                        Login
-                    </button>
+                    <a href="buyers.html" class="text-brand-primary hover:text-brand-primary-dark transition-all duration-300 font-semibold text-base relative group">
+                        Buy Boxes
+                        <span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-brand-primary-dark transition-all duration-300 group-hover:w-full"></span>
+                    </a>
                 </div>
                 
-                <!-- Mobile menu button -->
-                <div class="md:hidden">
-                    <button id="mobile-menu-button" class="text-gray-700 hover:text-brand-primary p-2">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="lg:hidden flex items-center">
+                    <button id="mobile-menu-button" class="text-gray-700 p-3 rounded-xl hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-primary flex-shrink-0" style="pointer-events: auto !important;">
+                        <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
                         </svg>
                     </button>
@@ -170,19 +172,18 @@
         </div>
         
         <!-- Mobile Menu -->
-        <div id="mobile-menu" class="md:hidden hidden bg-white/95 backdrop-blur-sm shadow-lg">
-            <div class="px-4 py-6 space-y-4">
-                <a href="index.html#services" class="block text-gray-700 hover:text-brand-primary transition-colors font-semibold py-2">How It Works</a>
-                <a href="buyers.html" class="block text-brand-primary font-semibold py-2">Buy Boxes</a>
-                <a href="index.html#about" class="block text-gray-700 hover:text-brand-primary transition-colors font-semibold py-2">Why Choose Us?</a>
-                <a href="index.html#contact" class="block text-gray-700 hover:text-brand-primary transition-colors font-semibold py-2">Get My Offer</a>
-                <button onclick="showLoginModal()" class="w-full gradient-primary text-white px-6 py-3 rounded-xl font-semibold mt-4">Dashboard Login</button>
+        <div id="mobile-menu" class="lg:hidden hidden bg-white/95 backdrop-blur-sm shadow-lg border-t" style="z-index: 40;">
+            <div class="px-4 py-4 space-y-1 max-h-screen overflow-y-auto">
+                <a href="index.html#services" class="block text-gray-700 hover:text-brand-primary hover:bg-gray-50 transition-colors font-semibold py-3 px-2 rounded-lg">How It Works</a>
+                <a href="index.html#about" class="block text-gray-700 hover:text-brand-primary hover:bg-gray-50 transition-colors font-semibold py-3 px-2 rounded-lg">Why Choose Us?</a>
+                <a href="index.html#contact" class="block text-gray-700 hover:text-brand-primary hover:bg-gray-50 transition-colors font-semibold py-3 px-2 rounded-lg">Get My Offer</a>
+                <a href="buyers.html" class="block text-brand-primary hover:text-brand-primary-dark hover:bg-blue-50 transition-colors font-semibold py-3 px-2 rounded-lg">Buy Boxes</a>
             </div>
         </div>
     </nav>
 
     <!-- Hero Section -->
-    <section class="relative pt-32 pb-16 bg-gradient-to-br from-indigo-50 via-white to-blue-50/30 overflow-hidden">
+    <section class="relative pt-20 sm:pt-32 pb-16 bg-gradient-to-br from-indigo-50 via-white to-blue-50/30 overflow-hidden">
         <div class="absolute inset-0">
             <div class="absolute top-1/3 left-0 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl -translate-x-48"></div>
             <div class="absolute bottom-1/3 right-0 w-96 h-96 bg-indigo-500/5 rounded-full blur-3xl translate-x-48"></div>
@@ -506,14 +507,53 @@
         let filteredBuyBoxes = [];
         let currentBuyerTypeFilter = 'all';
 
-        // Mobile menu toggle
+        // Mobile menu toggle - fixed version from index.html
         document.addEventListener('DOMContentLoaded', function() {
             const mobileMenuButton = document.getElementById('mobile-menu-button');
             const mobileMenu = document.getElementById('mobile-menu');
-            
+
+            console.log('Mobile menu elements:', mobileMenuButton, mobileMenu);
+
             if (mobileMenuButton && mobileMenu) {
-                mobileMenuButton.addEventListener('click', () => {
+                let clickCount = 0;
+
+                // Simple toggle function with detailed logging
+                mobileMenuButton.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+
+                    clickCount++;
+                    console.log('Menu button clicked #' + clickCount);
+                    console.log('Button element:', e.target);
+                    console.log('Button computed style:', window.getComputedStyle(mobileMenuButton).pointerEvents);
+                    console.log('Menu currently has classes:', mobileMenu.className);
+                    console.log('Menu is hidden?', mobileMenu.classList.contains('hidden'));
+
                     mobileMenu.classList.toggle('hidden');
+
+                    // Force pointer events to stay enabled
+                    mobileMenuButton.style.pointerEvents = 'auto';
+
+                    console.log('After toggle - Menu classes:', mobileMenu.className);
+                    console.log('After toggle - Menu is hidden?', mobileMenu.classList.contains('hidden'));
+
+                    // Force a small delay to see if timing is an issue
+                    setTimeout(() => {
+                        console.log('Button still exists?', document.getElementById('mobile-menu-button'));
+                        // Ensure pointer events are still enabled
+                        mobileMenuButton.style.pointerEvents = 'auto';
+                    }, 100);
+                });
+
+                // Close menu when clicking on menu items
+                const menuLinks = mobileMenu.querySelectorAll('a');
+                console.log('Found menu links:', menuLinks.length);
+
+                menuLinks.forEach(link => {
+                    link.addEventListener('click', () => {
+                        console.log('Menu link clicked'); // Debug log
+                        mobileMenu.classList.add('hidden');
+                    });
                 });
             }
 
