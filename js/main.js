@@ -133,17 +133,29 @@ async function storeLead(leadData) {
     }
 }
 
-// Mobile menu functionality
+// Mobile menu functionality - Skip if mobile menu already exists
 function setupMobileMenu() {
-    // Add mobile menu toggle if needed
+    // Check if mobile menu already exists in HTML
+    const existingMobileMenu = document.getElementById('mobile-menu-button');
+    if (existingMobileMenu) {
+        // Mobile menu already handled by HTML/CSS, skip creating duplicate
+        return;
+    }
+
+    // Legacy mobile menu code for pages without built-in mobile menu
     const nav = document.querySelector('nav');
-    const navItems = nav.querySelector('.flex.items-center.space-x-8');
-    
+    const navItems = nav ? nav.querySelector('.flex.items-center.space-x-8') : null;
+
+    if (!nav || !navItems) {
+        // Navigation structure not found, skip mobile menu setup
+        return;
+    }
+
     // Check if screen is mobile size
     if (window.innerWidth <= 768) {
         addMobileMenuToggle(nav, navItems);
     }
-    
+
     // Handle window resize
     window.addEventListener('resize', function() {
         if (window.innerWidth <= 768) {
@@ -160,8 +172,10 @@ function setupMobileMenu() {
     });
 }
 
-// Add mobile menu toggle
+// Add mobile menu toggle (legacy function for older pages)
 function addMobileMenuToggle(nav, navItems) {
+    if (!nav || !navItems) return;
+
     const toggle = document.createElement('button');
     toggle.className = 'mobile-menu-toggle md:hidden text-gray-700 hover:text-secondary';
     toggle.innerHTML = `
@@ -169,18 +183,21 @@ function addMobileMenuToggle(nav, navItems) {
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
         </svg>
     `;
-    
+
     toggle.addEventListener('click', function() {
         navItems.classList.toggle('hidden');
         navItems.classList.toggle('mobile-menu-open');
-        
+
         if (navItems.classList.contains('mobile-menu-open')) {
             navItems.className = 'mobile-menu-open absolute top-16 left-0 right-0 bg-white shadow-lg p-4 flex flex-col space-y-4';
         }
     });
-    
-    nav.querySelector('.flex.justify-between').appendChild(toggle);
-    navItems.classList.add('hidden');
+
+    const container = nav.querySelector('.flex.justify-between');
+    if (container) {
+        container.appendChild(toggle);
+        navItems.classList.add('hidden');
+    }
 }
 
 // Login modal functions
