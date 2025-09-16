@@ -1071,15 +1071,22 @@
                 <div class="px-6 py-4 border-b border-gray-200">
                     <div class="flex justify-between items-center">
                         <div class="flex space-x-4">
-                            <select class="border border-gray-300 rounded-lg px-3 py-2">
-                                <option>All Types</option>
-                                <option>Hedge Fund</option>
-                                <option>Private Investor</option>
-                                <option>Fix & Flip</option>
-                                <option>Buy & Hold</option>
-                                <option>Wholesaler</option>
+                            <select id="buyerTypeFilter" class="border border-gray-300 rounded-lg px-3 py-2" onchange="searchBuyers()">
+                                <option value="">All Types</option>
+                                <option value="hedge-fund">Hedge Fund</option>
+                                <option value="private-investor">Private Investor</option>
+                                <option value="fix-flip">Fix & Flip</option>
+                                <option value="buy-hold">Buy & Hold</option>
+                                <option value="wholesaler">Wholesaler</option>
                             </select>
-                            <input type="text" placeholder="Search buyers..." class="border border-gray-300 rounded-lg px-3 py-2 w-64">
+                            <div class="relative">
+                                <input type="text" id="buyerSearchInput" placeholder="Search buyers..." class="border border-gray-300 rounded-lg px-3 py-2 w-64 pr-10" oninput="searchBuyers()">
+                                <button type="button" onclick="clearBuyerSearch()" class="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600" title="Clear search">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                    </svg>
+                                </button>
+                            </div>
                         </div>
                         <div class="flex space-x-2">
                             <button onclick="getBuyerPerformanceReport()" class="px-4 py-2 text-sm bg-green-100 text-green-700 rounded-lg hover:bg-green-200">Performance Report</button>
