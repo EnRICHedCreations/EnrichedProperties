@@ -700,26 +700,83 @@ function updateAnalytics() {
     // This could be expanded to include dynamic charts
 }
 
+// Search buyers functionality
+function searchBuyers() {
+    const searchInput = document.getElementById('buyerSearchInput');
+    const typeFilter = document.getElementById('buyerTypeFilter');
+
+    if (!searchInput || !typeFilter) {
+        updateBuyersTable(); // Fallback to show all buyers
+        return;
+    }
+
+    const searchTerm = searchInput.value.toLowerCase().trim();
+    const selectedType = typeFilter.value;
+
+    let filteredBuyers = buyers;
+
+    // Filter by type if selected
+    if (selectedType) {
+        filteredBuyers = filteredBuyers.filter(buyer => buyer.type === selectedType);
+    }
+
+    // Filter by search term if provided
+    if (searchTerm) {
+        filteredBuyers = filteredBuyers.filter(buyer => {
+            const searchableFields = [
+                buyer.name || '',
+                buyer.company || '',
+                buyer.email || '',
+                buyer.phone || '',
+                buyer.city || buyer.address?.city || '',
+                buyer.state || buyer.address?.state || '',
+                buyer.preferredAreas || '',
+                buyer.propertyTypes || '',
+                buyer.status || ''
+            ];
+
+            return searchableFields.some(field =>
+                field.toLowerCase().includes(searchTerm)
+            );
+        });
+    }
+
+    updateBuyersTable(filteredBuyers);
+}
+
+// Clear search filters
+function clearBuyerSearch() {
+    const searchInput = document.getElementById('buyerSearchInput');
+    const typeFilter = document.getElementById('buyerTypeFilter');
+
+    if (searchInput) searchInput.value = '';
+    if (typeFilter) typeFilter.value = '';
+
+    updateBuyersTable(); // Show all buyers
+}
+
 // Update buyers table
-function updateBuyersTable() {
+function updateBuyersTable(buyersToDisplay = null) {
+    // Use provided buyers or default to all buyers
+    const displayBuyers = buyersToDisplay || buyers;
     // Update buyer performance scores before displaying
     updateBuyerPerformance();
     
     const tbody = document.getElementById('buyersTableBody');
     if (!tbody) return;
-    
-    if (buyers.length === 0) {
+
+    if (displayBuyers.length === 0) {
         tbody.innerHTML = `
             <tr>
                 <td colspan="9" class="px-6 py-8 text-center text-gray-500">
                     <div class="text-4xl mb-2">🏦</div>
-                    <p class="text-sm">No buyers yet</p>
-                    <p class="text-xs">Add your first buyer to start building your network</p>
+                    <p class="text-sm">${buyers.length === 0 ? 'No buyers yet' : 'No buyers match your search'}</p>
+                    <p class="text-xs">${buyers.length === 0 ? 'Add your first buyer to start building your network' : 'Try adjusting your search criteria'}</p>
                 </td>
             </tr>
         `;
     } else {
-        tbody.innerHTML = buyers.map(buyer => `
+        tbody.innerHTML = displayBuyers.map(buyer => `
             <tr class="table-row">
                 <td class="px-4 py-4">
                     <div class="text-sm font-medium text-gray-900">${buyer.name}</div>
