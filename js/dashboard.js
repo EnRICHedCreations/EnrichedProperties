@@ -296,7 +296,7 @@ function showTab(tabName) {
 
 // Update dashboard stats
 function updateDashboardStats() {
-    const activeLeadsCount = leads.filter(lead => ['new', 'contacted', 'qualified'].includes(lead.status)).length;
+    const activeLeadsCount = leads.filter(lead => ['new', 'to_contact', 'contacted', 'qualified'].includes(lead.status)).length;
     const dealsClosedCount = leads.filter(lead => lead.status === 'closed').length;
     const pendingCount = leads.filter(lead => lead.status === 'under-contract').length;
     const totalVolume = contracts.reduce((sum, contract) => sum + (contract.purchasePrice || 0), 0);
@@ -423,6 +423,7 @@ function updateLeadsTable() {
 // Update pipeline statistics
 function updatePipelineStats() {
     document.getElementById('newLeadsCount').textContent = leads.filter(l => l.status === 'new').length;
+    document.getElementById('toContactCount').textContent = leads.filter(l => l.status === 'to_contact').length;
     document.getElementById('contactedCount').textContent = leads.filter(l => l.status === 'contacted').length;
     document.getElementById('qualifiedCount').textContent = leads.filter(l => l.status === 'qualified').length;
     document.getElementById('underContractCount').textContent = leads.filter(l => l.status === 'under_contract').length;
@@ -432,10 +433,11 @@ function updatePipelineStats() {
 
 // Update Kanban pipeline view
 function updateKanbanView() {
-    const stages = ['new', 'contacted', 'qualified', 'under_contract', 'closed', 'dead'];
-    
+    const stages = ['new', 'to_contact', 'contacted', 'qualified', 'under_contract', 'closed', 'dead'];
+
     stages.forEach(stage => {
-        const columnId = stage === 'new' ? 'newLeadsColumn' : 
+        const columnId = stage === 'new' ? 'newLeadsColumn' :
+                        stage === 'to_contact' ? 'toContactColumn' :
                         stage === 'contacted' ? 'contactedColumn' :
                         stage === 'qualified' ? 'qualifiedColumn' :
                         stage === 'under_contract' ? 'underContractColumn' :
@@ -529,6 +531,7 @@ function updateListView() {
                 <td class="px-6 py-4 whitespace-nowrap">
                     <select onchange="updateLeadStatus('${lead.id}', this.value)" class="text-xs border border-gray-300 rounded px-2 py-1 status-${lead.status}">
                         <option value="new" ${lead.status === 'new' ? 'selected' : ''}>New</option>
+                        <option value="to_contact" ${lead.status === 'to_contact' ? 'selected' : ''}>To Contact</option>
                         <option value="contacted" ${lead.status === 'contacted' ? 'selected' : ''}>Contacted</option>
                         <option value="qualified" ${lead.status === 'qualified' ? 'selected' : ''}>Qualified</option>
                         <option value="under_contract" ${lead.status === 'under_contract' ? 'selected' : ''}>Under Contract</option>
@@ -2196,6 +2199,7 @@ function editLead(id) {
                                 <label class="block text-sm font-medium text-gray-700">Status</label>
                                 <select id="editLeadStatus" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                                     <option value="new" ${lead.status === 'new' ? 'selected' : ''}>New</option>
+                                    <option value="to_contact" ${lead.status === 'to_contact' ? 'selected' : ''}>To Contact</option>
                                     <option value="contacted" ${lead.status === 'contacted' ? 'selected' : ''}>Contacted</option>
                                     <option value="qualified" ${lead.status === 'qualified' ? 'selected' : ''}>Qualified</option>
                                     <option value="under_contract" ${lead.status === 'under_contract' ? 'selected' : ''}>Under Contract</option>
@@ -8935,7 +8939,7 @@ function saveCallLog() {
                 lead.status = 'qualified';
                 break;
             case 'callback':
-                lead.status = 'contacted';
+                lead.status = 'to_contact';
                 break;
             case 'not_interested':
             case 'do_not_call':
@@ -9283,7 +9287,7 @@ function logSmsActivity(lead, message, status, service) {
     lead.notes = (lead.notes || '') + '\n' + logEntry;
     
     // Update lead status if appropriate
-    if (status === 'sent' && lead.status === 'new') {
+    if (status === 'sent' && (lead.status === 'new' || lead.status === 'to_contact')) {
         lead.status = 'contacted';
     }
     
