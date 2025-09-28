@@ -365,10 +365,14 @@
             </div>
 
             <!-- Pipeline Overview Stats -->
-            <div class="grid grid-cols-2 md:grid-cols-6 gap-4 mb-8">
+            <div class="grid grid-cols-2 md:grid-cols-7 gap-4 mb-8">
                 <div class="bg-white rounded-lg shadow p-4 text-center">
                     <div class="text-2xl font-bold text-blue-600" id="newLeadsCount">0</div>
                     <div class="text-sm text-gray-600">New Leads</div>
+                </div>
+                <div class="bg-white rounded-lg shadow p-4 text-center">
+                    <div class="text-2xl font-bold text-indigo-600" id="toContactCount">0</div>
+                    <div class="text-sm text-gray-600">To Contact</div>
                 </div>
                 <div class="bg-white rounded-lg shadow p-4 text-center">
                     <div class="text-2xl font-bold text-yellow-600" id="contactedCount">0</div>
@@ -403,7 +407,7 @@
                 </div>
 
                 <!-- Kanban Pipeline -->
-                <div id="kanbanView" class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                <div id="kanbanView" class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-7 gap-4">
                     <!-- New Leads -->
                     <div class="bg-white rounded-lg shadow-sm">
                         <div class="bg-blue-500 text-white px-4 py-3 rounded-t-lg">
@@ -411,6 +415,17 @@
                             <div class="text-sm opacity-90">Just imported/added</div>
                         </div>
                         <div class="p-3 space-y-3 min-h-64" id="newLeadsColumn" ondrop="dropLead(event, 'new')" ondragover="allowDrop(event)">
+                            <!-- Lead cards will be populated here -->
+                        </div>
+                    </div>
+
+                    <!-- To Contact -->
+                    <div class="bg-white rounded-lg shadow-sm">
+                        <div class="bg-indigo-500 text-white px-4 py-3 rounded-t-lg">
+                            <h4 class="font-semibold">🎯 To Contact</h4>
+                            <div class="text-sm opacity-90">Ready to reach out</div>
+                        </div>
+                        <div class="p-3 space-y-3 min-h-64" id="toContactColumn" ondrop="dropLead(event, 'to_contact')" ondragover="allowDrop(event)">
                             <!-- Lead cards will be populated here -->
                         </div>
                     </div>
@@ -480,6 +495,7 @@
                                     <select id="statusFilter" onchange="filterLeads()" class="border border-gray-300 rounded-lg px-3 py-2">
                                         <option value="">All Status</option>
                                         <option value="new">New</option>
+                                        <option value="to_contact">To Contact</option>
                                         <option value="contacted">Contacted</option>
                                         <option value="qualified">Qualified</option>
                                         <option value="under_contract">Under Contract</option>
