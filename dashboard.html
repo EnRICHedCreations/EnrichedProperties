@@ -55,6 +55,9 @@
                 <button onclick="showTab('wholesale-deals')" id="wholesale-deals-tab" class="tab-button whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm">
                     Wholesale Deals
                 </button>
+                <button onclick="showTab('joint-ventures')" id="joint-ventures-tab" class="tab-button whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm">
+                    Joint Ventures
+                </button>
                 <button onclick="showTab('contracts')" id="contracts-tab" class="tab-button whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm">
                     Contracts
                 </button>
@@ -1286,6 +1289,105 @@
                         </thead>
                         <tbody id="dealsTableBody" class="bg-white divide-y divide-gray-200">
                             <!-- Deals will be populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Joint Ventures Tab -->
+        <div id="joint-ventures-content" class="tab-content hidden">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-900">Joint Venture Submissions</h2>
+                <div class="flex space-x-3">
+                    <select id="jvStatusFilter" class="border border-gray-300 rounded-lg px-3 py-2" onchange="filterJVs()">
+                        <option value="">All Statuses</option>
+                        <option value="pending">Pending Review</option>
+                        <option value="approved">Approved</option>
+                        <option value="in-progress">In Progress</option>
+                        <option value="closed">Closed</option>
+                        <option value="declined">Declined</option>
+                    </select>
+                    <button onclick="refreshJVs()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                        🔄 Refresh
+                    </button>
+                </div>
+            </div>
+
+            <!-- JV Stats -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                        <div class="p-2 bg-blue-100 rounded-lg">
+                            <div class="text-blue-600 text-2xl">🤝</div>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-600">Total Submissions</p>
+                            <p class="text-2xl font-semibold text-gray-900" id="totalJVsCount">0</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                        <div class="p-2 bg-yellow-100 rounded-lg">
+                            <div class="text-yellow-600 text-2xl">⏳</div>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-600">Pending Review</p>
+                            <p class="text-2xl font-semibold text-gray-900" id="pendingJVsCount">0</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                        <div class="p-2 bg-green-100 rounded-lg">
+                            <div class="text-green-600 text-2xl">✅</div>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-600">Approved</p>
+                            <p class="text-2xl font-semibold text-gray-900" id="approvedJVsCount">0</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                        <div class="p-2 bg-purple-100 rounded-lg">
+                            <div class="text-purple-600 text-2xl">🎯</div>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-600">Closed JVs</p>
+                            <p class="text-2xl font-semibold text-gray-900" id="closedJVsCount">0</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- JV Table -->
+            <div class="bg-white rounded-lg shadow overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <div class="flex justify-between items-center">
+                        <h3 class="text-lg font-semibold text-gray-900">JV Submissions</h3>
+                        <div class="flex space-x-4">
+                            <input type="text" id="jvSearch" placeholder="Search JVs..." class="border border-gray-300 rounded-lg px-3 py-2" onkeyup="searchJVs(this.value)">
+                        </div>
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Partner Name</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Deal Address</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contract Price</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ARV</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">JV Agreement</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Submitted</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="jvTableBody" class="bg-white divide-y divide-gray-200">
+                            <!-- JVs will be populated by JavaScript -->
                         </tbody>
                     </table>
                 </div>
