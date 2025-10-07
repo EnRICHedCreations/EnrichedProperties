@@ -266,6 +266,9 @@ function showTab(tabName) {
             case 'buyers':
                 updateBuyersTable();
                 break;
+            case 'joint-ventures':
+                loadJointVentures();
+                break;
             case 'contracts':
                 updateContractsTable();
                 break;
@@ -9337,6 +9340,286 @@ window.hangUp = hangUp;
 window.toggleMute = toggleMute;
 window.toggleRecording = toggleRecording;
 window.saveCallLog = saveCallLog;
+// ==============================================
+// JOINT VENTURES FUNCTIONS
+// ==============================================
+
+let jointVentures = [];
+
+// Load Joint Ventures
+async function loadJointVentures() {
+    try {
+        jointVentures = await CloudStorage.loadData('JointVentures', []);
+        console.log('Loaded JV submissions:', jointVentures.length);
+        updateJVsTable();
+        updateJVsStats();
+    } catch (error) {
+        console.error('Error loading joint ventures:', error);
+        jointVentures = [];
+        updateJVsTable();
+        updateJVsStats();
+    }
+}
+
+// Update JV Statistics
+function updateJVsStats() {
+    const totalCount = jointVentures.length;
+    const pendingCount = jointVentures.filter(jv => jv.status === 'pending').length;
+    const approvedCount = jointVentures.filter(jv => jv.status === 'approved').length;
+    const closedCount = jointVentures.filter(jv => jv.status === 'closed').length;
+
+    document.getElementById('totalJVsCount').textContent = totalCount;
+    document.getElementById('pendingJVsCount').textContent = pendingCount;
+    document.getElementById('approvedJVsCount').textContent = approvedCount;
+    document.getElementById('closedJVsCount').textContent = closedCount;
+}
+
+// Update JV Table
+function updateJVsTable(jvsToDisplay = jointVentures) {
+    const tbody = document.getElementById('jvTableBody');
+    if (!tbody) return;
+
+    if (jvsToDisplay.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="8" class="px-6 py-12 text-center text-gray-500">
+                    <div class="flex flex-col items-center">
+                        <div class="text-6xl mb-4">🤝</div>
+                        <div class="text-lg font-medium">No JV submissions yet</div>
+                        <div class="text-sm">JV submissions from the website will appear here</div>
+                    </div>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    // Sort by date (newest first)
+    const sortedJVs = [...jvsToDisplay].sort((a, b) => {
+        const dateA = new Date(a.dateSubmitted || 0);
+        const dateB = new Date(b.dateSubmitted || 0);
+        return dateB - dateA;
+    });
+
+    tbody.innerHTML = sortedJVs.map(jv => {
+        const statusColors = {
+            pending: 'bg-yellow-100 text-yellow-800',
+            approved: 'bg-green-100 text-green-800',
+            'in-progress': 'bg-blue-100 text-blue-800',
+            closed: 'bg-purple-100 text-purple-800',
+            declined: 'bg-red-100 text-red-800'
+        };
+
+        const statusColor = statusColors[jv.status] || statusColors.pending;
+        const submittedDate = jv.dateSubmitted ? new Date(jv.dateSubmitted).toLocaleDateString() : 'N/A';
+        const fullName = `${jv.firstName} ${jv.lastName}`;
+        const jvAgreementBadge = jv.jvAgreement === 'yes'
+            ? '<span class="text-green-600 font-semibold">✓ Yes</span>'
+            : '<span class="text-red-600 font-semibold">✗ No</span>';
+
+        return `
+            <tr class="hover:bg-gray-50">
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm font-medium text-gray-900">${fullName}</div>
+                    <div class="text-sm text-gray-500">${jv.emailAddress}</div>
+                </td>
+                <td class="px-6 py-4">
+                    <div class="text-sm text-gray-900">${jv.dealAddress}</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm font-medium text-gray-900">$${parseInt(jv.contractPrice).toLocaleString()}</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm font-medium text-gray-900">$${parseInt(jv.arv).toLocaleString()}</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-center">
+                    ${jvAgreementBadge}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusColor}">
+                        ${(jv.status || 'pending').charAt(0).toUpperCase() + (jv.status || 'pending').slice(1)}
+                    </span>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    ${submittedDate}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <button onclick="viewJVDetails(${jv.id})" class="text-blue-600 hover:text-blue-900 mr-3">View</button>
+                    <button onclick="updateJVStatus(${jv.id})" class="text-green-600 hover:text-green-900 mr-3">Update</button>
+                    <button onclick="deleteJV(${jv.id})" class="text-red-600 hover:text-red-900">Delete</button>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+// Filter JVs
+function filterJVs() {
+    const statusFilter = document.getElementById('jvStatusFilter').value;
+
+    if (!statusFilter) {
+        updateJVsTable(jointVentures);
+        return;
+    }
+
+    const filtered = jointVentures.filter(jv => jv.status === statusFilter);
+    updateJVsTable(filtered);
+}
+
+// Search JVs
+function searchJVs(searchTerm) {
+    if (!searchTerm) {
+        updateJVsTable(jointVentures);
+        return;
+    }
+
+    const term = searchTerm.toLowerCase();
+    const filtered = jointVentures.filter(jv => {
+        return (
+            jv.firstName?.toLowerCase().includes(term) ||
+            jv.lastName?.toLowerCase().includes(term) ||
+            jv.emailAddress?.toLowerCase().includes(term) ||
+            jv.dealAddress?.toLowerCase().includes(term)
+        );
+    });
+
+    updateJVsTable(filtered);
+}
+
+// Refresh JVs
+function refreshJVs() {
+    loadJointVentures();
+    showSuccessMessage('Joint Venture submissions refreshed!');
+}
+
+// View JV Details
+function viewJVDetails(jvId) {
+    const jv = jointVentures.find(j => j.id === jvId);
+    if (!jv) return;
+
+    const modalContent = `
+        <div class="space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="space-y-4">
+                    <h4 class="font-semibold text-gray-900 border-b pb-2">Partner Information</h4>
+                    <div><strong>Name:</strong> ${jv.firstName} ${jv.lastName}</div>
+                    <div><strong>Email:</strong> <a href="mailto:${jv.emailAddress}" class="text-blue-600 hover:underline">${jv.emailAddress}</a></div>
+                    <div><strong>JV Agreement:</strong> ${jv.jvAgreement === 'yes' ? '✓ Yes (50/25/25)' : '✗ No'}</div>
+                </div>
+                <div class="space-y-4">
+                    <h4 class="font-semibold text-gray-900 border-b pb-2">Deal Information</h4>
+                    <div><strong>Address:</strong> ${jv.dealAddress}</div>
+                    <div><strong>Contract Price:</strong> $${parseInt(jv.contractPrice).toLocaleString()}</div>
+                    <div><strong>ARV:</strong> $${parseInt(jv.arv).toLocaleString()}</div>
+                    <div><strong>Potential Spread:</strong> $${(parseInt(jv.arv) - parseInt(jv.contractPrice)).toLocaleString()}</div>
+                </div>
+            </div>
+
+            <div class="space-y-4">
+                <h4 class="font-semibold text-gray-900 border-b pb-2">Submission Details</h4>
+                <div><strong>Status:</strong> <span class="px-2 py-1 rounded-full text-xs font-semibold ${
+                    jv.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                    jv.status === 'approved' ? 'bg-green-100 text-green-800' :
+                    jv.status === 'in-progress' ? 'bg-blue-100 text-blue-800' :
+                    jv.status === 'closed' ? 'bg-purple-100 text-purple-800' :
+                    'bg-red-100 text-red-800'
+                }">${(jv.status || 'pending').charAt(0).toUpperCase() + (jv.status || 'pending').slice(1)}</span></div>
+                <div><strong>Submitted:</strong> ${jv.dateSubmitted ? new Date(jv.dateSubmitted).toLocaleString() : 'N/A'}</div>
+            </div>
+
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h4 class="font-semibold text-blue-900 mb-2">💡 JV Split Breakdown (50/25/25)</h4>
+                <div class="text-sm text-blue-800 space-y-1">
+                    <div>• Partner (${jv.firstName}): 50% of assignment fee</div>
+                    <div>• Enriched Properties: 25% of assignment fee</div>
+                    <div>• Partner's Partner: 25% for disposing the deal</div>
+                </div>
+            </div>
+
+            <div class="flex justify-between pt-4 border-t">
+                <a href="mailto:${jv.emailAddress}?subject=Regarding Your JV Submission" class="inline-block px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Email Partner</a>
+            </div>
+        </div>
+    `;
+
+    showCustomModal('JV Submission Details', modalContent, null);
+}
+
+// Update JV Status
+function updateJVStatus(jvId) {
+    const jv = jointVentures.find(j => j.id === jvId);
+    if (!jv) return;
+
+    const modalContent = `
+        <div class="space-y-4">
+            <p class="text-gray-600">Update the status of this JV submission:</p>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">New Status</label>
+                <select id="newJVStatus" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                    <option value="pending" ${jv.status === 'pending' ? 'selected' : ''}>Pending Review</option>
+                    <option value="approved" ${jv.status === 'approved' ? 'selected' : ''}>Approved</option>
+                    <option value="in-progress" ${jv.status === 'in-progress' ? 'selected' : ''}>In Progress</option>
+                    <option value="closed" ${jv.status === 'closed' ? 'selected' : ''}>Closed</option>
+                    <option value="declined" ${jv.status === 'declined' ? 'selected' : ''}>Declined</option>
+                </select>
+            </div>
+        </div>
+    `;
+
+    showCustomModal('Update JV Status', modalContent, () => confirmJVStatusUpdate(jvId));
+}
+
+function confirmJVStatusUpdate(jvId) {
+    const newStatus = document.getElementById('newJVStatus').value;
+    const jvIndex = jointVentures.findIndex(j => j.id === jvId);
+
+    if (jvIndex === -1) return;
+
+    jointVentures[jvIndex].status = newStatus;
+    jointVentures[jvIndex].lastUpdated = new Date().toISOString();
+
+    CloudStorage.saveData('JointVentures', jointVentures).then(() => {
+        updateJVsTable();
+        updateJVsStats();
+        hideContractGeneratorModal();
+        showSuccessMessage('JV status updated successfully!');
+    }).catch(error => {
+        console.error('Error updating JV status:', error);
+        showErrorMessage('Error updating JV status');
+    });
+}
+
+// Delete JV
+function deleteJV(jvId) {
+    if (!confirm('Are you sure you want to delete this JV submission? This action cannot be undone.')) {
+        return;
+    }
+
+    const jvIndex = jointVentures.findIndex(j => j.id === jvId);
+    if (jvIndex === -1) return;
+
+    jointVentures.splice(jvIndex, 1);
+
+    CloudStorage.saveData('JointVentures', jointVentures).then(() => {
+        updateJVsTable();
+        updateJVsStats();
+        showSuccessMessage('JV submission deleted successfully!');
+    }).catch(error => {
+        console.error('Error deleting JV:', error);
+        showErrorMessage('Error deleting JV submission');
+    });
+}
+
+// Export JV functions to window
+window.loadJointVentures = loadJointVentures;
+window.refreshJVs = refreshJVs;
+window.filterJVs = filterJVs;
+window.searchJVs = searchJVs;
+window.viewJVDetails = viewJVDetails;
+window.updateJVStatus = updateJVStatus;
+window.confirmJVStatusUpdate = confirmJVStatusUpdate;
+window.deleteJV = deleteJV;
+
 window.initializeTwilio = initializeTwilio;
 window.updateCallServiceNote = updateCallServiceNote;
 window.startSelectedCall = startSelectedCall;
